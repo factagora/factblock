@@ -1,0 +1,17 @@
+{
+  "factblock_version": "1.0-draft.1",
+  "namespace": "sample:rates",
+  "tables": {"nodes": "nodes.jsonl", "edges": "edges.jsonl"},
+  "declarations": {
+    "facts": [
+      {"fact_key": "belief:fed:direction", "key_fields": ["subject"], "policy": "latest_valid", "source_order": null, "declared_at": "2024-03-01T00:00:00Z"}
+    ],
+    "backfills": [
+      {"batch": "b1", "declared_known_at": "2024-04-15T00:00:00Z", "reason": "sample batch 1", "declared_by": "human:randy", "captured_at": "2026-10-04T00:00:00Z"},
+      {"batch": "b2", "declared_known_at": "2024-07-01T00:00:00Z", "reason": "sample batch 2", "declared_by": "human:randy", "captured_at": "2026-10-04T00:00:00Z"},
+      {"batch": "b3", "declared_known_at": "2024-09-15T00:00:00Z", "reason": "sample batch 3", "declared_by": "human:randy", "captured_at": "2026-10-04T00:00:00Z"}
+    ],
+    "edge_types": [],
+    "embedding": null
+  }
+}
