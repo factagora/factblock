@@ -56,7 +56,7 @@ A bundle is a FactBlock bundle only if all five hold. The validator (section 8) 
 | `fact_value` | any | no | The value `resolve` returns for this candidate |
 | `embedding` | float[] | no | Producer's vector. `declarations.embedding` names the model |
 | `author` | actor | no | Who said it. Actor syntax in 3.5 |
-| `owner` | string | no | Whose memory this is: a user, an agent, a worldview. A filter axis, distinct from `author` |
+| `space` | string | no | Whose memory this is: a user, an agent, a worldview. A filter axis, distinct from `author` |
 
 ### 3.2 Edge
 
