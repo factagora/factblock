@@ -1,9 +1,9 @@
-"""python -m factblock validate <bundle> | scan <bundle> --as-of <instant> [--valid-at <instant>]"""
+"""python -m factblock validate <bundle> | scan <bundle> --as-of T [--valid-at T] | resolve <bundle> <fact_key> --as-of T [--valid-at T] [--rules-as-of T]"""
 import argparse
 import json
 import sys
 
-from . import scan, validate
+from . import resolve, scan, validate
 
 p = argparse.ArgumentParser(prog="factblock")
 sub = p.add_subparsers(dest="cmd", required=True)
@@ -12,6 +12,12 @@ s = sub.add_parser("scan")
 s.add_argument("bundle")
 s.add_argument("--as-of", required=True)
 s.add_argument("--valid-at")
+r = sub.add_parser("resolve")
+r.add_argument("bundle")
+r.add_argument("fact_key")
+r.add_argument("--as-of", required=True)
+r.add_argument("--valid-at")
+r.add_argument("--rules-as-of")
 a = p.parse_args()
 
 if a.cmd == "validate":
@@ -19,6 +25,8 @@ if a.cmd == "validate":
     for c in checks:
         print(f"{'ok  ' if c.ok else 'FAIL'} {c.check_id:<20} {c.detail}")
     sys.exit(0 if all(c.ok for c in checks) else 1)
+elif a.cmd == "resolve":
+    print(json.dumps(resolve(a.bundle, a.fact_key, a.as_of, a.valid_at, a.rules_as_of), indent=1, default=str))
 else:
     r = scan(a.bundle, a.as_of, a.valid_at)
     print(json.dumps({"certificate": r.certificate,

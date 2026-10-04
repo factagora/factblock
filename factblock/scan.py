@@ -21,7 +21,7 @@ def _as_of(v):
 def _visible(r, as_of, valid_at):
     if r["known_at"] > as_of:
         return False
-    if valid_at is None or "asserted_at" not in r:
+    if "asserted_at" not in r:          # resolutions have no validity interval
         return True
     to = r.get("valid_to")
     return r["asserted_at"] <= valid_at and r["valid_from"] <= valid_at and (to is None or valid_at < to)
@@ -45,7 +45,8 @@ def scan(bundle, as_of, valid_at=None) -> Scan:
     if as_of is None:
         raise ValueError("as_of has no default: every read says which instant it asks about (SPEC 4.1)")
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
-    t, v = _as_of(as_of), parse_instant(valid_at) if valid_at else None
+    t = _as_of(as_of)
+    v = parse_instant(valid_at) if valid_at else t   # SPEC 4.1: valid_at defaults to as_of
     nodes = [r for r in b.nodes if _visible(r, t, v)]
     edges = [r for r in b.edges if _visible(r, t, v)]
     res = [r for r in b.resolutions if _visible(r, t, v)]
@@ -58,8 +59,7 @@ def scan(bundle, as_of, valid_at=None) -> Scan:
     batches = {r["attestation"]["batch"] for r in nodes + edges + res if r.get("attestation", {}).get("batch")}
     rows = sum(1 for r in nodes + edges + res if r.get("attestation", {}).get("batch"))
     cert = {"as_of": t.isoformat(), "read_at": datetime.now(timezone.utc).isoformat()}
-    if v:
-        cert["valid_at"] = v.isoformat()
+    cert["valid_at"] = v.isoformat()
     if masked:
         cert["masked"] = masked
     if batches:

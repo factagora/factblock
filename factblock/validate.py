@@ -92,7 +92,7 @@ def validate(bundle) -> list[Check]:
 
     # I5 declared facts
     undeclared = sorted({r["fact_key"] for r in b.nodes if r.get("fact_key") and r["fact_key"] not in b.facts})
-    badpol = [k for k, f in b.facts.items() if f.get("policy", "latest_valid") not in POLICIES]
+    badpol = [k for k, fs in b.facts.items() if any(f.get("policy", "latest_valid") not in POLICIES for f in fs)]
     check("I5.declared", undeclared, "fact_keys used but not declared")
     check("I5.policy_known", badpol, "facts with an unknown policy")
     return out

@@ -39,7 +39,10 @@ class Bundle:
         self.edges = _read_table(self.path / tables.get("edges", "edges.jsonl"))
         self.resolutions = _read_table(self.path / tables.get("resolutions", "resolutions.jsonl"))
         d = self.manifest.get("declarations", {})
-        self.facts = {f["fact_key"]: f for f in d.get("facts", [])}
+        self.facts = {}
+        for f in d.get("facts", []):
+            f["declared_at"] = parse_instant(f.get("declared_at"))
+            self.facts.setdefault(f["fact_key"], []).append(f)
         self.backfills = {b["batch"]: b for b in d.get("backfills", [])}
         for b in self.backfills.values():
             b["declared_known_at"] = parse_instant(b["declared_known_at"])

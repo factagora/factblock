@@ -56,6 +56,7 @@ A bundle is a FactBlock bundle only if all five hold. The validator (section 8) 
 | `fact_value` | any | no | The value `resolve` returns for this candidate |
 | `embedding` | float[] | no | Producer's vector. `declarations.embedding` names the model |
 | `author` | actor | no | Who said it. Actor syntax in 3.5 |
+| `owner` | string | no | Whose memory this is: a user, an agent, a worldview. A filter axis, distinct from `author` |
 
 ### 3.2 Edge
 
@@ -124,7 +125,7 @@ embedding:   { model, dimensions } | null
 
 A conforming reader implements these; an engine that embeds the reference library gets them for free.
 
-**4.1 As-of.** `read(as_of, valid_at?)` returns blocks with `known_at <= as_of`. With `valid_at`, also `asserted_at <= valid_at` and `valid_from <= valid_at < valid_to` (null `valid_to` is open). `as_of` has no default. A date-only `as_of` means the end of that day in UTC.
+**4.1 As-of.** `read(as_of, valid_at?)` returns blocks with `known_at <= as_of` that also hold at `valid_at`: `asserted_at <= valid_at` and `valid_from <= valid_at < valid_to` (null `valid_to` is open). `valid_at` defaults to `as_of`, so the one-argument read means "as best we knew on D, what held on D". `as_of` has no default. A date-only `as_of` means the end of that day in UTC.
 
 **4.2 Certificate.** Every as-of read returns `{ as_of, read_at, masked: {node, edge, resolution}, backfill: {batches, rows} | null, rules_as_of? }`. `masked` counts blocks hidden by 4.1. Omit keys whose value is zero or null.
 
@@ -147,6 +148,8 @@ A conforming reader implements these; an engine that embeds the reference librar
 ```
 
 `factblock_version` is semantic: a minor bump adds fields only; a major bump may break. Readers that do not know the version SHOULD read best-effort, never refuse.
+
+A bundle may travel as a `tar.gz` of the directory. The tckg ledger serves one from `GET /v1/export?as_of=`.
 
 ### 5.2 JSONL profile
 
@@ -179,6 +182,7 @@ A FactBlock node maps to one OKF concept document: `type` = `kind`, `title` = `s
 ## 10. Reference implementations
 
 - `factblock` (Python, `format/factblock/` in this repository): `scan`, `validate`, `resolve`. Returns Arrow tables plus a certificate.
+- tckg `GET /v1/export` writes bundles that `factblock validate` accepts; the smoke `smoke/06-export.sh` proves the round trip on every commit.
 - tckg (PostgreSQL ledger service): stamps `known_at`, enforces I1 to I5 at write time, exports bundles.
 
 A second, independent implementation is the condition for 1.0.0.
