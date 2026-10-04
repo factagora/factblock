@@ -187,6 +187,7 @@ A FactBlock node maps to one OKF concept document: `type` = `kind`, `title` = `s
 - tckg `GET /v1/export` writes bundles that `factblock validate` accepts; the smoke `smoke/06-export.sh` proves the round trip on every commit.
 - tckg (PostgreSQL ledger service): stamps `known_at`, enforces I1 to I5 at write time, exports bundles.
 
+- `duckdb/factblock.sql` (SQL, this repository): a reader for DuckDB as table macros over the Parquet profile. Same as-of, valid_at, supersession, and certificate rules as `scan`; a test holds the two equal.
 - `factblock.adapters.graphiti` (Python, this repository): a second writer. It reads a Graphiti graph through Graphiti's own object model (any backend: Neo4j, FalkorDB, Kuzu) and writes a bundle, declaring one backfill batch per distinct `created_at` because that clock is self-reported (section 6). `memory/graphiti_to_factblock.py` runs it against an embedded Kuzu store and imports the result into tckg.
 
 Two writers exist (a ledger and an adapter). 1.0.0 still waits for a reader or writer maintained outside this repository.
