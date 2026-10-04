@@ -6,6 +6,7 @@ Three clocks on every block (said, holds, known), typed causal edges, attested k
 
 - [`SPEC.md`](./SPEC.md): the format. Five invariants, logical model, JSONL and Parquet profiles, read semantics, conformance.
 - [`factblock/`](./factblock): the Python reference library. `scan(bundle, as_of)` returns Arrow tables and a certificate; `validate` checks a bundle; `resolve` picks one value for a declared fact by its policy; `write_parquet` converts to the Parquet profile. Query the result with DuckDB, Spark, or anything that reads Arrow.
+- [`factblock/adapters/graphiti.py`](./factblock/adapters/graphiti.py): the second writer. A Graphiti graph (its own objects, any backend) becomes a bundle; Graphiti's `created_at` is attested as backfill batches because the store stamped it itself.
 - [`samples/`](./samples): small bundles that exercise the invariants.
 
 Format, not platform. Apache-2.0 (the LICENSE file lands when this folder goes public). tckg (the rest of this repository) is one ledger that writes this format; it is not required to read it.
