@@ -19,7 +19,8 @@ def _read_table(path: Path) -> list[dict]:
         return []
     if path.suffix == ".parquet":
         import pyarrow.parquet as pq
-        rows = pq.read_table(path).to_pylist()
+        from .parquet import decode_parquet_row
+        rows = [decode_parquet_row(r) for r in pq.read_table(path).to_pylist()]
     else:
         with path.open() as f:
             rows = [json.loads(line) for line in f if line.strip()]

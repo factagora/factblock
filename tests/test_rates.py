@@ -57,3 +57,25 @@ for f in (lambda: factblock.scan(RATES, None), lambda: factblock.resolve(RATES, 
     except ValueError:
         pass
 print("PASS factblock: validate 11/11, scan at three instants, supersession, certificate, valid_at, resolve 10 cases")
+
+# Parquet profile: the same bundle written as Parquet validates and answers identically (SPEC 5.3)
+import tempfile  # noqa: E402
+with tempfile.TemporaryDirectory() as d:
+    pq_dir = factblock.write_parquet(RATES, d)
+    assert sorted(x.name for x in pq_dir.iterdir()) == ["edges.parquet", "factblock.json", "nodes.parquet"]
+    assert all(c.ok for c in factblock.validate(pq_dir)), [c for c in factblock.validate(pq_dir) if not c.ok]
+    for t in ("2024-05-01", "2024-08-01", "2024-10-01"):
+        a, b = factblock.scan(RATES, t), factblock.scan(pq_dir, t)
+        assert ids(a) == ids(b) and a.certificate.get("masked") == b.certificate.get("masked"), t
+        assert a.certificate.get("backfill") == b.certificate.get("backfill")
+    ra, rb = factblock.resolve(RATES, "belief:fed:direction", "2024-10-01"), factblock.resolve(pq_dir, "belief:fed:direction", "2024-10-01")
+    assert ra["value"] == rb["value"] and ra["policy"] == rb["policy"]
+    # payload and the free-form fields survive the JSON-string column
+    c1 = next(n for n in factblock.Bundle(pq_dir).nodes if n["id"] == "c1")
+    assert c1["payload"] == {"about": {"start": "2024-03"}} and c1["fact_value"] == {"direction": "up"} and c1["author"] == "human:analyst-1", c1
+    # an engine reads the file directly: rows sorted by known_at, so an as-of read is a prefix
+    import pyarrow.parquet as pq
+    t = pq.read_table(pq_dir / "nodes.parquet")
+    ks = t.column("known_at").to_pylist()
+    assert ks == sorted(ks) and str(t.schema.field("known_at").type) == "timestamp[us, tz=UTC]"
+print("PASS factblock parquet: write, validate, scan x3, resolve, round-trip fields, sorted by known_at")

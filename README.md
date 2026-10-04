@@ -5,7 +5,7 @@
 Three clocks on every block (said, holds, known), typed causal edges, attested knowledge time, and declared rules for choosing between conflicting values. A reader can answer "what did we know at T, and why did we change our mind" from the files alone, and prove it did not peek.
 
 - [`SPEC.md`](./SPEC.md): the format. Five invariants, logical model, JSONL and Parquet profiles, read semantics, conformance.
-- [`factblock/`](./factblock): the Python reference library. `scan(bundle, as_of)` returns Arrow tables and a certificate; `validate` checks a bundle; `resolve` picks one value for a declared fact by its policy. Query the result with DuckDB, Spark, or anything that reads Arrow.
+- [`factblock/`](./factblock): the Python reference library. `scan(bundle, as_of)` returns Arrow tables and a certificate; `validate` checks a bundle; `resolve` picks one value for a declared fact by its policy; `write_parquet` converts to the Parquet profile. Query the result with DuckDB, Spark, or anything that reads Arrow.
 - [`samples/`](./samples): small bundles that exercise the invariants.
 
 Format, not platform. Apache-2.0 (the LICENSE file lands when this folder goes public). tckg (the rest of this repository) is one ledger that writes this format; it is not required to read it.
@@ -16,6 +16,7 @@ cd format && uv sync
 uv run python -m factblock validate samples/rates
 uv run python -m factblock scan samples/rates --as-of 2024-08-01
 uv run python -m factblock resolve samples/rates belief:fed:direction --as-of 2024-10-01
+uv run python -m factblock to-parquet samples/rates /tmp/rates-pq     # the Parquet profile; DuckDB or Spark read it directly
 ```
 
 ```python

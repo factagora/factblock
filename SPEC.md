@@ -157,7 +157,9 @@ One block per line. Instants are RFC 3339 with offset. `valid_to` null is writte
 
 ### 5.3 Parquet profile
 
-Arrow types: `id` utf8; `kind`, `edge_type` dictionary<utf8>; instants `timestamp[us, UTC]`; `valid_to` nullable; `payload`, `properties`, `fact_value` utf8 holding JSON; `embedding` `fixed_size_list<float32>[dimensions]`; `attestation` struct<ledger utf8, batch utf8>. Files are sorted by `known_at` so that an as-of read is a prefix scan. A writer MAY partition by `known_at` date.
+One file per table, one explicit Arrow schema per table (the reference library's `factblock/parquet.py` is the normative list). Instants are `timestamp[us, UTC]`; `valid_to` is nullable. `kind` and `edge_type` are utf8 (dictionary encoding is a writer option). `payload`, `properties`, `fact_value`, `value`, and `evidence` are utf8 columns holding JSON. `attestation` is `struct<ledger utf8, batch utf8>`. `embedding` is `list<float32>`; a writer MAY use `fixed_size_list` when `declarations.embedding.dimensions` is set. Fields the schema does not name go into an `extra` utf8 column as a JSON object, so a round trip loses nothing (section 7). Rows are sorted by `known_at`, so an as-of read is a prefix scan, and any engine can apply `WHERE known_at <= T` on the file directly. Compression is the writer's choice; the reference writer uses zstd.
+
+`factblock to-parquet <bundle> <out>` converts a JSONL bundle. The manifest is copied with `tables` pointing at the `.parquet` files.
 
 ### 5.4 Iceberg (informative)
 
