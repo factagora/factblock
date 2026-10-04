@@ -1,6 +1,6 @@
 -- FactBlock for DuckDB: as-of reads over a Parquet bundle in SQL alone (SPEC 4, 5.3).
 --
---   duckdb -init format/duckdb/factblock.sql
+--   duckdb -init duckdb/factblock.sql
 --   SELECT id, statement, superseded_by FROM factblock_nodes('path/to/bundle', TIMESTAMPTZ '2024-08-01');
 --   SELECT * FROM factblock_certificate('path/to/bundle', TIMESTAMPTZ '2024-08-01');
 --
