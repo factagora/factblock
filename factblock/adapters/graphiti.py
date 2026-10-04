@@ -2,7 +2,7 @@
 it reads Graphiti's own objects, not tckg, and depends on nothing but the duck-typed
 attributes below, so it runs against any Graphiti backend (Neo4j, FalkorDB, Kuzu).
 
-Mapping (format/SPEC.md 3, memory/tckg_driver for the reverse direction):
+Mapping (SPEC.md 3; tckg's memory/tckg_driver is the reverse direction):
   group_id                 -> space
   EpisodicNode             -> node kind=episode   (statement=name, asserted_at=valid_at)
   EntityNode               -> node kind=entity    (statement=name)

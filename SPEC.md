@@ -157,7 +157,7 @@ One block per line. Instants are RFC 3339 with offset. `valid_to` null is writte
 
 ### 5.3 Parquet profile
 
-One file per table, one explicit Arrow schema per table (the reference library's `factblock/parquet.py` is the normative list). Instants are `timestamp[us, UTC]`; `valid_to` is nullable. `kind` and `edge_type` are utf8 (dictionary encoding is a writer option). `payload`, `properties`, `fact_value`, `value`, and `evidence` are utf8 columns holding JSON. `attestation` is `struct<ledger utf8, batch utf8>`. `embedding` is `list<float32>`; a writer MAY use `fixed_size_list` when `declarations.embedding.dimensions` is set. Fields the schema does not name go into an `extra` utf8 column as a JSON object, so a round trip loses nothing (section 7). Rows are sorted by `known_at`, so an as-of read is a prefix scan, and any engine can apply `WHERE known_at <= T` on the file directly. Compression is the writer's choice; the reference writer uses zstd.
+One file per table, one explicit Arrow schema per table (`factblock/parquet.py` in this repository is the normative list). Instants are `timestamp[us, UTC]`; `valid_to` is nullable. `kind` and `edge_type` are utf8 (dictionary encoding is a writer option). `payload`, `properties`, `fact_value`, `value`, and `evidence` are utf8 columns holding JSON. `attestation` is `struct<ledger utf8, batch utf8>`. `embedding` is `list<float32>`; a writer MAY use `fixed_size_list` when `declarations.embedding.dimensions` is set. Fields the schema does not name go into an `extra` utf8 column as a JSON object, so a round trip loses nothing (section 7). Rows are sorted by `known_at`, so an as-of read is a prefix scan, and any engine can apply `WHERE known_at <= T` on the file directly. Compression is the writer's choice; the reference writer uses zstd.
 
 `factblock to-parquet <bundle> <out>` converts a JSONL bundle. The manifest is copied with `tables` pointing at the `.parquet` files.
 
@@ -183,11 +183,11 @@ A FactBlock node maps to one OKF concept document: `type` = `kind`, `title` = `s
 
 ## 10. Reference implementations
 
-- `factblock` (Python, `format/factblock/` in this repository): `scan`, `validate`, `resolve`. Returns Arrow tables plus a certificate.
-- tckg `GET /v1/export` writes bundles that `factblock validate` accepts; the smoke `smoke/06-export.sh` proves the round trip on every commit.
-- tckg (PostgreSQL ledger service): stamps `known_at`, enforces I1 to I5 at write time, exports bundles.
+- `factblock` (Python, `factblock/` in this repository): `scan`, `validate`, `resolve`, `write_parquet`. Returns Arrow tables plus a certificate.
+- tckg `GET /v1/export` writes bundles that `factblock validate` accepts; tckg's smoke suite ([factagora/tckg](https://github.com/factagora/tckg), `smoke/06-export.sh`) proves the round trip on every commit.
+- [tckg](https://github.com/factagora/tckg) (PostgreSQL ledger service): stamps `known_at`, enforces I1 to I5 at write time, exports bundles.
 
 - `duckdb/factblock.sql` (SQL, this repository): a reader for DuckDB as table macros over the Parquet profile. Same as-of, valid_at, supersession, and certificate rules as `scan`; a test holds the two equal.
-- `factblock.adapters.graphiti` (Python, this repository): a second writer. It reads a Graphiti graph through Graphiti's own object model (any backend: Neo4j, FalkorDB, Kuzu) and writes a bundle, declaring one backfill batch per distinct `created_at` because that clock is self-reported (section 6). `memory/graphiti_to_factblock.py` runs it against an embedded Kuzu store and imports the result into tckg.
+- `factblock.adapters.graphiti` (Python, this repository): a second writer. It reads a Graphiti graph through Graphiti's own object model (any backend: Neo4j, FalkorDB, Kuzu) and writes a bundle, declaring one backfill batch per distinct `created_at` because that clock is self-reported (section 6). tckg's `memory/graphiti_to_factblock.py` runs it against an embedded Kuzu store and imports the result into the tckg ledger.
 
 Two writers exist (a ledger and an adapter). 1.0.0 still waits for a reader or writer maintained outside this repository.
