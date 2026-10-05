@@ -13,6 +13,7 @@ jobs:
       - run: uv run python tests/test_extract.py
       - run: uv run python tests/test_why.py
       - run: uv run python tests/test_leak.py
+      - run: uv run python tests/test_recall.py
       - run: uv run python tests/test_sync.py
       - run: uv run python tests/test_claimreview.py
       - run: uv run python tests/test_okf.py
