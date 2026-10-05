@@ -8,7 +8,7 @@ import pyarrow as pa
 
 from .bundle import Bundle, parse_instant
 
-JSON_COLS = ("payload", "properties", "fact_value", "attestation")
+JSON_COLS = ("payload", "properties", "fact_value", "attestation", "value", "evidence")   # free-form or mixed-type: out as JSON strings
 
 
 def _as_of(v):

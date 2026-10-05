@@ -2,14 +2,15 @@
    | validate <bundle> | scan <bundle> --as-of T [--valid-at T]
    | resolve <bundle> <fact_key> --as-of T [--valid-at T] [--rules-as-of T]
    | why <bundle> <node_id> --as-of T [--valid-at T] [--depth N] | leak <bundle> <questions.jsonl>
-   | sync <bundle> <url> --space S [--token T] [--as-of T] [--push-only | --pull-only] | to-parquet <bundle> <out>"""
+   | sync <bundle> <url> --space S [--token T] [--as-of T] [--push-only | --pull-only]
+   | to-claimreview <bundle> --as-of T [--base-url U] | to-parquet <bundle> <out>"""
 import argparse
 import json
 import os
 import pathlib
 import sys
 
-from . import Bundle, TckgStore, extract, leak, resolve, scan, sync, validate, why, write_bundle, write_parquet
+from . import Bundle, TckgStore, extract, leak, resolve, scan, sync, to_claimreview, validate, why, write_bundle, write_parquet
 
 
 def main():
@@ -55,6 +56,11 @@ def main():
     e.add_argument("--known-at", help="when you learned it; default now")
     e.add_argument("--backfill", action="store_true", help="known_at = observed_at: material from the past, known when it was said")
     e.add_argument("--namespace", default="local")
+    cr = sub.add_parser("to-claimreview", help="verdicts visible as of an instant, as schema.org ClaimReview JSON-LD")
+    cr.add_argument("bundle")
+    cr.add_argument("--as-of", required=True)
+    cr.add_argument("--valid-at")
+    cr.add_argument("--base-url", help="each review's url becomes <base-url>/<block id>")
     c = sub.add_parser("to-parquet")
     c.add_argument("bundle")
     c.add_argument("out")
@@ -74,6 +80,8 @@ def main():
         for c in checks:
             print(f"{'ok  ' if c.ok else 'FAIL'} {c.check_id:<20} {c.detail}")
         sys.exit(0 if all(c.ok for c in checks) else 1)
+    elif a.cmd == "to-claimreview":
+        print(json.dumps(to_claimreview(a.bundle, a.as_of, a.base_url, a.valid_at), indent=1, default=str))
     elif a.cmd == "to-parquet":
         out = write_parquet(a.bundle, a.out)
         print(f"wrote {out}: {sorted(x.name for x in out.iterdir())}")

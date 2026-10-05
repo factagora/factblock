@@ -16,11 +16,11 @@ assert len(checks) == 11
 
 ids = lambda s: sorted(s.nodes.column("id").to_pylist())  # noqa: E731
 may = factblock.scan(RATES, "2024-05-01")
-assert ids(may) == ["c1", "c2"] and may.certificate["masked"] == {"node": 4, "edge": 2}, may.certificate
+assert ids(may) == ["c1", "c2"] and may.certificate["masked"] == {"node": 4, "edge": 2, "resolution": 3}, may.certificate
 aug = factblock.scan(RATES, "2024-08-01")
-assert ids(aug) == ["c1", "c2", "c3"] and aug.certificate["masked"] == {"node": 3, "edge": 1}
+assert ids(aug) == ["c1", "c2", "c3"] and aug.certificate["masked"] == {"node": 3, "edge": 1, "resolution": 2}
 octo = factblock.scan(RATES, "2024-10-01")
-assert ids(octo) == ["c1", "c2", "c3", "c4", "t1", "t2"] and "masked" not in octo.certificate
+assert ids(octo) == ["c1", "c2", "c3", "c4", "t1", "t2"] and octo.certificate["masked"] == {"resolution": 1}   # the December re-resolution of c1
 sup = dict(zip(octo.nodes.column("id").to_pylist(), octo.nodes.column("superseded_by").to_pylist()))
 assert sup["c1"] == "c4" and all(v is None for k, v in sup.items() if k != "c1"), sup
 assert octo.certificate["backfill"] == {"batches": 3, "rows": 9}
@@ -56,13 +56,14 @@ for f in (lambda: factblock.scan(RATES, None), lambda: factblock.resolve(RATES, 
         raise AssertionError("as_of default must not exist")
     except ValueError:
         pass
-print("PASS factblock: validate 11/11, scan at three instants, supersession, certificate, valid_at, resolve 10 cases")
+assert factblock.scan(RATES, "2024-10-01").resolutions.num_rows == 2 and factblock.scan(RATES, "2025-01-01").resolutions.num_rows == 3
+print("PASS factblock: validate 11/11, scan at three instants, supersession, certificate, valid_at, resolve 10 cases, verdict rows masked by known_at")
 
 # Parquet profile: the same bundle written as Parquet validates and answers identically (SPEC 5.3)
 import tempfile  # noqa: E402
 with tempfile.TemporaryDirectory() as d:
     pq_dir = factblock.write_parquet(RATES, d)
-    assert sorted(x.name for x in pq_dir.iterdir()) == ["edges.parquet", "factblock.json", "nodes.parquet"]
+    assert sorted(x.name for x in pq_dir.iterdir()) == ["edges.parquet", "factblock.json", "nodes.parquet", "resolutions.parquet"]
     assert all(c.ok for c in factblock.validate(pq_dir)), [c for c in factblock.validate(pq_dir) if not c.ok]
     for t in ("2024-05-01", "2024-08-01", "2024-10-01"):
         a, b = factblock.scan(RATES, t), factblock.scan(pq_dir, t)

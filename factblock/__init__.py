@@ -9,8 +9,10 @@
     why(bundle, node_id, as_of, valid_at=None, depth=3) -> dict   # the chain behind one block, SPEC 4.5
     leak(bundle, questions) -> dict               # answers that rest on blocks learned after the question was asked
     sync(bundle, store, as_of=None, push=True, pull=True) -> dict   # folder <-> a store (TckgStore, or yours) by identity
+    to_claimreview(bundle, as_of, base_url=None) -> dict   # verdicts as schema.org ClaimReview JSON-LD, SPEC 9
 """
 from .bundle import Bundle, write_bundle
+from .claimreview import to_claimreview
 from .extract import extract, load_profile
 from .leak import leak
 from .parquet import write_parquet
@@ -20,4 +22,4 @@ from .sync import Store, TckgStore, sync
 from .validate import Check, validate
 from .why import why
 
-__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore"]
+__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore", "to_claimreview"]

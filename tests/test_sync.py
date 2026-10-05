@@ -69,16 +69,16 @@ store.rows["nodes"].append({"id": "x1", "kind": "claim", "statement": "Stamped b
 r = factblock.sync(work, store)
 assert r["pushed"]["accepted"] == 0 and r["pulled"] == {"nodes": 1, "edges": 0, "resolutions": 1}, r
 b = factblock.Bundle(work)
-assert len(b.nodes) == 7 and len(b.resolutions) == 1 and "v1" in b.backfills
+assert len(b.nodes) == 7 and len(b.resolutions) == 4 and "v1" in b.backfills   # 3 sample verdicts + the pulled one
 checks = factblock.validate(b)
 assert all(c.ok for c in checks), [c for c in checks if not c.ok]
-assert factblock.scan(work, "2024-10-15").resolutions.num_rows == 0 and factblock.scan(work, "2024-11-05").resolutions.num_rows == 1
+assert factblock.scan(work, "2024-10-15").resolutions.num_rows == 2 and factblock.scan(work, "2024-11-05").resolutions.num_rows == 3
 
 # 4. pushing the folder into a second, empty store carries the pulled rows too: the store-stamped row
 #    becomes a batch at its own known_at (SPEC 6), never a fresh row
 second = DictStore()
 r = factblock.sync(work, second, pull=False)
-assert r["pushed"]["accepted"] == 10 and r["pushed"]["resolutions_not_pushed"] == 1, r
+assert r["pushed"]["accepted"] == 10 and r["pushed"]["resolutions_not_pushed"] == 4, r
 assert any(k.startswith("dictstore/0@2024-11-02") for k in second.batches), second.batches
 assert factblock.sync(work, second)["pulled"] == {"nodes": 0, "edges": 0, "resolutions": 0}
 print("PASS sync: push 9, no-op, pull verdict + store-stamped row, folder valid, re-push declares known_at as a batch")

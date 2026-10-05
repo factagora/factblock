@@ -3,7 +3,8 @@
   "namespace": "sample:rates",
   "tables": {
     "nodes": "nodes.jsonl",
-    "edges": "edges.jsonl"
+    "edges": "edges.jsonl",
+    "resolutions": "resolutions.jsonl"
   },
   "declarations": {
     "facts": [

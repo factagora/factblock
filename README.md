@@ -90,13 +90,13 @@ The same ledger runs closed for companies at [app.factagora.com](https://app.fac
 
 ## The format
 
-[`SPEC.md`](./SPEC.md) is short. Five invariants (present, attested, unique, typed, declared), a JSONL profile and a Parquet profile, read semantics, and the conformance checks `validate` runs (eleven of them). Projections to OKF and ClaimReview are described so a bundle can feed systems that speak those.
+[`SPEC.md`](./SPEC.md) is short. Five invariants (present, attested, unique, typed, declared), a JSONL profile and a Parquet profile, read semantics, and the conformance checks `validate` runs (eleven of them). Projections to OKF and ClaimReview are described, and `to-claimreview` writes the verdicts visible as of an instant as schema.org JSON-LD, so a bundle can feed systems that speak those.
 
 Format, not platform. Apache-2.0. tckg is one writer of this format; nothing here requires it.
 
 ## Status
 
-`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: the ClaimReview projection. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: a Fact Check Tools adapter (fact-checks in, as dated claims with dated verdicts) and the OKF projection. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
 
 ```bash
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
@@ -113,5 +113,5 @@ uv run python -m factblock scan samples/rates --as-of 2024-08-01
 uv run python -m factblock why samples/rates c3 --as-of 2024-10-01
 uv run python -m factblock leak samples/rates samples/rates-questions.jsonl
 uv run python -m factblock resolve samples/rates belief:fed:direction --as-of 2024-10-01
-uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_leak.py && uv run python tests/test_sync.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
+uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_leak.py && uv run python tests/test_sync.py && uv run python tests/test_claimreview.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
 ```

@@ -46,7 +46,7 @@ A bundle is a FactBlock bundle only if all five hold. The validator (section 8) 
 | `kind` | string | yes | Core: `claim` `prediction` `entity` `factor` `timeseries` `episode`. Others preserved (section 7) |
 | `statement` | string | no | The text. Required for `claim` and `prediction` |
 | `category` | string | no | |
-| `payload` | object | no | Free form. Conventions: `about` (the period the content refers to), `source`, `factblock_id` |
+| `payload` | object | no | Free form. Conventions: `about` (the period the content refers to), `speaker` (who said it, as written), `quote` (the words), `source` (`{url, title, published_at}`, where it appeared), `factblock_id` |
 | `asserted_at` | instant | yes | I1 |
 | `valid_from` | instant | yes | I1 |
 | `valid_to` | instant or null | no | I1 |
@@ -106,7 +106,11 @@ Resolutions are append-only records about a node, never fields on it.
 | `decided_at` | instant | yes (when the verdict holds as content) |
 | `known_at`, `attestation` | | yes (I1, I2) |
 | `resolver` | actor | no |
-| `method`, `criteria`, `outcome`, `evidence` | | no |
+| `method`, `criteria` | string | no | How the verdict was reached, and against what |
+| `outcome` | string | no | Recommended vocabulary below; other values preserved (section 7) |
+| `evidence` | array | no | Elements `{type, url, title, publisher, published_at}`; `type` free (`OFFICIAL_DOCUMENT`, `STATISTICS`, `NEWS_ARTICLE`, ...) |
+
+Recommended `outcome` vocabulary, so that verdicts from different resolvers compare and project (section 9): for a `prediction`, `came_true`, `did_not`, `partial`, `undecidable`; for a `claim`, `true`, `mostly_true`, `mostly_false`, `false`, `misleading`, `unverifiable`. A verdict is a row, so a re-resolution is a second row with a later `decided_at`; readers that need one verdict take the latest visible one and say so.
 
 ### 3.7 Declarations
 
@@ -179,13 +183,33 @@ Consumers MUST preserve unknown fields when round-tripping, MUST NOT reject a bu
 
 `factblock validate <bundle>` runs every check in section 2 and the schema of section 3 and reports `check_id | ok | detail`. A bundle conforms when every check passes. The validator needs no engine and no network. Each MUST in this document has a check id; the checks are the normative list, the prose explains them.
 
-## 9. OKF projection (informative)
+## 9. Projections (informative)
+
+### 9.1 OKF
 
 A FactBlock node maps to one OKF concept document: `type` = `kind`, `title` = `statement`, `resource` = a URI for the node, `generated.at` = `asserted_at`, `generated.by` = `author`, `stale_after` = `valid_to`, `sources[]` from `payload.source`, and `supersedes:` / `superseded_by:` as additional frontmatter keys holding bundle-relative links. `known_at` and `attestation` are carried as additional keys. The reverse direction (OKF to FactBlock) MUST declare a backfill batch, because an OKF document's timestamps are self-reported and the importer's capture instant is the only knowledge time it can attest.
 
+### 9.2 ClaimReview
+
+A verdict visible as of an instant maps to one schema.org `ClaimReview`. The projection is lossy: ClaimReview holds one verdict per claim and two dates, so the chain, the interval, the certificate and earlier verdicts have no field. The reference projection (`factblock to-claimreview`) takes the latest visible verdict per block and carries the rest under `factblock:` keys that a consumer may ignore.
+
+| ClaimReview | FactBlock |
+|---|---|
+| `claimReviewed` | node `statement` |
+| `itemReviewed` (`Claim`) `.author` | `payload.speaker`, else node `author` |
+| `itemReviewed.datePublished` | node `asserted_at` (date) |
+| `itemReviewed.appearance.url` | `payload.source.url` |
+| `reviewRating.alternateName`, `.ratingValue` (1..5) | resolution `outcome` through the recommended vocabulary (3.6): `true`/`came_true` 5, `mostly_true` 4, `partial` 3, `mostly_false`/`misleading` 2, `false`/`did_not` 1, `unverifiable`/`undecidable` no `ratingValue` |
+| `author` | resolution `resolver` (`human:` becomes `Person`, else `Organization`) |
+| `datePublished` | resolution `decided_at` (date) |
+| `url` | caller's base URL plus the node id |
+| `factblock:id`, `factblock:kind`, `factblock:known_at`, `factblock:method`, `factblock:certificate` | what ClaimReview cannot say |
+
+The reverse direction (ClaimReview, or a fact-check feed such as Google's Fact Check Tools API, to FactBlock) maps the claim to a node (`text` to `statement`, `claimant` to `payload.speaker`, `claimDate` to `asserted_at`) and each review to a resolution row (`textualRating` to `value`, normalised to the vocabulary where it fits, `reviewDate` to `decided_at`, `publisher` to `resolver`, `url` to `evidence`). Its dates are self-reported, so the importer MUST declare a backfill batch per `reviewDate`, as in 9.1 and section 6.
+
 ## 10. Reference implementations
 
-- `factblock` (Python, `factblock/` in this repository): `scan`, `validate`, `resolve`, `why`, `leak`, `write_parquet`, `extract`. Returns Arrow tables plus a certificate.
+- `factblock` (Python, `factblock/` in this repository): `scan`, `validate`, `resolve`, `why`, `leak`, `write_parquet`, `extract`, `to_claimreview` (9.2). Returns Arrow tables plus a certificate.
 - `factblock.sync` (Python, this repository): moves a bundle between a folder and a store under 6.1. A store is two methods, `pull(as_of)` and `push(manifest, nodes, edges)`; `TckgStore` implements them over tckg's HTTP API (`GET /v1/export`, `POST /v1/memories` with one backfill declaration per batch), and `tests/test_sync.py` holds an in-memory store as the minimal example. tckg's `smoke/10-sync.sh` runs the round trip against a live ledger.
 - tckg `GET /v1/export` writes bundles that `factblock validate` accepts; tckg's smoke suite ([factagora/tckg](https://github.com/factagora/tckg), `smoke/06-export.sh`) proves the round trip on every commit.
 - [tckg](https://github.com/factagora/tckg) (PostgreSQL ledger service): stamps `known_at`, enforces I1 to I5 at write time, exports bundles.
