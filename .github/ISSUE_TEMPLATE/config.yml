@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question
+    url: https://github.com/factagora/factblock/discussions
+    about: How to use it, what a field means, whether something fits the format

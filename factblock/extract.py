@@ -122,7 +122,7 @@ def extract(text: str, observed_at, *, speaker: str | None = None, source: str |
 
     nodes, edges, ids = [], [], {}
     for b in out.get("blocks", []):
-        nid = uuid.uuid4().hex
+        nid = uuid.uuid4().hex[:8]        # short enough to type into `why`; a folder is one writer's memory
         ids[b["ref"]] = nid
         horizon = b.get("horizon_days")
         payload = {k: b[k] for k in ("speaker", "quote", "confidence", "topics", "asset", "direction", "horizon_days") if b.get(k) not in (None, [], "")}
@@ -140,7 +140,7 @@ def extract(text: str, observed_at, *, speaker: str | None = None, source: str |
             continue
         eid = known_entities.get(name)
         if not eid:
-            eid = known_entities[name] = uuid.uuid4().hex
+            eid = known_entities[name] = uuid.uuid4().hex[:8]
             nodes.append({"id": eid, "kind": "entity", "statement": name, "payload": {"type": e.get("type", "other")},
                           "asserted_at": at, "valid_from": at, "valid_to": None, **stamp})
         for ref in e.get("mentioned_by", []):

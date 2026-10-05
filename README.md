@@ -8,15 +8,33 @@ Your data is full of claims: facts, opinions, predictions, promises. FactBlock e
 
 ```bash
 pip install factblock
-
-factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # your model key
-factblock scan brain/ --as-of 2024-05-01      # what was known that day, with a certificate of what was hidden
-factblock why brain/ P3 --as-of 2024-08-01    # the causal chain behind a block
+factblock sample brain/                               # six dated claims, a reversal, three verdicts
+factblock scan brain/ --as-of 2024-05-01              # what was known that day, and what was hidden
+factblock why brain/ c3 --as-of 2024-10-01            # the causal chain behind a block
 factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
-factblock sync brain/ https://tckg.factagora.com --space tckg:...   # the same folder, in a hosted ledger, both ways
+factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # your model key, or --provider fake
 ```
 
-`brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [upload it to a hosted ledger](#same-files-hosted). Nothing here needs a server.
+```
+$ factblock why brain/ c3 --as-of 2024-10-01
+subject: c3  2024-06-20  Housing demand falls as mortgages track yields
+    cause (CAUSES): c2  2024-04-10  Bond yields rise after the rate hike
+        cause (CAUSES): c1  2024-03-20  The Fed raises interest rates
+            successor (SUPERSEDES): c4  2024-09-18  The Fed cuts interest rates
+as of 2024-10-01  hidden: 1 resolution  backfilled: 9 rows in 3 batches
+```
+
+Run the same command `--as-of 2024-05-01` and the chain stops at `c2`, because `c3` was not known yet. Add `--json` to any read for the machine form.
+
+```python
+import factblock
+r = factblock.scan("brain/", as_of="2024-05-01")                       # pyarrow tables plus a certificate
+blocks = [n for n in r.nodes.to_pylist() if n["kind"] in ("claim", "prediction")]
+context = "\n".join(f"- {n['asserted_at'].date()}: {n['statement']}" for n in blocks)
+# put `context` in your agent's prompt; r.certificate says what was hidden to answer as of that day
+```
+
+`brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
 
 ## What comes out
 
@@ -33,7 +51,7 @@ P3  prediction  Stay out of long bonds                     asset TLT, direction 
 P1 --CAUSES--> P2 --CAUSES--> P3
 ```
 
-Every block carries two clocks: **asserted_at**, when it was said (`--observed-at`), and **known_at**, when your system learned it. By default that is now, so a 2024 transcript extracted today is hidden from a 2024 read; `--backfill` declares it known when it was said, which is what you want for material from the past. Every edge carries a type with a family (causal, argumentative, temporal) and the speaker's own confidence. Nothing is a chunk, nothing is a bare triple; the unit is a dated statement someone made.
+Every block carries two clocks: **asserted_at**, when it was said (`--observed-at`), and **known_at**, when your system learned it. By default that is now, so a 2024 transcript extracted today is hidden from a 2024 read; `--backfill` declares it known when it was said, which is what you want for material from the past. `--provider fake` splits sentences without a model, enough to see the files; `gemini` and `openai` do the real extraction with your key. Every edge carries a type with a family (causal, argumentative, temporal) and the speaker's own confidence. Nothing is a chunk, nothing is a bare triple; the unit is a dated statement someone made.
 
 ## When
 
@@ -114,7 +132,7 @@ uv run python -m factblock scan brain/ --as-of 2024-05-01
 uv sync
 uv run python -m factblock validate samples/rates
 uv run python -m factblock scan samples/rates --as-of 2024-08-01
-uv run python -m factblock why samples/rates c3 --as-of 2024-10-01
+uv run python -m factblock why samples/rates c3 --as-of 2024-10-01 --json
 uv run python -m factblock leak samples/rates samples/rates-questions.jsonl
 uv run python -m factblock resolve samples/rates belief:fed:direction --as-of 2024-10-01
 uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_leak.py && uv run python tests/test_sync.py && uv run python tests/test_claimreview.py && uv run python tests/test_okf.py && uv run python tests/test_factcheck.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py

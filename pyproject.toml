@@ -44,3 +44,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["factblock"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"samples/rates" = "factblock/samples/rates"   # `factblock sample` copies it; the repo keeps one copy at samples/

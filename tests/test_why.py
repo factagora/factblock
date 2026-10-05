@@ -31,5 +31,7 @@ assert may["chain"] == [] and may["reason"] == "not_yet" and may["certificate"][
 assert factblock.why(RATES, "nope", "2024-05-01")["reason"] == "absent"
 
 out = subprocess.run([sys.executable, "-m", "factblock", "why", str(RATES), "c3", "--as-of", "2024-08-01"], capture_output=True, text=True, check=True).stdout
+assert "subject: c3" in out and "        cause (CAUSES): c1" in out, out
+out = subprocess.run([sys.executable, "-m", "factblock", "why", str(RATES), "c3", "--as-of", "2024-08-01", "--json"], capture_output=True, text=True, check=True).stdout
 assert '"role": "cause"' in out and '"c1"' in out, out
 print("PASS why: chain at three instants, roles both ends, depth, not_yet/absent, CLI")
