@@ -1,4 +1,4 @@
-"""python -m factblock extract <file|-> --observed-at T -o <bundle> [--speaker S] [--source S] [--provider gemini|openai|fake] [--model M] [--known-at T]
+"""python -m factblock extract <file|-> --observed-at T -o <bundle> [--speaker S] [--source S] [--provider gemini|openai|fake] [--model M] [--known-at T | --backfill]
    | validate <bundle> | scan <bundle> --as-of T [--valid-at T]
    | resolve <bundle> <fact_key> --as-of T [--valid-at T] [--rules-as-of T] | to-parquet <bundle> <out>"""
 import argparse
@@ -33,6 +33,7 @@ def main():
     e.add_argument("--provider", default="gemini", choices=["gemini", "openai", "fake"])
     e.add_argument("--model")
     e.add_argument("--known-at", help="when you learned it; default now")
+    e.add_argument("--backfill", action="store_true", help="known_at = observed_at: material from the past, known when it was said")
     e.add_argument("--namespace", default="local")
     c = sub.add_parser("to-parquet")
     c.add_argument("bundle")
@@ -43,7 +44,7 @@ def main():
         text = sys.stdin.read() if a.source == "-" else open(a.source).read()
         existing = Bundle(a.out) if (pathlib.Path(a.out) / "factblock.json").exists() else None
         r = extract(text, a.observed_at, speaker=a.speaker, source=a.source_name, provider=a.provider, model=a.model,
-                    known_at=a.known_at, namespace=a.namespace, existing=existing)
+                    known_at=a.known_at, backfill=a.backfill, namespace=a.namespace, existing=existing)
         write_bundle(r, a.out, append=True)
         s_ = r["summary"]
         print(f"{a.out}: +{s_['blocks']} blocks, +{s_['entities']} entities, +{s_['links']} links"

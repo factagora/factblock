@@ -7,7 +7,7 @@ Your data is full of claims: facts, opinions, predictions, promises. FactBlock e
 ```bash
 pip install factblock
 
-factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" -o brain/   # your model key
+factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # your model key
 factblock scan brain/ --as-of 2024-05-01      # what was known that day, with a certificate of what was hidden
 factblock why brain/ P3 --as-of 2024-08-01    # the causal chain behind a block
 factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
@@ -30,7 +30,7 @@ P3  prediction  Stay out of long bonds                     asset TLT, direction 
 P1 --CAUSES--> P2 --CAUSES--> P3
 ```
 
-Every block carries two clocks: **asserted_at**, when it was said, and **known_at**, when your system learned it. Every edge carries a type with a family (causal, argumentative, temporal) and the speaker's own confidence. Nothing is a chunk, nothing is a bare triple; the unit is a dated statement someone made.
+Every block carries two clocks: **asserted_at**, when it was said (`--observed-at`), and **known_at**, when your system learned it. By default that is now, so a 2024 transcript extracted today is hidden from a 2024 read; `--backfill` declares it known when it was said, which is what you want for material from the past. Every edge carries a type with a family (causal, argumentative, temporal) and the speaker's own confidence. Nothing is a chunk, nothing is a bare triple; the unit is a dated statement someone made.
 
 ## When
 
@@ -97,7 +97,7 @@ Format, not platform. Apache-2.0. tckg is one writer of this format; nothing her
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
 export GEMINI_API_KEY=...                              # or GOOGLE_GENAI_USE_VERTEXAI=1 GOOGLE_CLOUD_PROJECT=... for Vertex
 echo "The Fed will keep raising rates this year. That means bond yields keep climbing." \
-  | uv run python -m factblock extract - --observed-at 2024-03-20 --speaker "Jim Cramer" -o brain/
+  | uv run python -m factblock extract - --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/
 uv run python -m factblock scan brain/ --as-of 2024-05-01
 ```
 

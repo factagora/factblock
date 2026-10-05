@@ -44,8 +44,10 @@ with tempfile.TemporaryDirectory() as d:
 
     # the CLI end to end, stdin in, summary line out
     out = subprocess.run([sys.executable, "-m", "factblock", "extract", "-", "--observed-at", "2024-09-01", "--provider", "fake",
-                          "-o", d, "--speaker", "Jim Cramer"], input="Rates will fall by year end.", capture_output=True, text=True, check=True)
+                          "-o", d, "--speaker", "Jim Cramer", "--backfill"], input="Rates will fall by year end.", capture_output=True, text=True, check=True)
     assert "+1 blocks" in out.stdout and "batch extract-" in out.stdout, out.stdout
-    assert len(factblock.Bundle(d).backfills) == 3
+    b = factblock.Bundle(d)
+    assert len(b.backfills) == 3
+    assert any(x["declared_known_at"].isoformat().startswith("2024-09-01") for x in b.backfills.values()), "--backfill: known when said"
 
 print("PASS extract: fake provider -> valid bundle, masked before known_at, causal edges, entity reuse on append, CLI")

@@ -58,7 +58,8 @@ def _gemini(profile, user, model):
     from google import genai  # pip install factblock[gemini]; GEMINI_API_KEY, or GOOGLE_GENAI_USE_VERTEXAI=1 + GOOGLE_CLOUD_PROJECT
     from google.genai import types
     client = genai.Client()
-    cfg = dict(system_instruction=profile["instructions"], response_mime_type="application/json", temperature=0.2)
+    cfg = dict(system_instruction=profile["instructions"], response_mime_type="application/json", temperature=0.2,
+               automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True))  # no tools here; silences the SDK's AFC notice
     try:
         config = types.GenerateContentConfig(response_json_schema=profile["schema"], **cfg)
     except Exception:  # older SDKs: the instructions carry the shape
@@ -101,15 +102,17 @@ PROVIDERS = {"gemini": _gemini, "openai": _openai, "fake": _fake}
 # --- extraction -----------------------------------------------------------------
 
 def extract(text: str, observed_at, *, speaker: str | None = None, source: str | None = None,
-            provider: str = "gemini", model: str | None = None, known_at=None, declared_by: str | None = None,
-            namespace: str = "local", existing: Bundle | None = None) -> dict:
+            provider: str = "gemini", model: str | None = None, known_at=None, backfill: bool = False,
+            declared_by: str | None = None, namespace: str = "local", existing: Bundle | None = None) -> dict:
     """Run the claims profile over `text` and return a bundle as plain dicts. `observed_at` is when the
     text was said or written: every block is asserted then. `known_at` is when you learned it (default
-    now), declared as one backfill batch. `existing` lets entities reuse ids already in a bundle."""
+    now), declared as one backfill batch; `backfill=True` sets it to `observed_at`, the usual choice for
+    material from the past ("treat it as known when it was said"). `existing` lets entities reuse ids
+    already in a bundle."""
     profile = load_profile()
     observed_at = parse_instant(observed_at)
     now = datetime.now(timezone.utc)
-    known_at = parse_instant(known_at) if known_at else now
+    known_at = parse_instant(known_at) if known_at else (observed_at if backfill else now)
     out = PROVIDERS[provider](profile, _prompt(profile, text, observed_at, speaker, source), model)
 
     batch = f"extract-{known_at.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:6]}"
