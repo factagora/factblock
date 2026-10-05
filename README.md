@@ -1,5 +1,7 @@
 # FactBlock: agent memory for decisions
 
+[![test](https://github.com/factagora/factblock/actions/workflows/test.yml/badge.svg)](https://github.com/factagora/factblock/actions/workflows/test.yml) [![PyPI](https://img.shields.io/pypi/v/factblock)](https://pypi.org/project/factblock/) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
+
 **A temporal causal knowledge graph that remembers *when* and *why* for your AI.**
 
 Your data is full of claims: facts, opinions, predictions, promises. FactBlock extracts them, keeps when they were said and when you learned them, links what caused what, and never overwrites what changed. Your agent recalls them as of any moment, so it decides on what was knowable then, not on hindsight.
@@ -94,7 +96,7 @@ The same ledger runs closed for companies at [app.factagora.com](https://app.fac
 
 [`SPEC.md`](./SPEC.md) is short. Five invariants (present, attested, unique, typed, declared), a JSONL profile and a Parquet profile, read semantics, and the conformance checks `validate` runs (eleven of them). Projections to OKF and ClaimReview are described, and `to-claimreview` writes the verdicts visible as of an instant as schema.org JSON-LD, so a bundle can feed systems that speak those.
 
-Format, not platform. Apache-2.0. tckg is one writer of this format; nothing here requires it.
+Format, not platform. Apache-2.0. tckg is one writer of this format; nothing here requires it. Contributions are welcome under the DCO: see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Status
 
