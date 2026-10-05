@@ -41,20 +41,30 @@ That string goes into your agent's prompt. `factblock.recall(...)` returns the s
 
 ## What comes out
 
-One transcript line, three blocks, two edges:
+Two years of one public figure's statements, as files. [`samples/cramer`](./samples/cramer) is Jim Cramer on CNBC, 2024-09 to 2026-09: 2,091 blocks, 1,169 links he drew between them, 779 priced calls scored at their horizon. Every block links to the recording and the timestamp.
 
 ```
-"The Fed will keep raising rates this year. That means bond yields keep climbing,
- so I'd stay out of long bonds."                         Jim Cramer, 2024-03-20
+$ factblock scan samples/cramer --as-of 2025-01-01 | head -1
+as of 2025-01-01  hidden: 1790 nodes, 1025 edges, 753 resolutions  backfilled: 471 rows in 52 batches
 
-P1  prediction  The Fed keeps raising rates this year      asserted 2024-03-20
-P2  prediction  Bond yields keep climbing
-P3  prediction  Stay out of long bonds                     asset TLT, direction down
-
-P1 --CAUSES--> P2 --CAUSES--> P3
+$ factblock why samples/cramer 1b77a1a885470207 --as-of 2026-09-10
+subject: 1b77a1a885470207  2025-07-17  The current data center buildout is the largest construction boom since World War II.
+    effect (CAUSES): c43aac6a842836bf  2025-07-17  Lead contractors such as ABB and Legrand are receiving strong data center orders.
+        effect (CAUSES): 041ef1dfd5dbb6df  2025-07-17  Companies involved in the data center buildout, such as Eaton and Parker-Hannifin, are receiving a large number of new orders.
+            effect (CAUSES): 2751ba237ecd5415  2025-07-17  Parker-Hannifin is a good stock to own.
+            effect (CAUSES): 7d3af08ba4f4f027  2025-07-17  Eaton is a good stock to own.
 ```
 
-Every block carries two clocks: **asserted_at**, when it was said (`--observed-at`), and **known_at**, when your system learned it. By default that is now, so a 2024 transcript extracted today is hidden from a 2024 read; `--backfill` declares it known when it was said, which is what you want for material from the past. `--provider fake` splits sentences without a model, enough to see the files; `gemini` and `openai` do the real extraction with your key. Every edge carries a type with a family (causal, argumentative, temporal) and the speaker's own confidence. Nothing is a chunk, nothing is a bare triple; the unit is a dated statement someone made.
+A call and its verdict carry separate clocks, so the same read gives different answers on different days:
+
+```
+66027d5985bf9605  prediction  2024-09-11  Nvidia's business is currently growing, not slowing down.   NVDA, up
+  verdict: came_true   decided 2024-12-10   NVDA +23.3% over 90 days   known 2024-12-10
+```
+
+As of 2024-11-01 the call is open. As of 2024-12-10 it came true. As of 2024-09-10 it does not exist yet. `to-claimreview samples/cramer --as-of 2025-06-01` writes the 197 verdicts known by then as schema.org JSON-LD.
+
+Every block carries two clocks: **asserted_at**, when it was said (`--observed-at` for `extract`), and **known_at**, when your system learned it. By default that is now, so a 2024 transcript extracted today is hidden from a 2024 read; `--backfill` declares it known when it was said, which is what you want for material from the past. `--provider fake` splits sentences without a model, enough to see the files; `gemini` and `openai` do the real extraction with your key. Every edge carries a type with a family (causal, argumentative, temporal) and the speaker's own confidence. Nothing is a chunk, nothing is a bare triple; the unit is a dated statement someone made.
 
 ## When
 

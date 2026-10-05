@@ -1,0 +1,2629 @@
+{
+ "factblock_version": "1.0-draft.1",
+ "namespace": "factagora:brains/jim-cramer",
+ "source": "factagora-influencer-backtest/0.1",
+ "description": "Jim Cramer: statements from CNBC Television recordings, 2024-09 to 2026-09, the links the speaker drew between them, and priced calls scored at their horizon. Every block links to its recording and timestamp.",
+ "tables": {
+  "nodes": "nodes.jsonl",
+  "edges": "edges.jsonl",
+  "resolutions": "resolutions.jsonl"
+ },
+ "declarations": {
+  "facts": [],
+  "edge_types": [],
+  "embedding": null,
+  "backfills": [
+   {
+    "batch": "yt:79haJuy4nhE",
+    "declared_known_at": "2024-09-09T14:15:22Z",
+    "reason": "public recording: Cramer's Mad Dash: New Google antitrust trial starts today (https://www.youtube.com/watch?v=79haJuy4nhE)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Uz84QrROD1w",
+    "declared_known_at": "2024-09-11T00:03:22Z",
+    "reason": "public recording: Tech may be tough on a day-to-day basis, but long-term it yields rewards, says Jim Cramer (https://www.youtube.com/watch?v=Uz84QrROD1w)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:DfSuI1zDvbw",
+    "declared_known_at": "2024-09-12T16:13:14Z",
+    "reason": "public recording: Cramer\u2019s Mad Dash: Nike & Lululemon (https://www.youtube.com/watch?v=DfSuI1zDvbw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:V-Uoqt1anTA",
+    "declared_known_at": "2024-09-14T00:18:01Z",
+    "reason": "public recording: Lightning Round: I'm worried about Domino's Pizza, says Jim Cramer (https://www.youtube.com/watch?v=V-Uoqt1anTA)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:U-7DGXHCk5o",
+    "declared_known_at": "2024-09-17T14:30:23Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Carvana (https://www.youtube.com/watch?v=U-7DGXHCk5o)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:-bD9NsPgQQs",
+    "declared_known_at": "2024-09-19T00:18:31Z",
+    "reason": "public recording: You want to own companies that are doing badly and need a rate cut, says Jim Cramer (https://www.youtube.com/watch?v=-bD9NsPgQQs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:cNh-3xiNTDE",
+    "declared_known_at": "2024-09-20T00:29:59Z",
+    "reason": "public recording: Lightning Round: Something is wrong with Celsius Holdings, says Jim Cramer (https://www.youtube.com/watch?v=cNh-3xiNTDE)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:B5zeKgl9AzQ",
+    "declared_known_at": "2024-09-21T00:33:14Z",
+    "reason": "public recording: Lightning Round: I like Dutch Bros, says Jim Cramer (https://www.youtube.com/watch?v=B5zeKgl9AzQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:F4Oqi8GcolM",
+    "declared_known_at": "2024-10-01T14:05:00Z",
+    "reason": "public recording: Cramer\u2019s Mad Dash: McCormick & Co. (https://www.youtube.com/watch?v=F4Oqi8GcolM)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:ps162tfcFo4",
+    "declared_known_at": "2024-10-03T00:15:18Z",
+    "reason": "public recording: Jim Cramer talks how inflation is changing the consumer (https://www.youtube.com/watch?v=ps162tfcFo4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:RwlNLcmzzO4",
+    "declared_known_at": "2024-10-07T14:22:00Z",
+    "reason": "public recording: Cramer's Stop Trading: Abbott Labs (https://www.youtube.com/watch?v=RwlNLcmzzO4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:JUEvGt_FtU4",
+    "declared_known_at": "2024-10-09T00:24:21Z",
+    "reason": "public recording: Analysts' downgrades have scared so many out of stocks, says Jim Cramer (https://www.youtube.com/watch?v=JUEvGt_FtU4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:DyH50gIAbCs",
+    "declared_known_at": "2024-10-10T14:04:13Z",
+    "reason": "public recording: Cramer\u2019s Mad Dash: Nike (https://www.youtube.com/watch?v=DyH50gIAbCs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-10-11",
+    "declared_known_at": "2024-10-11T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:_C4_ldwGTYE",
+    "declared_known_at": "2024-10-11T23:59:04Z",
+    "reason": "public recording: The market was not impressed by Tesla's robotaxi event, says Jim Cramer (https://www.youtube.com/watch?v=_C4_ldwGTYE)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:kCJBP0yiraU",
+    "declared_known_at": "2024-10-15T00:27:19Z",
+    "reason": "public recording: Lightning Round: Stay away from Halliburton, says Jim Cramer (https://www.youtube.com/watch?v=kCJBP0yiraU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:UKvbHL3OA2I",
+    "declared_known_at": "2024-10-16T23:59:06Z",
+    "reason": "public recording: ASML gave a 'horrendous' forecast yesterday, says Jim Cramer (https://www.youtube.com/watch?v=UKvbHL3OA2I)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:rnZT48FKZ_o",
+    "declared_known_at": "2024-10-18T13:59:51Z",
+    "reason": "public recording: Cramer's Mad Dash: Apple (https://www.youtube.com/watch?v=rnZT48FKZ_o)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:8JEQvB2gaCY",
+    "declared_known_at": "2024-10-21T14:09:49Z",
+    "reason": "public recording: Cramer\u2019s Mad Dash: Apple (https://www.youtube.com/watch?v=8JEQvB2gaCY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:fZ_ALcRXsw4",
+    "declared_known_at": "2024-10-22T23:41:55Z",
+    "reason": "public recording: Mad Money - 10/22/24 | Audio Only (https://www.youtube.com/watch?v=fZ_ALcRXsw4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-10-25",
+    "declared_known_at": "2024-10-25T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:2HIHov2O4VQ",
+    "declared_known_at": "2024-10-28T23:37:12Z",
+    "reason": "public recording: Stocks going up on nothing are 'very dangerous', says Jim Cramer (https://www.youtube.com/watch?v=2HIHov2O4VQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:lGjzSHLHTrI",
+    "declared_known_at": "2024-10-30T00:10:02Z",
+    "reason": "public recording: Lightning Round: CrowdStrike is a 'buy, buy, buy', says Jim Cramer (https://www.youtube.com/watch?v=lGjzSHLHTrI)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-10-30",
+    "declared_known_at": "2024-10-30T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:du6nWXgDbFk",
+    "declared_known_at": "2024-10-31T23:45:48Z",
+    "reason": "public recording: It's insane how frightened shareholders can get, says Jim Cramer (https://www.youtube.com/watch?v=du6nWXgDbFk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:aObbyR1n5w4",
+    "declared_known_at": "2024-11-04T15:38:07Z",
+    "reason": "public recording: Cramer's Stop Trading: Peloton (https://www.youtube.com/watch?v=aObbyR1n5w4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:io3YXZu0m5o",
+    "declared_known_at": "2024-11-06T01:13:34Z",
+    "reason": "public recording: Lightning Round: I like Broadcom, says Jim Cramer (https://www.youtube.com/watch?v=io3YXZu0m5o)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:7NN91SKARlU",
+    "declared_known_at": "2024-11-07T01:05:00Z",
+    "reason": "public recording: Jim Cramer on what sectors were unjustifiably in the red today (https://www.youtube.com/watch?v=7NN91SKARlU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-11-08",
+    "declared_known_at": "2024-11-08T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:CALAiZhn78g",
+    "declared_known_at": "2024-11-09T00:47:25Z",
+    "reason": "public recording: Jim Cramer looks ahead to next week's market game plan (https://www.youtube.com/watch?v=CALAiZhn78g)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Z3i0d88nJtc",
+    "declared_known_at": "2024-11-13T16:03:57Z",
+    "reason": "public recording: The markets may be putting the stock cart ahead of the bond horse, says Cramer (https://www.youtube.com/watch?v=Z3i0d88nJtc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:EKtLzMeGNtU",
+    "declared_known_at": "2024-11-16T00:53:20Z",
+    "reason": "public recording: Columbia Sportswear CEO Tim Boyle goes one-on-one with Jim Cramer (https://www.youtube.com/watch?v=EKtLzMeGNtU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:YPwbgVjN6xY",
+    "declared_known_at": "2024-11-21T00:50:25Z",
+    "reason": "public recording: Jim Cramer talks companies responding to changing consumer values (https://www.youtube.com/watch?v=YPwbgVjN6xY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:-wNLDvsS168",
+    "declared_known_at": "2024-11-25T15:34:08Z",
+    "reason": "public recording: Cramer's Mad Dash: What could move Apple higher than Nvidia (https://www.youtube.com/watch?v=-wNLDvsS168)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Mal7AR4SPhg",
+    "declared_known_at": "2024-12-03T00:45:15Z",
+    "reason": "public recording: Mad Money - 12/02/24 | Audio Only (https://www.youtube.com/watch?v=Mal7AR4SPhg)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Rp5rzgcmRyM",
+    "declared_known_at": "2024-12-04T01:04:03Z",
+    "reason": "public recording: Salesforce CEO goes one-on-one with Jim Cramer (https://www.youtube.com/watch?v=Rp5rzgcmRyM)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:mFd0WQF8yzg",
+    "declared_known_at": "2024-12-06T01:08:28Z",
+    "reason": "public recording: Lightning Round: Ralph Lauren could go higher, says Jim Cramer (https://www.youtube.com/watch?v=mFd0WQF8yzg)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:kfLFJ4RDg5I",
+    "declared_known_at": "2024-12-09T15:22:19Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Chevron (https://www.youtube.com/watch?v=kfLFJ4RDg5I)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-12-09",
+    "declared_known_at": "2024-12-09T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-12-10",
+    "declared_known_at": "2024-12-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:QDcIsvwJI10",
+    "declared_known_at": "2024-12-11T01:20:31Z",
+    "reason": "public recording: Jim Cramer talks the recent fall of enterprise software stocks (https://www.youtube.com/watch?v=QDcIsvwJI10)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-12-12",
+    "declared_known_at": "2024-12-12T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:DdlmF05XRsE",
+    "declared_known_at": "2024-12-13T00:55:08Z",
+    "reason": "public recording: Lightning Round: I don't think Star Bulk's yield can hold up, says Jim Cramer (https://www.youtube.com/watch?v=DdlmF05XRsE)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-12-16",
+    "declared_known_at": "2024-12-16T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:w9h0MsnpmBk",
+    "declared_known_at": "2024-12-17T00:38:55Z",
+    "reason": "public recording: Tesla's move since the election is one for the ages, says Jim Cramer (https://www.youtube.com/watch?v=w9h0MsnpmBk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-12-17",
+    "declared_known_at": "2024-12-17T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:G0E55SRk1oc",
+    "declared_known_at": "2024-12-18T15:17:58Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Best Buy (https://www.youtube.com/watch?v=G0E55SRk1oc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-12-18",
+    "declared_known_at": "2024-12-18T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-12-19",
+    "declared_known_at": "2024-12-19T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:vyNwQLLRhm4",
+    "declared_known_at": "2024-12-20T15:12:22Z",
+    "reason": "public recording: Cramer\u2019s Mad Dash: Vertex Pharmaceuticals (https://www.youtube.com/watch?v=vyNwQLLRhm4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-12-23",
+    "declared_known_at": "2024-12-23T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2024-12-31",
+    "declared_known_at": "2024-12-31T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-01-02",
+    "declared_known_at": "2025-01-02T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:28bSS5b1Clc",
+    "declared_known_at": "2025-01-04T01:08:50Z",
+    "reason": "public recording: The momentum in semi stocks could last as they have great earnings momentum, says Jim Cramer (https://www.youtube.com/watch?v=28bSS5b1Clc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-01-07",
+    "declared_known_at": "2025-01-07T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:hR3a8BdbklI",
+    "declared_known_at": "2025-01-08T00:58:54Z",
+    "reason": "public recording: Bullish investors are counting on rate cuts, that seems wrong, says Jim Cramer (https://www.youtube.com/watch?v=hR3a8BdbklI)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:WkRIuqCoVds",
+    "declared_known_at": "2025-01-09T02:06:08Z",
+    "reason": "public recording: Jim Cramer talks time ticking away for TikTok (https://www.youtube.com/watch?v=WkRIuqCoVds)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-01-10",
+    "declared_known_at": "2025-01-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-01-13",
+    "declared_known_at": "2025-01-13T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:B1OVrqgmjxM",
+    "declared_known_at": "2025-01-14T01:01:00Z",
+    "reason": "public recording: Jim Cramer takes the pulse of the healthcare industry at JPMorgan's healthcare conference (https://www.youtube.com/watch?v=B1OVrqgmjxM)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:m_gaBXwiZFg",
+    "declared_known_at": "2025-01-15T15:15:17Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Intuitive Surgical (https://www.youtube.com/watch?v=m_gaBXwiZFg)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:xKcHAWMeDQw",
+    "declared_known_at": "2025-01-17T15:22:33Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Cisco (https://www.youtube.com/watch?v=xKcHAWMeDQw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-01-21",
+    "declared_known_at": "2025-01-21T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:p7EK8aPCBi0",
+    "declared_known_at": "2025-01-22T01:19:35Z",
+    "reason": "public recording: Jim Cramer on if TSMC's earnings sparked a broader rally (https://www.youtube.com/watch?v=p7EK8aPCBi0)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:yyF1cq8iMoU",
+    "declared_known_at": "2025-01-23T15:28:51Z",
+    "reason": "public recording: Cramer\u2019s Mad Dash: Union Pacific (https://www.youtube.com/watch?v=yyF1cq8iMoU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:lmxVlcEjoNU",
+    "declared_known_at": "2025-01-25T01:08:12Z",
+    "reason": "public recording: Mad Money - 01/24/25 | Audio Only (https://www.youtube.com/watch?v=lmxVlcEjoNU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:JJenWfqVV7U",
+    "declared_known_at": "2025-01-28T01:37:25Z",
+    "reason": "public recording: Lightning Round: Buy BlackRock, says Jim Cramer (https://www.youtube.com/watch?v=JJenWfqVV7U)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-01-28",
+    "declared_known_at": "2025-01-28T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:IxW1yMMWlAE",
+    "declared_known_at": "2025-01-30T01:15:17Z",
+    "reason": "public recording: Brinker CEO Kevin Hochman goes one-on-one with Jim Cramer (https://www.youtube.com/watch?v=IxW1yMMWlAE)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-01-30",
+    "declared_known_at": "2025-01-30T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-01-31",
+    "declared_known_at": "2025-01-31T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:NsnTVvhhNLU",
+    "declared_known_at": "2025-02-03T15:45:04Z",
+    "reason": "public recording: Cramer's Mad Dash: Palantir (https://www.youtube.com/watch?v=NsnTVvhhNLU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-02-03",
+    "declared_known_at": "2025-02-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-02-04",
+    "declared_known_at": "2025-02-04T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:G3psPSvQdtU",
+    "declared_known_at": "2025-02-05T00:13:34Z",
+    "reason": "public recording: Jim Cramer on the state of trade between the U.S., Mexico, Canada, and China (https://www.youtube.com/watch?v=G3psPSvQdtU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-02-05",
+    "declared_known_at": "2025-02-05T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:CGUkGVp68EE",
+    "declared_known_at": "2025-02-06T01:24:04Z",
+    "reason": "public recording: Mad Money - 02/05/25 | Audio Only (https://www.youtube.com/watch?v=CGUkGVp68EE)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-02-10",
+    "declared_known_at": "2025-02-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:zQgGzABdUlY",
+    "declared_known_at": "2025-02-14T00:52:27Z",
+    "reason": "public recording: Mad Money - 02/13/25 | Audio Only (https://www.youtube.com/watch?v=zQgGzABdUlY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-02-18",
+    "declared_known_at": "2025-02-18T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:tZ-Nx6vuX-o",
+    "declared_known_at": "2025-02-19T16:02:34Z",
+    "reason": "public recording: Cramer's Stop Trading: Celanese (https://www.youtube.com/watch?v=tZ-Nx6vuX-o)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-02-19",
+    "declared_known_at": "2025-02-19T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-02-20",
+    "declared_known_at": "2025-02-20T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:ObdDrhdCXD8",
+    "declared_known_at": "2025-02-21T01:42:46Z",
+    "reason": "public recording: Lightning Round: Stay out of beer stocks, says Jim Cramer (https://www.youtube.com/watch?v=ObdDrhdCXD8)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-02-24",
+    "declared_known_at": "2025-02-24T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:osf4hze3z64",
+    "declared_known_at": "2025-02-25T01:34:52Z",
+    "reason": "public recording: Jim Cramer talks fads and froth in the market (https://www.youtube.com/watch?v=osf4hze3z64)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:R8LYmknNpkc",
+    "declared_known_at": "2025-02-27T01:11:00Z",
+    "reason": "public recording: The market was flying high until Pres. Trump started talking about tariffs, says Jim Cramer (https://www.youtube.com/watch?v=R8LYmknNpkc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-02-27",
+    "declared_known_at": "2025-02-27T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:D13WgyA4KBU",
+    "declared_known_at": "2025-02-28T01:19:41Z",
+    "reason": "public recording: Lightning Round: Very, very skeptical of nuclear power trades, says Jim Cramer (https://www.youtube.com/watch?v=D13WgyA4KBU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-03-03",
+    "declared_known_at": "2025-03-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-03-04",
+    "declared_known_at": "2025-03-04T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Go-s7GZ-Q-E",
+    "declared_known_at": "2025-03-06T00:59:36Z",
+    "reason": "public recording: At this moment, the market's alleged reasoning powers are totally impaired, says Jim Cramer (https://www.youtube.com/watch?v=Go-s7GZ-Q-E)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-03-06",
+    "declared_known_at": "2025-03-06T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:tN5g5zGpxE0",
+    "declared_known_at": "2025-03-07T15:10:06Z",
+    "reason": "public recording: Cramer's Mad Dash: Gap (https://www.youtube.com/watch?v=tN5g5zGpxE0)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:4BuU5_n7NKw",
+    "declared_known_at": "2025-03-10T15:20:14Z",
+    "reason": "public recording: Cramer's Stop Trading: Toll Brothers (https://www.youtube.com/watch?v=4BuU5_n7NKw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-03-10",
+    "declared_known_at": "2025-03-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-03-11",
+    "declared_known_at": "2025-03-11T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:VJUaA9_tBys",
+    "declared_known_at": "2025-03-12T00:10:42Z",
+    "reason": "public recording: Pres. Trump says he's not focused on the stock market, says Jim Cramer (https://www.youtube.com/watch?v=VJUaA9_tBys)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:7h-puPpZra8",
+    "declared_known_at": "2025-03-13T00:52:14Z",
+    "reason": "public recording: Lightning Round: I'm not repeating my bullishness on Nu Holdings, says Jim Cramer (https://www.youtube.com/watch?v=7h-puPpZra8)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-03-13",
+    "declared_known_at": "2025-03-13T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-03-17",
+    "declared_known_at": "2025-03-17T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:OtyjaSaP2-U",
+    "declared_known_at": "2025-03-18T00:17:35Z",
+    "reason": "public recording: Lightning Round: Take the money and run with Paramount, says Jim Cramer (https://www.youtube.com/watch?v=OtyjaSaP2-U)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-03-19",
+    "declared_known_at": "2025-03-19T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:9afTqd6kNFQ",
+    "declared_known_at": "2025-03-19T23:56:12Z",
+    "reason": "public recording: Jim Cramer dissects Fed Chair Powell's comments and March's Fed decision (https://www.youtube.com/watch?v=9afTqd6kNFQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:10ZTB57CcDA",
+    "declared_known_at": "2025-03-21T23:34:32Z",
+    "reason": "public recording: Unrelenting market negativity bringing about 'real but ignored value', says Jim Cramer (https://www.youtube.com/watch?v=10ZTB57CcDA)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-03-24",
+    "declared_known_at": "2025-03-24T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:fgmrce_xO94",
+    "declared_known_at": "2025-03-25T14:35:57Z",
+    "reason": "public recording: Cramer on markets: The bulls and the president hold the cards (https://www.youtube.com/watch?v=fgmrce_xO94)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:WQR0sXgtNSI",
+    "declared_known_at": "2025-03-27T20:15:02Z",
+    "reason": "public recording: Jim Cramer: 'I'm pro-tariff, absolutely. I hate free trade' (https://www.youtube.com/watch?v=WQR0sXgtNSI)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:65uzUlY1Rqc",
+    "declared_known_at": "2025-03-31T13:48:49Z",
+    "reason": "public recording: Cramer's Mad Dash: CoreWeave (https://www.youtube.com/watch?v=65uzUlY1Rqc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-04-03",
+    "declared_known_at": "2025-04-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:IB-1tKf8PxI",
+    "declared_known_at": "2025-04-04T13:57:39Z",
+    "reason": "public recording: Cramer's Mad Dash: Kraft Heinz (https://www.youtube.com/watch?v=IB-1tKf8PxI)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-04-07",
+    "declared_known_at": "2025-04-07T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:el6OW8RAjsc",
+    "declared_known_at": "2025-04-08T00:14:14Z",
+    "reason": "public recording: Lightning Round: Forget about Lumentum Holdings, says Jim Cramer (https://www.youtube.com/watch?v=el6OW8RAjsc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-04-10",
+    "declared_known_at": "2025-04-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:F8ZhdSOr31I",
+    "declared_known_at": "2025-04-10T23:56:11Z",
+    "reason": "public recording: Pres. Trump doesn't seem like he wants to make a deal with China, says Jim Cramer (https://www.youtube.com/watch?v=F8ZhdSOr31I)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-04-21",
+    "declared_known_at": "2025-04-21T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:ARotZpYutbk",
+    "declared_known_at": "2025-04-22T00:02:22Z",
+    "reason": "public recording: This earnings season could not matter as bigger forces are at work, says Jim Cramer (https://www.youtube.com/watch?v=ARotZpYutbk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:yTyrYEHiDmU",
+    "declared_known_at": "2025-04-23T23:43:23Z",
+    "reason": "public recording: Mad Money 04/23/25 | Audio Only (https://www.youtube.com/watch?v=yTyrYEHiDmU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-04-24",
+    "declared_known_at": "2025-04-24T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:I819iLrK5b0",
+    "declared_known_at": "2025-04-25T14:13:15Z",
+    "reason": "public recording: Cramer on robotaxi's: I'm putting my chips on Elon Musk (https://www.youtube.com/watch?v=I819iLrK5b0)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-04-28",
+    "declared_known_at": "2025-04-28T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:ge6wXZ4v1k4",
+    "declared_known_at": "2025-04-29T00:23:39Z",
+    "reason": "public recording: Lightning Round: Take-Two Interactive is going much higher, says Jim Cramer (https://www.youtube.com/watch?v=ge6wXZ4v1k4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-04-29",
+    "declared_known_at": "2025-04-29T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:J4IWcUWj3M0",
+    "declared_known_at": "2025-05-01T14:09:04Z",
+    "reason": "public recording: Cramer\u2019s Mad Dash: ServiceNow (https://www.youtube.com/watch?v=J4IWcUWj3M0)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:inykRyc3cuY",
+    "declared_known_at": "2025-05-03T00:30:04Z",
+    "reason": "public recording: Cramer breaks down the busy earnings week for Big Tech (https://www.youtube.com/watch?v=inykRyc3cuY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-05",
+    "declared_known_at": "2025-05-05T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-06",
+    "declared_known_at": "2025-05-06T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-07",
+    "declared_known_at": "2025-05-07T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-08",
+    "declared_known_at": "2025-05-08T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:oedbV5DQwf4",
+    "declared_known_at": "2025-05-13T13:59:19Z",
+    "reason": "public recording: Cramer's Mad Dash: Fedex (https://www.youtube.com/watch?v=oedbV5DQwf4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:9dsf-BoNoDQ",
+    "declared_known_at": "2025-05-14T23:58:45Z",
+    "reason": "public recording: Mad Money 5/14/25 | Audio Only (https://www.youtube.com/watch?v=9dsf-BoNoDQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-15",
+    "declared_known_at": "2025-05-15T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:VgpWjoke0Jc",
+    "declared_known_at": "2025-05-16T00:55:52Z",
+    "reason": "public recording: Jim Cramer on how U.S.-China relations are impacting the semiconductor sector (https://www.youtube.com/watch?v=VgpWjoke0Jc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:nj1wc2Grql8",
+    "declared_known_at": "2025-05-19T14:34:37Z",
+    "reason": "public recording: Cramer's Stop Trading: Regeneron (https://www.youtube.com/watch?v=nj1wc2Grql8)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:mxBX7jiYnew",
+    "declared_known_at": "2025-05-21T00:03:18Z",
+    "reason": "public recording: Palo Alto Networks CEO Nikesh Arora goes one-on-one with Jim Cramer (https://www.youtube.com/watch?v=mxBX7jiYnew)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-21",
+    "declared_known_at": "2025-05-21T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-22",
+    "declared_known_at": "2025-05-22T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:BNhE5V8OdX0",
+    "declared_known_at": "2025-05-22T23:44:26Z",
+    "reason": "public recording: Williams-Sonoma CEO Laura Alber goes one-on-one with Jim Cramer (https://www.youtube.com/watch?v=BNhE5V8OdX0)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:WFMf7MiCvcU",
+    "declared_known_at": "2025-05-24T00:00:35Z",
+    "reason": "public recording: Mad Money 5/23/25 | Audio Only (https://www.youtube.com/watch?v=WFMf7MiCvcU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-27",
+    "declared_known_at": "2025-05-27T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-28",
+    "declared_known_at": "2025-05-28T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-29",
+    "declared_known_at": "2025-05-29T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-05-30",
+    "declared_known_at": "2025-05-30T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:C3rtRbBnYdE",
+    "declared_known_at": "2025-05-30T23:50:00Z",
+    "reason": "public recording: Mad Money 5/30/25 | Audio Only (https://www.youtube.com/watch?v=C3rtRbBnYdE)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-06-02",
+    "declared_known_at": "2025-06-02T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Zxdh0h3iFOs",
+    "declared_known_at": "2025-06-03T00:33:10Z",
+    "reason": "public recording: Higher steel tariffs allow U.S. producers to raise prices and that's terrific, says Jim Cramer (https://www.youtube.com/watch?v=Zxdh0h3iFOs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-06-03",
+    "declared_known_at": "2025-06-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:atEfEfNX-Pw",
+    "declared_known_at": "2025-06-04T14:41:16Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Meta (https://www.youtube.com/watch?v=atEfEfNX-Pw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:GGOY5cz3in0",
+    "declared_known_at": "2025-06-05T23:41:18Z",
+    "reason": "public recording: Wall Street is overreacting to a solid quarter from Cracker Barrel, says Jim Cramer (https://www.youtube.com/watch?v=GGOY5cz3in0)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-06-06",
+    "declared_known_at": "2025-06-06T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:mcRhoOcZM2k",
+    "declared_known_at": "2025-06-07T00:00:03Z",
+    "reason": "public recording: Lightning Round: Disney is going higher, says Jim Cramer (https://www.youtube.com/watch?v=mcRhoOcZM2k)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-06-09",
+    "declared_known_at": "2025-06-09T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:NFZxP6QneJ4",
+    "declared_known_at": "2025-06-10T14:29:38Z",
+    "reason": "public recording: Cramer on McDonald's getting third downgrade in less than one week: Analysts are 'going to be wrong' (https://www.youtube.com/watch?v=NFZxP6QneJ4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-06-10",
+    "declared_known_at": "2025-06-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-06-11",
+    "declared_known_at": "2025-06-11T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:mqYLwgp0lRI",
+    "declared_known_at": "2025-06-12T00:11:18Z",
+    "reason": "public recording: Jim Cramer talks the pros and cons of the tentative trade deal between the U.S. and China (https://www.youtube.com/watch?v=mqYLwgp0lRI)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-06-16",
+    "declared_known_at": "2025-06-16T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:LOP35-YKQww",
+    "declared_known_at": "2025-06-17T23:51:19Z",
+    "reason": "public recording: The market is a forecasting machine, business is all about anticipation, says Jim Cramer (https://www.youtube.com/watch?v=LOP35-YKQww)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-06-18",
+    "declared_known_at": "2025-06-18T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:RgR8doqrNi4",
+    "declared_known_at": "2025-06-24T00:06:26Z",
+    "reason": "public recording: Mad Money 6/23/25 | Audio Only (https://www.youtube.com/watch?v=RgR8doqrNi4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:CmWVi9-vRcI",
+    "declared_known_at": "2025-06-25T14:16:21Z",
+    "reason": "public recording: Cramer's Stop Trading: Paychex (https://www.youtube.com/watch?v=CmWVi9-vRcI)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:M9HmYK81wXo",
+    "declared_known_at": "2025-06-26T23:55:36Z",
+    "reason": "public recording: We were told the rally was too narrow so often, it had to be unsustainable, says Jim Cramer (https://www.youtube.com/watch?v=M9HmYK81wXo)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:j4wJZ850VsU",
+    "declared_known_at": "2025-06-30T14:05:09Z",
+    "reason": "public recording: Cramer's Mad Dash: Circle (https://www.youtube.com/watch?v=j4wJZ850VsU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:byqMFf2Idi0",
+    "declared_known_at": "2025-07-02T00:00:29Z",
+    "reason": "public recording: Mad Money 7/01/25 | Audio Only (https://www.youtube.com/watch?v=byqMFf2Idi0)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:1061GFbTZRo",
+    "declared_known_at": "2025-07-03T00:20:28Z",
+    "reason": "public recording: Suddenly Whirlpool is in the driver's seat, says Jim Cramer (https://www.youtube.com/watch?v=1061GFbTZRo)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-07-07",
+    "declared_known_at": "2025-07-07T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:vgHeeVr1ypE",
+    "declared_known_at": "2025-07-08T23:47:35Z",
+    "reason": "public recording: Stocks seem to shrug off tariff worries, says Jim Cramer (https://www.youtube.com/watch?v=vgHeeVr1ypE)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:tg8chwxL7Lc",
+    "declared_known_at": "2025-07-10T00:16:27Z",
+    "reason": "public recording: Gambling income tax change is 'brutal', says Jim Cramer (https://www.youtube.com/watch?v=tg8chwxL7Lc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:wxh5sy0WC50",
+    "declared_known_at": "2025-07-11T23:50:23Z",
+    "reason": "public recording: Mad Money 7/11/25 | Audio Only (https://www.youtube.com/watch?v=wxh5sy0WC50)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:SPzwuRQ3pYw",
+    "declared_known_at": "2025-07-15T00:12:30Z",
+    "reason": "public recording: Lightning Round: ODP, Palo Alto Networks, and Nutex (https://www.youtube.com/watch?v=SPzwuRQ3pYw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-07-15",
+    "declared_known_at": "2025-07-15T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:rDm7_j8WPrc",
+    "declared_known_at": "2025-07-16T14:51:04Z",
+    "reason": "public recording: Cramer's Mad Dash: Johnson & Johnson (https://www.youtube.com/watch?v=rDm7_j8WPrc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-07-17",
+    "declared_known_at": "2025-07-17T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:OiTTRWkOxu8",
+    "declared_known_at": "2025-07-17T23:47:07Z",
+    "reason": "public recording: Sometimes in this game, you just get lucky, says Jim Cramer (https://www.youtube.com/watch?v=OiTTRWkOxu8)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:CpeWo0-IdPo",
+    "declared_known_at": "2025-07-22T00:21:47Z",
+    "reason": "public recording: Lightning Round: The infrastructure play is still on, says Jim Cramer (https://www.youtube.com/watch?v=CpeWo0-IdPo)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-07-23",
+    "declared_known_at": "2025-07-23T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:7RIhvSJBgj4",
+    "declared_known_at": "2025-07-24T00:11:04Z",
+    "reason": "public recording: SL Green Realty has been frustrating, says Jim Cramer (https://www.youtube.com/watch?v=7RIhvSJBgj4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:BMVOsky5cFk",
+    "declared_known_at": "2025-07-25T00:33:52Z",
+    "reason": "public recording: IONQ CEO Niccolo De Masi goes one-on-one with Jim Cramer (https://www.youtube.com/watch?v=BMVOsky5cFk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-07-28",
+    "declared_known_at": "2025-07-28T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:BLsXoE6ZBRg",
+    "declared_known_at": "2025-07-28T23:53:14Z",
+    "reason": "public recording: Lightning Round: Palantir is going to $200, says Jim Cramer (https://www.youtube.com/watch?v=BLsXoE6ZBRg)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:LqRrUljGfEo",
+    "declared_known_at": "2025-07-30T23:30:24Z",
+    "reason": "public recording: How can investors be disappointed by something we all saw coming, says Jim Cramer (https://www.youtube.com/watch?v=LqRrUljGfEo)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-07-31",
+    "declared_known_at": "2025-07-31T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:I3UhhwwGVqM",
+    "declared_known_at": "2025-08-01T00:16:22Z",
+    "reason": "public recording: Jim Cramer recaps the slate of Big Tech earnings reported today (https://www.youtube.com/watch?v=I3UhhwwGVqM)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-04",
+    "declared_known_at": "2025-08-04T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:7lA4dxvOmzk",
+    "declared_known_at": "2025-08-05T00:01:22Z",
+    "reason": "public recording: Mad Money 8/04/25 | Audio Only (https://www.youtube.com/watch?v=7lA4dxvOmzk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:BSCWswV1ueY",
+    "declared_known_at": "2025-08-06T23:39:11Z",
+    "reason": "public recording: The market is all over the map driven by individual stocks, not groups, says Jim Cramer (https://www.youtube.com/watch?v=BSCWswV1ueY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:kbI2h-katBQ",
+    "declared_known_at": "2025-08-09T00:01:02Z",
+    "reason": "public recording: Mad Money 8/08/25 | Audio Only (https://www.youtube.com/watch?v=kbI2h-katBQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-12",
+    "declared_known_at": "2025-08-12T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:wYsQTQV4vzA",
+    "declared_known_at": "2025-08-12T23:51:24Z",
+    "reason": "public recording: Expedia gave really robust guidance for the current quarter, says Jim Cramer (https://www.youtube.com/watch?v=wYsQTQV4vzA)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-13",
+    "declared_known_at": "2025-08-13T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:JsHCYHTNaGk",
+    "declared_known_at": "2025-08-13T23:51:04Z",
+    "reason": "public recording: Cramer dives into the IPO market and whether investors should be bullish on Bullish (https://www.youtube.com/watch?v=JsHCYHTNaGk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-14",
+    "declared_known_at": "2025-08-14T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-18",
+    "declared_known_at": "2025-08-18T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:aX5VnuEdX08",
+    "declared_known_at": "2025-08-18T23:09:08Z",
+    "reason": "public recording: Mad Money 8/18/25 | Audio Only (https://www.youtube.com/watch?v=aX5VnuEdX08)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-19",
+    "declared_known_at": "2025-08-19T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-20",
+    "declared_known_at": "2025-08-20T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-21",
+    "declared_known_at": "2025-08-21T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-23",
+    "declared_known_at": "2025-08-23T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-25",
+    "declared_known_at": "2025-08-25T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:9d7vm1mX4yw",
+    "declared_known_at": "2025-08-26T00:01:11Z",
+    "reason": "public recording: CVS is up because it faced the pain that's now hitting the rest of managed care, says Jim Cramer (https://www.youtube.com/watch?v=9d7vm1mX4yw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:9dCOulPM78E",
+    "declared_known_at": "2025-08-27T17:01:24Z",
+    "reason": "public recording: Mad Money 8/26/25 | Audio Only (https://www.youtube.com/watch?v=9dCOulPM78E)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:a3RfMPotZ3s",
+    "declared_known_at": "2025-08-29T00:28:02Z",
+    "reason": "public recording: Lightning Round: Wait until Circle declines substantially to buy more, says Jim Cramer (https://www.youtube.com/watch?v=a3RfMPotZ3s)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-08-29",
+    "declared_known_at": "2025-08-29T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-02",
+    "declared_known_at": "2025-09-02T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:BMhW3sWfNs8",
+    "declared_known_at": "2025-09-03T14:34:07Z",
+    "reason": "public recording: Cramer's Stop Trading: PepsiCo (https://www.youtube.com/watch?v=BMhW3sWfNs8)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-04",
+    "declared_known_at": "2025-09-04T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:jc-qgtf46bY",
+    "declared_known_at": "2025-09-05T00:13:01Z",
+    "reason": "public recording: Palo Alto CEO Nikesh Arora goes one-on-one with Jim Cramer (https://www.youtube.com/watch?v=jc-qgtf46bY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-08",
+    "declared_known_at": "2025-09-08T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:qbq3bUl6I9Y",
+    "declared_known_at": "2025-09-08T23:57:38Z",
+    "reason": "public recording: Lately, bonds have been consistently wrong, says Jim Cramer (https://www.youtube.com/watch?v=qbq3bUl6I9Y)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-09",
+    "declared_known_at": "2025-09-09T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:oC_k6WI7gOs",
+    "declared_known_at": "2025-09-10T00:07:51Z",
+    "reason": "public recording: Lightning Round: If something was wrong with UnitedHealth the CEO would have said so: Jim Cramer (https://www.youtube.com/watch?v=oC_k6WI7gOs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-10",
+    "declared_known_at": "2025-09-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:icc66jaXeew",
+    "declared_known_at": "2025-09-11T00:08:15Z",
+    "reason": "public recording: Lightning Round: Buy some Cintas here then wait for the quarter, says Jim Cramer (https://www.youtube.com/watch?v=icc66jaXeew)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-11",
+    "declared_known_at": "2025-09-11T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:6DIDz-5CTQ8",
+    "declared_known_at": "2025-09-16T23:49:02Z",
+    "reason": "public recording: This move in JPMorgan is monumental for a bank stock, says Jim Cramer (https://www.youtube.com/watch?v=6DIDz-5CTQ8)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:OHM-Bhh9x-o",
+    "declared_known_at": "2025-09-18T00:39:31Z",
+    "reason": "public recording: Lightning Round: I like Rubrik, I don't think the stock should have dropped, says Jim Cramer (https://www.youtube.com/watch?v=OHM-Bhh9x-o)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:iH-GiT7ZZCw",
+    "declared_known_at": "2025-09-20T00:03:42Z",
+    "reason": "public recording: Micron has had a big run, it needs to cool before I can recommend it, says Jim Cramer (https://www.youtube.com/watch?v=iH-GiT7ZZCw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-22",
+    "declared_known_at": "2025-09-22T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:-wHS010Zr8s",
+    "declared_known_at": "2025-09-23T00:51:11Z",
+    "reason": "public recording: It's vital for you to realize why so many people can't make money in this market, says Jim Cramer (https://www.youtube.com/watch?v=-wHS010Zr8s)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-24",
+    "declared_known_at": "2025-09-24T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Y37fMPiarQo",
+    "declared_known_at": "2025-09-25T14:56:39Z",
+    "reason": "public recording: Cramer's Stop Trading: Lululemon (https://www.youtube.com/watch?v=Y37fMPiarQo)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-25",
+    "declared_known_at": "2025-09-25T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:KGKgqJCDZ2M",
+    "declared_known_at": "2025-09-27T00:56:42Z",
+    "reason": "public recording: I think you should stop being swayed by AI negativity, says Jim Cramer (https://www.youtube.com/watch?v=KGKgqJCDZ2M)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-09-30",
+    "declared_known_at": "2025-09-30T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:lIhjNg5FfoA",
+    "declared_known_at": "2025-09-30T23:59:46Z",
+    "reason": "public recording: Mad Money 9/30/25 | Audio Only (https://www.youtube.com/watch?v=lIhjNg5FfoA)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-01",
+    "declared_known_at": "2025-10-01T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:lAGrlvq6ynw",
+    "declared_known_at": "2025-10-03T14:22:55Z",
+    "reason": "public recording: Cramer's Stop Trading: Amgen (https://www.youtube.com/watch?v=lAGrlvq6ynw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-03",
+    "declared_known_at": "2025-10-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:tldKbTZvdaQ",
+    "declared_known_at": "2025-10-06T14:00:35Z",
+    "reason": "public recording: Cramer's Mad Dash: Klarna Group (https://www.youtube.com/watch?v=tldKbTZvdaQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-07",
+    "declared_known_at": "2025-10-07T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Ud0vNrp4utk",
+    "declared_known_at": "2025-10-07T23:44:07Z",
+    "reason": "public recording: Averages seem to be setting up for some legitimate profit-taking, says Jim Cramer (https://www.youtube.com/watch?v=Ud0vNrp4utk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Tzn5dFstLOk",
+    "declared_known_at": "2025-10-09T23:24:10Z",
+    "reason": "public recording: Mad Money 10/09/25 | Audio Only (https://www.youtube.com/watch?v=Tzn5dFstLOk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-13",
+    "declared_known_at": "2025-10-13T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:2QpXUcNG2o8",
+    "declared_known_at": "2025-10-14T13:56:38Z",
+    "reason": "public recording: Cramer's Mad Dash: Domino's Pizza (https://www.youtube.com/watch?v=2QpXUcNG2o8)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-15",
+    "declared_known_at": "2025-10-15T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:hDiu3WLMFYw",
+    "declared_known_at": "2025-10-16T14:02:30Z",
+    "reason": "public recording: Cramer's Mad Dash: Taiwan Semi (https://www.youtube.com/watch?v=hDiu3WLMFYw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-16",
+    "declared_known_at": "2025-10-16T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:2TAGS-On8Xk",
+    "declared_known_at": "2025-10-18T00:19:45Z",
+    "reason": "public recording: Lightning Round: I am a buyer of Carnival Corporation, says Jim Cramer (https://www.youtube.com/watch?v=2TAGS-On8Xk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-20",
+    "declared_known_at": "2025-10-20T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:BzCHobru_zc",
+    "declared_known_at": "2025-10-22T00:03:37Z",
+    "reason": "public recording: Jim Cramer: Strong earnings from \u2018actual businesses\u2019 are driving the \u2018real economy\u2019 (https://www.youtube.com/watch?v=BzCHobru_zc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-23",
+    "declared_known_at": "2025-10-23T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Zw_PdNqGkoQ",
+    "declared_known_at": "2025-10-25T03:01:19Z",
+    "reason": "public recording: Government shutdown created tremendous focus on individual companies, says Jim Cramer (https://www.youtube.com/watch?v=Zw_PdNqGkoQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-27",
+    "declared_known_at": "2025-10-27T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:r5XyY4cxaKk",
+    "declared_known_at": "2025-10-28T23:33:41Z",
+    "reason": "public recording: Jim Cramer: 'I like that Amazon\u2019s never done trying to make you money' (https://www.youtube.com/watch?v=r5XyY4cxaKk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:cNUJhYtnNZs",
+    "declared_known_at": "2025-10-30T01:11:12Z",
+    "reason": "public recording: Mad Money 10/29/25 | Audio Only (https://www.youtube.com/watch?v=cNUJhYtnNZs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-30",
+    "declared_known_at": "2025-10-30T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-10-31",
+    "declared_known_at": "2025-10-31T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:jag9qh0_6fs",
+    "declared_known_at": "2025-10-31T23:49:25Z",
+    "reason": "public recording: Lightning Round: Wait for Nextracker to cool off a bit, says Jim Cramer (https://www.youtube.com/watch?v=jag9qh0_6fs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-11-03",
+    "declared_known_at": "2025-11-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:FEOSnSYceUI",
+    "declared_known_at": "2025-11-05T00:51:30Z",
+    "reason": "public recording: Mad Money 11/04/25 | Audio Only (https://www.youtube.com/watch?v=FEOSnSYceUI)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-11-05",
+    "declared_known_at": "2025-11-05T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:V9f_dbdTHq4",
+    "declared_known_at": "2025-11-06T01:03:23Z",
+    "reason": "public recording: Lightning Round: Buy Boeing right here, says Jim Cramer (https://www.youtube.com/watch?v=V9f_dbdTHq4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-11-07",
+    "declared_known_at": "2025-11-07T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:R56VKYHUcJc",
+    "declared_known_at": "2025-11-10T15:20:03Z",
+    "reason": "public recording: Cramer's Mad Dash: CoreWeave (https://www.youtube.com/watch?v=R56VKYHUcJc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-11-10",
+    "declared_known_at": "2025-11-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-11-11",
+    "declared_known_at": "2025-11-11T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:FTOYFD8WcYc",
+    "declared_known_at": "2025-11-12T14:54:40Z",
+    "reason": "public recording: Cramer's Mad Dash: Eli Lilly (https://www.youtube.com/watch?v=FTOYFD8WcYc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-11-12",
+    "declared_known_at": "2025-11-12T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:LBprAkMf6B8",
+    "declared_known_at": "2025-11-14T00:33:06Z",
+    "reason": "public recording: Jim Cramer on if the 'Year of Magical Investing' is over (https://www.youtube.com/watch?v=LBprAkMf6B8)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-11-17",
+    "declared_known_at": "2025-11-17T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:sTEbRKSipvg",
+    "declared_known_at": "2025-11-18T00:48:00Z",
+    "reason": "public recording: Mad Money 11/17/25 | Audio Only (https://www.youtube.com/watch?v=sTEbRKSipvg)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:K9Du1tDWknY",
+    "declared_known_at": "2025-11-21T15:21:30Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Microsoft (https://www.youtube.com/watch?v=K9Du1tDWknY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:2phUKoUyuLk",
+    "declared_known_at": "2025-11-25T01:06:16Z",
+    "reason": "public recording: I wouldn't stick your neck out on Six Flags, says Jim Cramer (https://www.youtube.com/watch?v=2phUKoUyuLk)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-11-26",
+    "declared_known_at": "2025-11-26T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-11-28",
+    "declared_known_at": "2025-11-28T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:GLzYnV2m2gg",
+    "declared_known_at": "2025-12-02T15:25:56Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Nvidia (https://www.youtube.com/watch?v=GLzYnV2m2gg)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-03",
+    "declared_known_at": "2025-12-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-04",
+    "declared_known_at": "2025-12-04T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:TBMZuvdOAAg",
+    "declared_known_at": "2025-12-09T15:45:41Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Wells Fargo (https://www.youtube.com/watch?v=TBMZuvdOAAg)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-09",
+    "declared_known_at": "2025-12-09T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-10",
+    "declared_known_at": "2025-12-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:zvq4s66dJiU",
+    "declared_known_at": "2025-12-11T00:57:56Z",
+    "reason": "public recording: Mad Money 12/10/25 | Audio Only (https://www.youtube.com/watch?v=zvq4s66dJiU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:JbNmL_SpPGE",
+    "declared_known_at": "2025-12-13T00:23:02Z",
+    "reason": "public recording: Today was an ugly day if you own nothing but AI companies, says Jim Cramer (https://www.youtube.com/watch?v=JbNmL_SpPGE)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-15",
+    "declared_known_at": "2025-12-15T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:driuldHrRUs",
+    "declared_known_at": "2025-12-16T00:48:36Z",
+    "reason": "public recording: Affirm CEO Max Levchin goes one-on-one with Jim Cramer (https://www.youtube.com/watch?v=driuldHrRUs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-16",
+    "declared_known_at": "2025-12-16T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:dpTOF1oFbBs",
+    "declared_known_at": "2025-12-17T15:24:48Z",
+    "reason": "public recording: Cramer\u2019s Stop Trading: Oracle (https://www.youtube.com/watch?v=dpTOF1oFbBs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-17",
+    "declared_known_at": "2025-12-17T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-18",
+    "declared_known_at": "2025-12-18T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:8la1mnOeGN4",
+    "declared_known_at": "2025-12-19T00:56:58Z",
+    "reason": "public recording: Lightning Round: Don't get involved in any 'year of magical investing' stock: Jim Cramer (https://www.youtube.com/watch?v=8la1mnOeGN4)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:_nF2w6uoRnA",
+    "declared_known_at": "2025-12-22T14:56:29Z",
+    "reason": "public recording: Cramer's Mad Dash: Agnico Eagle Mines (https://www.youtube.com/watch?v=_nF2w6uoRnA)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-22",
+    "declared_known_at": "2025-12-22T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-26",
+    "declared_known_at": "2025-12-26T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-29",
+    "declared_known_at": "2025-12-29T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:AZsuKIQHj-w",
+    "declared_known_at": "2025-12-29T23:24:01Z",
+    "reason": "public recording: When the dot-com bubble burst in 2000 picking individual stocks went out of style, says Jim Cramer (https://www.youtube.com/watch?v=AZsuKIQHj-w)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2025-12-30",
+    "declared_known_at": "2025-12-30T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-02",
+    "declared_known_at": "2026-01-02T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-05",
+    "declared_known_at": "2026-01-05T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:V7J4L82N6-k",
+    "declared_known_at": "2026-01-06T00:22:59Z",
+    "reason": "public recording: U.S. refineries could be a big beneficiary of Venezuelan oil, says Jim Cramer (https://www.youtube.com/watch?v=V7J4L82N6-k)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:KoL8mUFRQ8U",
+    "declared_known_at": "2026-01-07T00:48:08Z",
+    "reason": "public recording: Mad Money 01/06/26 | Audio Only (https://www.youtube.com/watch?v=KoL8mUFRQ8U)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-08",
+    "declared_known_at": "2026-01-08T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:O0gV-00MpCQ",
+    "declared_known_at": "2026-01-09T00:12:00Z",
+    "reason": "public recording: Jim Cramer makes sense of what is driving markets swings (https://www.youtube.com/watch?v=O0gV-00MpCQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-09",
+    "declared_known_at": "2026-01-09T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:olDUwYEPrDQ",
+    "declared_known_at": "2026-01-13T00:38:18Z",
+    "reason": "public recording: Wall Street doesn't care about Trump's credit card plan, 'it is too over the top', says Jim Cramer (https://www.youtube.com/watch?v=olDUwYEPrDQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-13",
+    "declared_known_at": "2026-01-13T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:qaHiso5XtI8",
+    "declared_known_at": "2026-01-15T00:24:07Z",
+    "reason": "public recording: Bank earnings numbers were actually good, says Jim Cramer (https://www.youtube.com/watch?v=qaHiso5XtI8)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-15",
+    "declared_known_at": "2026-01-15T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:kgRCB1oPEJU",
+    "declared_known_at": "2026-01-16T00:50:01Z",
+    "reason": "public recording: Rubrik CEO Bipul Sinha sits down with Jim Cramer (https://www.youtube.com/watch?v=kgRCB1oPEJU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:VS3OkVon59k",
+    "declared_known_at": "2026-01-20T14:49:27Z",
+    "reason": "public recording: Cramer's Mad Dash: Oracle (https://www.youtube.com/watch?v=VS3OkVon59k)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-20",
+    "declared_known_at": "2026-01-20T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:misT22U7VRw",
+    "declared_known_at": "2026-01-22T20:30:20Z",
+    "reason": "public recording: CNBC's Jim Cramer weighs in on the mystery of Apple's recent decline (https://www.youtube.com/watch?v=misT22U7VRw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:rzJfXrAjODY",
+    "declared_known_at": "2026-01-24T01:03:19Z",
+    "reason": "public recording: Mad Money 01/23/26 | Audio Only (https://www.youtube.com/watch?v=rzJfXrAjODY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-27",
+    "declared_known_at": "2026-01-27T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-28",
+    "declared_known_at": "2026-01-28T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-01-29",
+    "declared_known_at": "2026-01-29T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-02-02",
+    "declared_known_at": "2026-02-02T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:nNcDqZ2zTvI",
+    "declared_known_at": "2026-02-03T00:59:12Z",
+    "reason": "public recording: Mad Money 02/02/26 | Audio Only (https://www.youtube.com/watch?v=nNcDqZ2zTvI)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-02-03",
+    "declared_known_at": "2026-02-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-02-04",
+    "declared_known_at": "2026-02-04T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-02-11",
+    "declared_known_at": "2026-02-11T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-02-12",
+    "declared_known_at": "2026-02-12T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-02-17",
+    "declared_known_at": "2026-02-17T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-02-23",
+    "declared_known_at": "2026-02-23T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:ESuYMNA6o0M",
+    "declared_known_at": "2026-02-26T00:30:34Z",
+    "reason": "public recording: Today the market was brought back to reality, says Jim Cramer (https://www.youtube.com/watch?v=ESuYMNA6o0M)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-03-03",
+    "declared_known_at": "2026-03-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:ISGe21_RSYs",
+    "declared_known_at": "2026-03-04T01:03:43Z",
+    "reason": "public recording: Mad Money 03/03/26 | Audio Only (https://www.youtube.com/watch?v=ISGe21_RSYs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-03-05",
+    "declared_known_at": "2026-03-05T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-03-10",
+    "declared_known_at": "2026-03-10T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-03-11",
+    "declared_known_at": "2026-03-11T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:SA2ZUqpSEss",
+    "declared_known_at": "2026-03-12T23:31:58Z",
+    "reason": "public recording: Mad Money 03/10/26 | Audio Only (https://www.youtube.com/watch?v=SA2ZUqpSEss)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-03-16",
+    "declared_known_at": "2026-03-16T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-03-18",
+    "declared_known_at": "2026-03-18T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-03-19",
+    "declared_known_at": "2026-03-19T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:nrfLRxpp2Xw",
+    "declared_known_at": "2026-03-20T23:46:18Z",
+    "reason": "public recording: Mad Money 03/20/26 | Audio Only (https://www.youtube.com/watch?v=nrfLRxpp2Xw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-03-23",
+    "declared_known_at": "2026-03-23T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-03-26",
+    "declared_known_at": "2026-03-26T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:HZv54NYleAs",
+    "declared_known_at": "2026-03-30T23:52:18Z",
+    "reason": "public recording: Mad Money 03/30/26 | Audio Only (https://www.youtube.com/watch?v=HZv54NYleAs)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-04-07",
+    "declared_known_at": "2026-04-07T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:8at2Eyt89RQ",
+    "declared_known_at": "2026-04-07T23:56:06Z",
+    "reason": "public recording: Mad Money 04/07/26 | Audio Only (https://www.youtube.com/watch?v=8at2Eyt89RQ)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-04-09",
+    "declared_known_at": "2026-04-09T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-04-13",
+    "declared_known_at": "2026-04-13T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-04-15",
+    "declared_known_at": "2026-04-15T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:_qWkxf2IhfY",
+    "declared_known_at": "2026-04-16T23:20:42Z",
+    "reason": "public recording: Jim Cramer warns investors against market speculation amid rally (https://www.youtube.com/watch?v=_qWkxf2IhfY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-04-23",
+    "declared_known_at": "2026-04-23T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:i3xD9jEIuDg",
+    "declared_known_at": "2026-04-24T23:59:44Z",
+    "reason": "public recording: Mad Money 04/24/26 | Audio Only (https://www.youtube.com/watch?v=i3xD9jEIuDg)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-04-27",
+    "declared_known_at": "2026-04-27T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-05-01",
+    "declared_known_at": "2026-05-01T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:yd5ubeTfIDw",
+    "declared_known_at": "2026-05-02T00:32:52Z",
+    "reason": "public recording: Mad Money 05/01/26 | Audio Only (https://www.youtube.com/watch?v=yd5ubeTfIDw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-05-04",
+    "declared_known_at": "2026-05-04T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-05-07",
+    "declared_known_at": "2026-05-07T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-05-08",
+    "declared_known_at": "2026-05-08T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:WubZMiGRH-I",
+    "declared_known_at": "2026-05-14T23:49:59Z",
+    "reason": "public recording: Mad Money 05/14/26 | Audio Only (https://www.youtube.com/watch?v=WubZMiGRH-I)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:UBZvilR6Zuo",
+    "declared_known_at": "2026-05-26T23:47:42Z",
+    "reason": "public recording: Mad Money 05/26/26 | Audio Only (https://www.youtube.com/watch?v=UBZvilR6Zuo)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-05-27",
+    "declared_known_at": "2026-05-27T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-06-01",
+    "declared_known_at": "2026-06-01T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-06-02",
+    "declared_known_at": "2026-06-02T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:dVzjXBscDRc",
+    "declared_known_at": "2026-06-02T23:53:33Z",
+    "reason": "public recording: Mad Money 06/02/26 | Audio Only (https://www.youtube.com/watch?v=dVzjXBscDRc)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-06-04",
+    "declared_known_at": "2026-06-04T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:FXHqAKCEO00",
+    "declared_known_at": "2026-06-09T23:54:16Z",
+    "reason": "public recording: Mad Money 06/09/26 | Audio Only (https://www.youtube.com/watch?v=FXHqAKCEO00)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-06-11",
+    "declared_known_at": "2026-06-11T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:45eGpfJ0ILY",
+    "declared_known_at": "2026-06-17T23:54:38Z",
+    "reason": "public recording: Under CEO Lip-Bu Tan, Intel's foundry problems have been solved, says Jim Cramer (https://www.youtube.com/watch?v=45eGpfJ0ILY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-06-22",
+    "declared_known_at": "2026-06-22T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-06-29",
+    "declared_known_at": "2026-06-29T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:LSEOup9UnkY",
+    "declared_known_at": "2026-07-02T23:12:59Z",
+    "reason": "public recording: Mad Money 07/02/26 | Audio Only (https://www.youtube.com/watch?v=LSEOup9UnkY)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-07-07",
+    "declared_known_at": "2026-07-07T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:bk36Zec5ebw",
+    "declared_known_at": "2026-07-13T14:00:28Z",
+    "reason": "public recording: Cramer\u2019s Mad Dash: SpaceX (https://www.youtube.com/watch?v=bk36Zec5ebw)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-07-15",
+    "declared_known_at": "2026-07-15T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:kU3HZzOcQ1s",
+    "declared_known_at": "2026-07-21T00:04:08Z",
+    "reason": "public recording: If you own too much tech, now is the time to use caution, says Jim Cramer (https://www.youtube.com/watch?v=kU3HZzOcQ1s)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-07-22",
+    "declared_known_at": "2026-07-22T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-07-24",
+    "declared_known_at": "2026-07-24T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-07-27",
+    "declared_known_at": "2026-07-27T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:Z6eL97pcmJ0",
+    "declared_known_at": "2026-07-31T00:09:50Z",
+    "reason": "public recording: Mad Money 07/30/26 | Audio Only (https://www.youtube.com/watch?v=Z6eL97pcmJ0)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-08-03",
+    "declared_known_at": "2026-08-03T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-08-05",
+    "declared_known_at": "2026-08-05T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-08-11",
+    "declared_known_at": "2026-08-11T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:ulNPNVMK1jo",
+    "declared_known_at": "2026-08-11T23:57:20Z",
+    "reason": "public recording: Mad Money 08/11/26 | Audio Only (https://www.youtube.com/watch?v=ulNPNVMK1jo)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-08-13",
+    "declared_known_at": "2026-08-13T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:KFJNTLqtXt0",
+    "declared_known_at": "2026-08-19T23:08:13Z",
+    "reason": "public recording: Mad Money 08/19/26 | Audio Only (https://www.youtube.com/watch?v=KFJNTLqtXt0)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-08-25",
+    "declared_known_at": "2026-08-25T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:NeFNYfXUqFM",
+    "declared_known_at": "2026-08-28T23:29:51Z",
+    "reason": "public recording: Mad Money 08/28/26 | Audio Only (https://www.youtube.com/watch?v=NeFNYfXUqFM)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-09-01",
+    "declared_known_at": "2026-09-01T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "yt:WAA4y14Z7MU",
+    "declared_known_at": "2026-09-04T23:11:42Z",
+    "reason": "public recording: Mad Money 09/04/26 | Audio Only (https://www.youtube.com/watch?v=WAA4y14Z7MU)",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   },
+   {
+    "batch": "settle:2026-09-08",
+    "declared_known_at": "2026-09-08T21:00:00Z",
+    "reason": "horizon settlement at the closing price of that day",
+    "declared_by": "process:factagora-influencer-backtest/0.1",
+    "captured_at": "2026-09-10T00:00:00Z"
+   }
+  ]
+ }
+}

@@ -222,5 +222,12 @@ def main():
         print(f"{a.out}: +{s_['claims']} claims, +{s_['verdicts']} verdicts, {s_['batches']} batches")
 
 
+def run():
+    try:
+        main()
+    except BrokenPipeError:        # `factblock scan ... | head`
+        sys.stderr.close()
+
+
 if __name__ == "__main__":
-    main()
+    run()

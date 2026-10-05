@@ -29,7 +29,7 @@ Issues = "https://github.com/factagora/factblock/issues"
 Hosted = "https://docs.tckg.factagora.com"
 
 [project.scripts]
-factblock = "factblock.__main__:main"
+factblock = "factblock.__main__:run"
 
 [project.optional-dependencies]
 gemini = ["google-genai>=1.62"]   # factblock extract --provider gemini (GEMINI_API_KEY, or Vertex via GOOGLE_GENAI_USE_VERTEXAI=1)

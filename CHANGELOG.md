@@ -28,4 +28,6 @@ First public draft of the format and the reference library.
 - CLI: `factblock sample <dir>` copies the sample bundle (shipped in the wheel); `scan`, `why` and `resolve` print for people by default and take `--json`; every subcommand has help text and they are listed in the order you meet them. `extract` writes 8-character ids you can type.
 - Repository: CONTRIBUTING (DCO), RELEASING, CODE_OF_CONDUCT, issue templates.
 - `factblock recall <bundle> "<query>" --as-of T [--limit N] [--all-kinds]` and `factblock.recall()` / `factblock.context()`: the blocks about something as of an instant, ranked by query hits then recency, with the certificate. Keyword matching only; no embeddings yet.
+- `samples/cramer`: a real bundle. Jim Cramer on CNBC, 2024-09 to 2026-09: 2,091 blocks under one backfill batch per recording, 1,169 typed links, 779 calls settled at their horizon as resolution rows. README's "What comes out" shows it. The reader test reads it at three instants.
+- CLI exits quietly when its output pipe closes (`| head`).
 - `bench/streamingqa`: the hindsight number. StreamingQA's 36,378 dated questions as dated blocks; a time-ignorant top-5 recall leaks on 79.7% of questions (41.8% of picks), the as-of recall on none. `factblock.scan` now wraps a table-free `visible()` and `recall` keeps per-node word sets; a recall over 36,378 blocks takes under a second

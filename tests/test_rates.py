@@ -80,3 +80,16 @@ with tempfile.TemporaryDirectory() as d:
     ks = t.column("known_at").to_pylist()
     assert ks == sorted(ks) and str(t.schema.field("known_at").type) == "timestamp[us, tz=UTC]"
 print("PASS factblock parquet: write, validate, scan x3, resolve, round-trip fields, sorted by known_at")
+
+# the real sample: one public figure's two years of statements, links and settled calls, read at three instants
+CRAMER = pathlib.Path(__file__).resolve().parents[1] / "samples" / "cramer"
+assert all(c.ok for c in factblock.validate(CRAMER)), [c for c in factblock.validate(CRAMER) if not c.ok]
+early = factblock.scan(CRAMER, "2024-10-01")
+assert early.nodes.num_rows == 58 and early.certificate["masked"]["node"] == 2033 and early.resolutions.num_rows == 0, early.certificate
+assert factblock.scan(CRAMER, "2025-06-01").resolutions.num_rows == 197
+chain = factblock.why(CRAMER, "1b77a1a885470207", "2026-09-10")["chain"]
+assert len(chain) == 5 and {r["role"] for r in chain} == {"subject", "effect"}, chain
+assert factblock.why(CRAMER, "1b77a1a885470207", "2025-01-01")["reason"] == "not_yet"
+assert factblock.recall(CRAMER, "Nvidia data center", "2025-01-01")["matched"] == 21
+assert len(factblock.to_claimreview(CRAMER, "2025-06-01")["@graph"]) == 197
+print("PASS samples/cramer: validate, 58 blocks known by 2024-10, 197 verdicts by 2025-06, a five-block chain, recall, ClaimReview")
