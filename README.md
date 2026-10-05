@@ -77,7 +77,11 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 
 ## Same files, hosted
 
-[tckg](https://tckg.factagora.com) is a hosted ledger that writes and reads this format. Upload a `brain/` and you get what a folder cannot give: `known_at` stamped by a server instead of by you, one ledger shared by many agents and users, natural-language writes at scale, verdicts with evidence on resolved claims, and an MCP address per worldview so a user plugs one into Claude or Cursor and reaches nothing else. `GET /v1/export` gives the folder back at any instant. The format is the contract; you can leave with your files.
+A folder is one writer's memory. [factagora.ai](https://factagora.ai) is where a `brain/` meets other people's. Upload it and it comes back with **more rows, never changed rows**: verdicts on predictions whose horizon has passed (mechanical ones from prices and published figures, judgment calls from the community, each with evidence), links to what other people claimed about the same thing (`SUPPORTS`, `CONTRADICTS`), entities resolved across worldviews. Every added row carries its own `known_at`, stamped by the server rather than by you, so a verdict is as replayable as the claim it judges: as of last June, the prediction was still open.
+
+It also gives what a folder cannot: one ledger shared by many agents and users, natural-language writes at scale, and an MCP address per worldview, so a user plugs one into Claude or Cursor and reaches nothing else. Browse public worldviews there, or ask one a question as of a date. `GET /v1/export` hands the folder back at any instant. The format is the contract; you can leave with your files.
+
+The same ledger runs closed for companies at [app.factagora.com](https://app.factagora.com): your support logs, your sales promises, your own assistant's assertions, as claims with verdicts, inside your tenant.
 
 ## The format
 
