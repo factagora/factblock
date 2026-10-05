@@ -12,3 +12,4 @@ jobs:
       - run: uv run python tests/test_duckdb.py
       - run: uv run python tests/test_extract.py
       - run: uv run python tests/test_why.py
+      - run: uv run python tests/test_leak.py
