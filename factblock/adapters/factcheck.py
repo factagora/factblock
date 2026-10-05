@@ -10,6 +10,7 @@ fact-checking world when it was first reviewed, and each verdict when it was pub
 """
 import hashlib
 import json
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -41,8 +42,16 @@ def search(query, api_key, language=None, pages=1, page_size=100):
     out, token = [], None
     for _ in range(pages):
         q = {"query": query, "key": api_key, "pageSize": page_size, **({"languageCode": language} if language else {}), **({"pageToken": token} if token else {})}
-        with urllib.request.urlopen(API + "?" + urllib.parse.urlencode(q), timeout=60) as resp:
-            d = json.load(resp)
+        try:
+            with urllib.request.urlopen(API + "?" + urllib.parse.urlencode(q), timeout=60) as resp:
+                d = json.load(resp)
+        except urllib.error.HTTPError as e:      # Google puts the reason in the body; show it instead of a bare status
+            body = e.read().decode(errors="replace")
+            try:
+                body = json.loads(body)["error"]["message"]
+            except (ValueError, KeyError, TypeError):
+                pass
+            raise RuntimeError(f"Fact Check Tools API: HTTP {e.code}: {body}") from None
         out += d.get("claims", [])
         token = d.get("nextPageToken")
         if not token:
