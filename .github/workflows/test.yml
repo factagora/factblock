@@ -14,3 +14,6 @@ jobs:
       - run: uv run python tests/test_why.py
       - run: uv run python tests/test_leak.py
       - run: uv run python tests/test_sync.py
+      - run: uv run python tests/test_claimreview.py
+      - run: uv run python tests/test_okf.py
+      - run: uv run python tests/test_factcheck.py
