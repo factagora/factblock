@@ -57,3 +57,27 @@ class Bundle:
             yield "edge", r
         for r in self.resolutions:
             yield "resolution", r
+
+
+def write_bundle(result: dict, out, append: bool = False) -> Path:
+    """Put {"manifest", "nodes", "edges"} on disk as a JSONL bundle. With append=True and a bundle
+    already at `out`, rows are added and the manifest's declarations are merged, so a folder grows
+    one batch at a time and stays valid."""
+    out = Path(out); out.mkdir(parents=True, exist_ok=True)
+    mpath = out / "factblock.json"
+    manifest = result["manifest"]
+    if append and mpath.exists():
+        old = json.loads(mpath.read_text())
+        for key in ("facts", "backfills", "edge_types"):
+            have = {json.dumps(x, sort_keys=True) for x in old["declarations"].get(key, [])}
+            old["declarations"][key] = old["declarations"].get(key, []) + [x for x in manifest["declarations"].get(key, []) if json.dumps(x, sort_keys=True) not in have]
+        old["exported_as_of"] = manifest.get("exported_as_of", old.get("exported_as_of"))
+        manifest = old
+        mode = "a"
+    else:
+        mode = "w"
+    mpath.write_text(json.dumps(manifest, indent=1) + "\n")
+    for name in ("nodes", "edges"):
+        with (out / manifest["tables"].get(name, f"{name}.jsonl")).open(mode) as f:
+            f.write("".join(json.dumps(r) + "\n" for r in result.get(name, [])))
+    return out

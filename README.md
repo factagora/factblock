@@ -91,7 +91,15 @@ Format, not platform. Apache-2.0. tckg is one writer of this format; nothing her
 
 ## Status
 
-`1.0-draft.1`. Works today: `validate`, `scan`, `resolve`, `to-parquet`, the DuckDB macros, the Graphiti adapter, and the tckg export. Next, in this order: `extract` (your own model key, the claims profile tckg uses), `why` on files, `leak`, and the ClaimReview projection. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `resolve`, `to-parquet`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next, in this order: `why` on files, `leak`, `sync` with the hosted ledger, and the ClaimReview projection. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+
+```bash
+uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
+export GEMINI_API_KEY=...                              # or GOOGLE_GENAI_USE_VERTEXAI=1 GOOGLE_CLOUD_PROJECT=... for Vertex
+echo "The Fed will keep raising rates this year. That means bond yields keep climbing." \
+  | uv run python -m factblock extract - --observed-at 2024-03-20 --speaker "Jim Cramer" -o brain/
+uv run python -m factblock scan brain/ --as-of 2024-05-01
+```
 
 ```bash
 uv sync

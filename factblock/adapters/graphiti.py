@@ -107,9 +107,4 @@ def bundle_from_graphiti(entities, episodes, facts, episodic_edges, exported_at=
     return {"manifest": manifest, "nodes": nodes, "edges": edges}
 
 
-def write_bundle(result: dict, out) -> Path:
-    out = Path(out); out.mkdir(parents=True, exist_ok=True)
-    (out / "factblock.json").write_text(json.dumps(result["manifest"], indent=1) + "\n")
-    for name in ("nodes", "edges"):
-        (out / f"{name}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in result[name]))
-    return out
+from ..bundle import write_bundle  # noqa: E402,F401  (kept here for callers that imported it from the adapter)

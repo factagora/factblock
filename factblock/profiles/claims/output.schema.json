@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "properties": {
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {"type": "string"},
+          "kind": {"type": "string", "enum": ["claim", "prediction"]},
+          "statement": {"type": "string"},
+          "speaker": {"type": "string"},
+          "quote": {"type": "string"},
+          "confidence": {"type": "number"},
+          "topics": {"type": "array", "items": {"type": "string"}},
+          "asset": {"type": "string"},
+          "direction": {"type": "string", "enum": ["up", "down", "neutral"]},
+          "horizon_days": {"type": "integer"}
+        },
+        "required": ["ref", "kind", "statement"]
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "type": {"type": "string", "enum": ["person", "organization", "asset", "place", "other"]},
+          "mentioned_by": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["name", "type"]
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {"type": "string"},
+          "target": {"type": "string"},
+          "type": {"type": "string", "enum": ["CAUSES", "CONTRIBUTING_FACTOR", "TRIGGERS", "PREVENTS", "CONCURRENT_SIGNAL", "SUPPORTS", "CONTRADICTS"]},
+          "confidence": {"type": "number"},
+          "lag": {"type": "string"}
+        },
+        "required": ["source", "target", "type"]
+      }
+    }
+  },
+  "required": ["blocks", "entities", "links"]
+}

@@ -1,0 +1,10 @@
+{
+  "CAUSES": "causal",
+  "CONTRIBUTING_FACTOR": "causal",
+  "TRIGGERS": "causal",
+  "PREVENTS": "causal",
+  "CONCURRENT_SIGNAL": "temporal",
+  "SUPPORTS": "argumentative",
+  "CONTRADICTS": "argumentative",
+  "MENTIONS": "general"
+}

@@ -1,7 +1,7 @@
 [project]
 name = "factblock"
 version = "1.0.0a1"
-description = "FactBlock table format: validator, as-of reader (Arrow out), resolve, Parquet writer, Graphiti adapter"
+description = "Agent memory for decisions: extract dated claims and their causal links into a temporal causal knowledge graph you can read as of any instant"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -22,6 +22,10 @@ Specification = "https://github.com/factagora/factblock/blob/main/SPEC.md"
 
 [project.scripts]
 factblock = "factblock.__main__:main"
+
+[project.optional-dependencies]
+gemini = ["google-genai>=1.62"]   # factblock extract --provider gemini (GEMINI_API_KEY, or Vertex via GOOGLE_GENAI_USE_VERTEXAI=1)
+openai = ["openai>=1.50"]         # --provider openai, and any OpenAI-compatible server through OPENAI_BASE_URL
 
 [dependency-groups]
 dev = ["duckdb>=1.1"]

@@ -1,10 +1,12 @@
-"""python -m factblock validate <bundle> | scan <bundle> --as-of T [--valid-at T]
+"""python -m factblock extract <file|-> --observed-at T -o <bundle> [--speaker S] [--source S] [--provider gemini|openai|fake] [--model M] [--known-at T]
+   | validate <bundle> | scan <bundle> --as-of T [--valid-at T]
    | resolve <bundle> <fact_key> --as-of T [--valid-at T] [--rules-as-of T] | to-parquet <bundle> <out>"""
 import argparse
 import json
+import pathlib
 import sys
 
-from . import resolve, scan, validate, write_parquet
+from . import Bundle, extract, resolve, scan, validate, write_bundle, write_parquet
 
 
 def main():
@@ -22,12 +24,31 @@ def main():
     r.add_argument("--as-of", required=True)
     r.add_argument("--valid-at")
     r.add_argument("--rules-as-of")
+    e = sub.add_parser("extract", help="text in, a batch of blocks appended to a bundle")
+    e.add_argument("source", help="a text file, or - for stdin")
+    e.add_argument("--observed-at", required=True, help="when it was said or written (ISO 8601)")
+    e.add_argument("-o", "--out", required=True, help="bundle directory; created or appended to")
+    e.add_argument("--speaker")
+    e.add_argument("--source-name", dest="source_name", help="where it came from (a channel, a document)")
+    e.add_argument("--provider", default="gemini", choices=["gemini", "openai", "fake"])
+    e.add_argument("--model")
+    e.add_argument("--known-at", help="when you learned it; default now")
+    e.add_argument("--namespace", default="local")
     c = sub.add_parser("to-parquet")
     c.add_argument("bundle")
     c.add_argument("out")
     a = p.parse_args()
 
-    if a.cmd == "validate":
+    if a.cmd == "extract":
+        text = sys.stdin.read() if a.source == "-" else open(a.source).read()
+        existing = Bundle(a.out) if (pathlib.Path(a.out) / "factblock.json").exists() else None
+        r = extract(text, a.observed_at, speaker=a.speaker, source=a.source_name, provider=a.provider, model=a.model,
+                    known_at=a.known_at, namespace=a.namespace, existing=existing)
+        write_bundle(r, a.out, append=True)
+        s_ = r["summary"]
+        print(f"{a.out}: +{s_['blocks']} blocks, +{s_['entities']} entities, +{s_['links']} links"
+              + (f" ({s_['links_dropped']} dropped)" if s_['links_dropped'] else "") + f", batch {s_['batch']}")
+    elif a.cmd == "validate":
         checks = validate(a.bundle)
         for c in checks:
             print(f"{'ok  ' if c.ok else 'FAIL'} {c.check_id:<20} {c.detail}")
