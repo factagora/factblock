@@ -11,6 +11,7 @@ factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer"
 factblock scan brain/ --as-of 2024-05-01      # what was known that day, with a certificate of what was hidden
 factblock why brain/ P3 --as-of 2024-08-01    # the causal chain behind a block
 factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
+factblock sync brain/ https://tckg.factagora.com --space tckg:...   # the same folder, in a hosted ledger, both ways
 ```
 
 `brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [upload it to a hosted ledger](#same-files-hosted). Nothing here needs a server.
@@ -81,6 +82,10 @@ A folder is one writer's memory. [factagora.ai](https://factagora.ai) is where a
 
 It also gives what a folder cannot: one ledger shared by many agents and users, natural-language writes at scale, and an MCP address per worldview, so a user plugs one into Claude or Cursor and reaches nothing else. Browse public worldviews there, or ask one a question as of a date. `GET /v1/export` hands the folder back at any instant. The format is the contract; you can leave with your files.
 
+`factblock sync brain/ <url> --space <space>` moves rows both ways by identity: what only the folder has goes up, what only the ledger has comes down, nothing is changed in place. A row's `known_at` travels as the batch that attests it, so the ledger learns a 2024 transcript as known in 2024, not today, and the folder learns a verdict at the instant the ledger stamped it. Run it again and it is a no-op. `--pull-only` into a folder that does not exist yet clones a space. The token is `$TCKG_TOKEN` or `--token`.
+
+**Bring your own store.** `sync` talks to a store through two methods, `pull(as_of)` and `push(manifest, nodes, edges)` ([`factblock/sync.py`](./factblock/sync.py), the `Store` protocol). `TckgStore` is the one for tckg over HTTP; [`tests/test_sync.py`](./tests/test_sync.py) has a forty-line in-memory one that shows the single rule a store has to keep: declare the bundle's batches as your own backfill batches, never adopt an imported row as learned now. A SQLite, Neo4j, or warehouse store is the same two methods.
+
 The same ledger runs closed for companies at [app.factagora.com](https://app.factagora.com): your support logs, your sales promises, your own assistant's assertions, as claims with verdicts, inside your tenant.
 
 ## The format
@@ -91,7 +96,7 @@ Format, not platform. Apache-2.0. tckg is one writer of this format; nothing her
 
 ## Status
 
-`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `why`, `leak`, `resolve`, `to-parquet`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next, in this order: `sync` with the hosted ledger, and the ClaimReview projection. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: the ClaimReview projection. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
 
 ```bash
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
@@ -108,5 +113,5 @@ uv run python -m factblock scan samples/rates --as-of 2024-08-01
 uv run python -m factblock why samples/rates c3 --as-of 2024-10-01
 uv run python -m factblock leak samples/rates samples/rates-questions.jsonl
 uv run python -m factblock resolve samples/rates belief:fed:direction --as-of 2024-10-01
-uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_leak.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
+uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_leak.py && uv run python tests/test_sync.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
 ```

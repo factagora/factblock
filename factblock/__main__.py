@@ -1,13 +1,15 @@
 """python -m factblock extract <file|-> --observed-at T -o <bundle> [--speaker S] [--source S] [--provider gemini|openai|fake] [--model M] [--known-at T | --backfill]
    | validate <bundle> | scan <bundle> --as-of T [--valid-at T]
    | resolve <bundle> <fact_key> --as-of T [--valid-at T] [--rules-as-of T]
-   | why <bundle> <node_id> --as-of T [--valid-at T] [--depth N] | leak <bundle> <questions.jsonl> | to-parquet <bundle> <out>"""
+   | why <bundle> <node_id> --as-of T [--valid-at T] [--depth N] | leak <bundle> <questions.jsonl>
+   | sync <bundle> <url> --space S [--token T] [--as-of T] [--push-only | --pull-only] | to-parquet <bundle> <out>"""
 import argparse
 import json
+import os
 import pathlib
 import sys
 
-from . import Bundle, extract, leak, resolve, scan, validate, why, write_bundle, write_parquet
+from . import Bundle, TckgStore, extract, leak, resolve, scan, sync, validate, why, write_bundle, write_parquet
 
 
 def main():
@@ -34,6 +36,14 @@ def main():
     k = sub.add_parser("leak", help="which answers in a question set rest on blocks learned after the question was asked")
     k.add_argument("bundle")
     k.add_argument("questions", help="JSONL: {id?, asked_at, evidence: [block id, ...]} per line")
+    y = sub.add_parser("sync", help="folder <-> a tckg ledger, both ways, by identity; known_at travels as batches")
+    y.add_argument("bundle")
+    y.add_argument("url", help="the ledger, e.g. https://tckg.factagora.com")
+    y.add_argument("--space", help="whose memory this is on the ledger; rows that carry their own space keep it")
+    y.add_argument("--token", help="API key of the tenant; default $TCKG_TOKEN")
+    y.add_argument("--as-of", help="pull rows the ledger knew by this instant; default now")
+    y.add_argument("--push-only", action="store_true")
+    y.add_argument("--pull-only", action="store_true")
     e = sub.add_parser("extract", help="text in, a batch of blocks appended to a bundle")
     e.add_argument("source", help="a text file, or - for stdin")
     e.add_argument("--observed-at", required=True, help="when it was said or written (ISO 8601)")
@@ -67,6 +77,20 @@ def main():
     elif a.cmd == "to-parquet":
         out = write_parquet(a.bundle, a.out)
         print(f"wrote {out}: {sorted(x.name for x in out.iterdir())}")
+    elif a.cmd == "sync":
+        token = a.token or os.environ.get("TCKG_TOKEN") or p.error("--token or $TCKG_TOKEN is required")
+        r = sync(a.bundle, TckgStore(a.url, token, a.space), a.as_of, push=not a.pull_only, pull=not a.push_only)
+        pu, pl = r["pushed"], r["pulled"]
+        parts = []
+        if pu is not None:
+            parts.append(f"pushed {pu['accepted']} rows in {pu['batches']} batches" + (f", {len(pu['skipped'])} already there" if pu["skipped"] else "")
+                         + (f", {len(pu['refused'])} refused" if pu["refused"] else "") + (f", {pu['resolutions_not_pushed']} resolutions kept local" if pu["resolutions_not_pushed"] else ""))
+        if pl is not None:
+            parts.append(f"pulled {pl['nodes']} nodes, {pl['edges']} edges, {pl['resolutions']} resolutions")
+        print(f"{a.bundle} <-> {a.url}: " + "; ".join(parts) + f" (as of {r['as_of'][:19]})")
+        for x in (pu or {}).get("refused", []):
+            print(f"  refused {x}")
+        sys.exit(1 if pu and pu["refused"] else 0)
     elif a.cmd == "leak":
         r = leak(a.bundle, a.questions)
         for q in r["per_question"]:

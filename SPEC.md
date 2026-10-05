@@ -169,6 +169,8 @@ The three tables can be Iceberg tables. An Iceberg snapshot taken at T is an as-
 
 A writer that is not a ledger (an export tool, an adapter) MUST NOT invent `known_at`. It either copies `known_at` and `attestation` from the ledger it reads, or declares a backfill batch and sets `attestation.batch`. Writers MUST NOT emit `captured_at` on blocks; that field belongs to batch records.
 
+**6.1 Importing a bundle into a store.** A store that takes a bundle in MUST keep every row's `known_at`. It does so by declaring the bundle's backfill batches as its own backfill batches (same `declared_known_at`, the reason carried over) and writing each row under its batch. A row the bundle's ledger stamped itself (`attestation.batch` null) is written under a batch declared at that row's `known_at`, named after that ledger. A store MUST NOT adopt an imported row as learned at import time: that would move knowledge forward and make the row visible to as-of reads that the source would have hidden. Re-importing a bundle MUST be a no-op: rows are identified by `id` (nodes), `(source_id, target_id, edge_type, asserted_at)` (edges), and `(target_id, decided_at)` (resolutions), not by their attestation. Resolutions are the store's own to make and are not imported by the reference implementation.
+
 ## 7. Compatibility rules (from OKF, adopted)
 
 Consumers MUST preserve unknown fields when round-tripping, MUST NOT reject a bundle for unknown `kind` or `edge_type` values (section 3.3), and MUST NOT reject a bundle for a `factblock_version` they do not know. Producers MAY add fields; a field added by a producer that later becomes core keeps its name.
@@ -183,7 +185,8 @@ A FactBlock node maps to one OKF concept document: `type` = `kind`, `title` = `s
 
 ## 10. Reference implementations
 
-- `factblock` (Python, `factblock/` in this repository): `scan`, `validate`, `resolve`, `write_parquet`. Returns Arrow tables plus a certificate.
+- `factblock` (Python, `factblock/` in this repository): `scan`, `validate`, `resolve`, `why`, `leak`, `write_parquet`, `extract`. Returns Arrow tables plus a certificate.
+- `factblock.sync` (Python, this repository): moves a bundle between a folder and a store under 6.1. A store is two methods, `pull(as_of)` and `push(manifest, nodes, edges)`; `TckgStore` implements them over tckg's HTTP API (`GET /v1/export`, `POST /v1/memories` with one backfill declaration per batch), and `tests/test_sync.py` holds an in-memory store as the minimal example. tckg's `smoke/10-sync.sh` runs the round trip against a live ledger.
 - tckg `GET /v1/export` writes bundles that `factblock validate` accepts; tckg's smoke suite ([factagora/tckg](https://github.com/factagora/tckg), `smoke/06-export.sh`) proves the round trip on every commit.
 - [tckg](https://github.com/factagora/tckg) (PostgreSQL ledger service): stamps `known_at`, enforces I1 to I5 at write time, exports bundles.
 

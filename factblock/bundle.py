@@ -60,7 +60,7 @@ class Bundle:
 
 
 def write_bundle(result: dict, out, append: bool = False) -> Path:
-    """Put {"manifest", "nodes", "edges"} on disk as a JSONL bundle. With append=True and a bundle
+    """Put {"manifest", "nodes", "edges", "resolutions"?} on disk as a JSONL bundle. With append=True and a bundle
     already at `out`, rows are added and the manifest's declarations are merged, so a folder grows
     one batch at a time and stays valid."""
     out = Path(out); out.mkdir(parents=True, exist_ok=True)
@@ -76,8 +76,14 @@ def write_bundle(result: dict, out, append: bool = False) -> Path:
         mode = "a"
     else:
         mode = "w"
+    tables = manifest.setdefault("tables", {})
+    tables.setdefault("nodes", "nodes.jsonl"); tables.setdefault("edges", "edges.jsonl")
+    if result.get("resolutions"):
+        tables.setdefault("resolutions", "resolutions.jsonl")
     mpath.write_text(json.dumps(manifest, indent=1) + "\n")
-    for name in ("nodes", "edges"):
-        with (out / manifest["tables"].get(name, f"{name}.jsonl")).open(mode) as f:
-            f.write("".join(json.dumps(r) + "\n" for r in result.get(name, [])))
+    for name in ("nodes", "edges", "resolutions"):
+        rows = result.get(name, [])
+        if name in tables and (rows or (mode == "w" and name != "resolutions")):
+            with (out / tables[name]).open(mode) as f:
+                f.write("".join(json.dumps(r, default=lambda d: d.isoformat()) + "\n" for r in rows))
     return out
