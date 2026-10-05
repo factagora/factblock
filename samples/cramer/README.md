@@ -20,4 +20,4 @@ factblock why samples/cramer 1b77a1a885470207 --as-of 2026-09-10
 factblock to-claimreview samples/cramer --as-of 2025-06-01 | head -40
 ```
 
-Produced by `randy-note/data/influencer-backtest/to-factblock.py` from the influencer backtest data.
+Produced by `randy-note/scripts/influencer-to-factblock.py` from the influencer backtest data.
