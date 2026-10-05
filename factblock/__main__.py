@@ -1,12 +1,13 @@
 """python -m factblock extract <file|-> --observed-at T -o <bundle> [--speaker S] [--source S] [--provider gemini|openai|fake] [--model M] [--known-at T | --backfill]
    | validate <bundle> | scan <bundle> --as-of T [--valid-at T]
-   | resolve <bundle> <fact_key> --as-of T [--valid-at T] [--rules-as-of T] | to-parquet <bundle> <out>"""
+   | resolve <bundle> <fact_key> --as-of T [--valid-at T] [--rules-as-of T]
+   | why <bundle> <node_id> --as-of T [--valid-at T] [--depth N] | to-parquet <bundle> <out>"""
 import argparse
 import json
 import pathlib
 import sys
 
-from . import Bundle, extract, resolve, scan, validate, write_bundle, write_parquet
+from . import Bundle, extract, resolve, scan, validate, why, write_bundle, write_parquet
 
 
 def main():
@@ -24,6 +25,12 @@ def main():
     r.add_argument("--as-of", required=True)
     r.add_argument("--valid-at")
     r.add_argument("--rules-as-of")
+    w = sub.add_parser("why", help="the chain behind one block, as of an instant")
+    w.add_argument("bundle")
+    w.add_argument("node_id")
+    w.add_argument("--as-of", required=True)
+    w.add_argument("--valid-at")
+    w.add_argument("--depth", type=int, default=3)
     e = sub.add_parser("extract", help="text in, a batch of blocks appended to a bundle")
     e.add_argument("source", help="a text file, or - for stdin")
     e.add_argument("--observed-at", required=True, help="when it was said or written (ISO 8601)")
@@ -57,6 +64,8 @@ def main():
     elif a.cmd == "to-parquet":
         out = write_parquet(a.bundle, a.out)
         print(f"wrote {out}: {sorted(x.name for x in out.iterdir())}")
+    elif a.cmd == "why":
+        print(json.dumps(why(a.bundle, a.node_id, a.as_of, a.valid_at, a.depth), indent=1, default=str))
     elif a.cmd == "resolve":
         print(json.dumps(resolve(a.bundle, a.fact_key, a.as_of, a.valid_at, a.rules_as_of), indent=1, default=str))
     else:

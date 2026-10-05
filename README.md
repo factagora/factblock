@@ -49,7 +49,7 @@ A statement that gets corrected or reversed is not overwritten. The new block po
 
 ## Why
 
-Edges are the speaker's reasoning, not co-occurrence: `CAUSES`, `CONTRIBUTING_FACTOR`, `TRIGGERS`, `PREVENTS`, `SUPPORTS`, `CONTRADICTS`, `CONCURRENT_SIGNAL`, `SUPERSEDES`. `why` walks them backwards to the given depth, as of an instant, so the chain never includes a reason that was not yet known.
+Edges are the speaker's reasoning, not co-occurrence: `CAUSES`, `CONTRIBUTING_FACTOR`, `TRIGGERS`, `PREVENTS`, `SUPPORTS`, `CONTRADICTS`, `CONCURRENT_SIGNAL`, `SUPERSEDES`. `why` walks them from a block to the given depth, as of an instant, and names the role at every hop (`cause`, `effect`, `successor`, `contradiction`), so the chain never includes a reason that was not yet known.
 
 Declared facts make conflicts explicit. Declare `belief:fed:direction` with a policy (`latest_valid`, `latest_observed`, `source_priority`, `strict`) and `resolve` returns one value or the reason there is none: `no_data`, `not_yet`, `no_value_at`, `unresolved_conflict`. It never guesses.
 
@@ -91,7 +91,7 @@ Format, not platform. Apache-2.0. tckg is one writer of this format; nothing her
 
 ## Status
 
-`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `resolve`, `to-parquet`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next, in this order: `why` on files, `leak`, `sync` with the hosted ledger, and the ClaimReview projection. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `why`, `resolve`, `to-parquet`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next, in this order: `leak`, `sync` with the hosted ledger, and the ClaimReview projection. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
 
 ```bash
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
@@ -105,6 +105,7 @@ uv run python -m factblock scan brain/ --as-of 2024-05-01
 uv sync
 uv run python -m factblock validate samples/rates
 uv run python -m factblock scan samples/rates --as-of 2024-08-01
+uv run python -m factblock why samples/rates c3 --as-of 2024-10-01
 uv run python -m factblock resolve samples/rates belief:fed:direction --as-of 2024-10-01
-uv run python tests/test_rates.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
+uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
 ```

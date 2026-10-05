@@ -133,7 +133,7 @@ A conforming reader implements these; an engine that embeds the reference librar
 
 **4.4 Resolve.** `resolve(fact_key, as_of, valid_at?, rules_as_of?)`: candidates are visible nodes carrying `fact_key`; the declared policy picks one. Outcomes: `answered {value, candidates}`, or `no_answer {reason}` with reason in `undeclared_fact`, `no_data`, `not_yet`, `no_value_at`, `unresolved_conflict` (all candidates attached). A reader MUST NOT pick a value by any rule other than the declared policy.
 
-**4.5 Expansion.** Walking edges from a set of nodes applies 4.1 at every hop and filters by family.
+**4.5 Expansion.** Walking edges from a set of nodes applies 4.1 at every hop and filters by family. `why(node_id, as_of, valid_at?, depth=3)` is the named walk: from one block over edges of the causal, argumentative and temporal families, in both directions, to `depth` hops. Each row carries the block, its `depth`, the `path` of ids from the root, the edge it came through (`via`), and a `role` that names which end of that edge the block sits at (for `CAUSES`: `cause` at the source, `effect` at the target; for `SUPERSEDES`: `successor` and `predecessor`; the root is `subject`). A root that is not visible as of T returns an empty chain with reason `not_yet` (exists, learned later) or `absent`, plus the certificate.
 
 ## 5. Physical profiles
 
