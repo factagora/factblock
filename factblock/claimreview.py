@@ -16,7 +16,7 @@ RATINGS = {
 def _actor(a):
     if not a:
         return None
-    name = a.split(":", 1)[1] if a.startswith(("human:", "process:")) else a.split("/", 1)[0]
+    name = a.split(":", 1)[1] if a.startswith(("human:", "process:", "org:")) else a.split("/", 1)[0]
     return {"@type": "Person" if a.startswith("human:") else "Organization", "name": name}
 
 

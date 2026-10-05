@@ -35,6 +35,7 @@ with tempfile.TemporaryDirectory() as d:
     assert again["summary"]["claims"] == 0 and again["summary"]["verdicts"] == 0, again["summary"]
     cr = factblock.to_claimreview(out, "2024-07-01")["@graph"]
     assert {c["factblock:id"]: c["reviewRating"]["alternateName"] for c in cr}[crime["id"]] == "False"   # latest review wins
+    assert {c["factblock:id"]: c["author"]["name"] for c in cr}[crime["id"]] == "second.example"           # org: prefix stripped
     p = subprocess.run([sys.executable, "-m", "factblock", "from-factcheck", "-o", str(pathlib.Path(d) / "cli"), "--from-json", str(FIX)], capture_output=True, text=True, check=True)
     assert "+3 claims, +4 verdicts, 4 batches" in p.stdout, p.stdout
 print("PASS factcheck: 3 claims, 4 verdicts under review-date batches, ratings normalised, validate, as-of, idempotent re-import, ClaimReview round trip, CLI")
