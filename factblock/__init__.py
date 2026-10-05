@@ -6,6 +6,8 @@
     write_parquet(bundle, out) -> Path          # JSONL bundle to the Parquet profile, SPEC 5.3
     extract(text, observed_at, ...) -> dict      # the claims profile through a model you choose (extract.py)
     write_bundle(result, out, append=False)      # dicts to a JSONL bundle, growing one batch at a time
+    recall(bundle, query, as_of, valid_at=None, limit=10) -> dict   # the blocks about something, as of an instant
+    context(bundle, query, as_of) -> str           # the same recall as prompt lines
     why(bundle, node_id, as_of, valid_at=None, depth=3) -> dict   # the chain behind one block, SPEC 4.5
     leak(bundle, questions) -> dict               # answers that rest on blocks learned after the question was asked
     sync(bundle, store, as_of=None, push=True, pull=True) -> dict   # folder <-> a store (TckgStore, or yours) by identity
@@ -18,10 +20,11 @@ from .okf import to_okf
 from .extract import extract, load_profile
 from .leak import leak
 from .parquet import write_parquet
+from .recall import context, recall
 from .resolve import resolve
 from .scan import Scan, scan
 from .sync import Store, TckgStore, sync
 from .validate import Check, validate
 from .why import why
 
-__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore", "to_claimreview", "to_okf"]
+__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore", "to_claimreview", "to_okf", "recall", "context"]

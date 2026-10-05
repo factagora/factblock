@@ -27,3 +27,4 @@ First public draft of the format and the reference library.
 - SPEC 3.5 adds the `org:<id>` actor shape for publishers and institutions.
 - CLI: `factblock sample <dir>` copies the sample bundle (shipped in the wheel); `scan`, `why` and `resolve` print for people by default and take `--json`; every subcommand has help text and they are listed in the order you meet them. `extract` writes 8-character ids you can type.
 - Repository: CONTRIBUTING (DCO), RELEASING, CODE_OF_CONDUCT, issue templates.
+- `factblock recall <bundle> "<query>" --as-of T [--limit N] [--all-kinds]` and `factblock.recall()` / `factblock.context()`: the blocks about something as of an instant, ranked by query hits then recency, with the certificate. Keyword matching only; no embeddings yet.

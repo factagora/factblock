@@ -1,5 +1,5 @@
 """The factblock command. `factblock --help` lists the subcommands in the order you meet them:
-sample, extract, scan, why, resolve, leak, validate, sync, then the projections and adapters.
+sample, extract, scan, recall, why, resolve, leak, validate, sync, then the projections and adapters.
 Reads print for people; `--json` prints the same answer as JSON."""
 import argparse
 import json
@@ -8,7 +8,7 @@ import pathlib
 import shutil
 import sys
 
-from . import Bundle, TckgStore, extract, leak, resolve, scan, sync, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
+from . import Bundle, TckgStore, extract, leak, recall, resolve, scan, sync, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
 from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
 
 # the wheel carries samples/rates at factblock/samples/rates (pyproject force-include); a checkout has it at the repo root
@@ -95,6 +95,10 @@ def main():
     e.add_argument("--backfill", action="store_true", help="known_at = observed_at: material from the past, known when it was said")
     e.add_argument("--namespace", default="local")
     cmd("scan", "what the folder knew as of an instant: blocks, edges, verdicts, and what was hidden")
+    rc = cmd("recall", "the blocks about something as of an instant, ranked; the read an agent makes before it answers")
+    rc.add_argument("query", help="words to look for in statements, quotes and speakers")
+    rc.add_argument("--limit", type=int, default=10)
+    rc.add_argument("--all-kinds", action="store_true", help="include entities and episodes, not only claims and predictions")
     w = cmd("why", "the chain behind one block as of an instant: causes, effects, successors, contradictions")
     w.add_argument("node_id", help="the block id (see scan)")
     w.add_argument("--depth", type=int, default=3, help="hops to walk; default 3")
@@ -152,6 +156,14 @@ def main():
                       "resolutions": r.resolutions.to_pylist()})
         else:
             _print_scan(r)
+    elif a.cmd == "recall":
+        r = recall(a.bundle, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else ("claim", "prediction"))
+        if a.json:
+            out_json(r)
+        else:
+            for i in r["items"]:
+                print(f"{i['id']:<12} {i['kind']:<11} {_day(i['asserted_at'])}  {i['statement']}" + (f"   ({i['speaker']})" if i.get("speaker") else ""))
+            print(f"{len(r['items'])} of {r['matched']} matching   {_cert(r['certificate'])}")
     elif a.cmd == "why":
         r = why(a.bundle, a.node_id, a.as_of, a.valid_at, a.depth)
         out_json(r) if a.json else _print_why(r)

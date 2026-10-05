@@ -10,6 +10,7 @@ Your data is full of claims: facts, opinions, predictions, promises. FactBlock e
 pip install factblock
 factblock sample brain/                               # six dated claims, a reversal, three verdicts
 factblock scan brain/ --as-of 2024-05-01              # what was known that day, and what was hidden
+factblock recall brain/ "interest rates" --as-of 2024-05-01   # the blocks about something, as of that day
 factblock why brain/ c3 --as-of 2024-10-01            # the causal chain behind a block
 factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
 factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # your model key, or --provider fake
@@ -28,11 +29,13 @@ Run the same command `--as-of 2024-05-01` and the chain stops at `c2`, because `
 
 ```python
 import factblock
-r = factblock.scan("brain/", as_of="2024-05-01")                       # pyarrow tables plus a certificate
-blocks = [n for n in r.nodes.to_pylist() if n["kind"] in ("claim", "prediction")]
-context = "\n".join(f"- {n['asserted_at'].date()}: {n['statement']}" for n in blocks)
-# put `context` in your agent's prompt; r.certificate says what was hidden to answer as of that day
+print(factblock.context("brain/", "interest rates", as_of="2024-05-01"))
+# - 2024-03-20: The Fed raises interest rates
+# - 2024-04-10: Bond yields rise after the rate hike
+# (as of 2024-05-01; 9 later blocks hidden)
 ```
+
+That string goes into your agent's prompt. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
 
 `brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
 
@@ -88,7 +91,7 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 
 ## Use it with your AI
 
-**Recall as context.** `scan` returns Arrow tables; turn the visible blocks into the context your agent reads, with `as_of` set to the decision time (now, or a past instant for a backtest).
+**Recall as context.** `recall` ranks the visible blocks about a query (keywords over statement, quote and speaker) and `context` turns them into prompt lines, with `as_of` set to the decision time (now, or a past instant for a backtest). `scan` returns everything visible as Arrow tables when you want to build your own.
 
 **Analytics.** `to-parquet` writes the Parquet profile. DuckDB reads it with no Python through [`duckdb/factblock.sql`](./duckdb/factblock.sql): `factblock_nodes(bundle, as_of)`, `factblock_edges`, `factblock_certificate`. Spark and Databricks read the same files.
 
@@ -118,7 +121,7 @@ Format, not platform. Apache-2.0. tckg is one writer of this format; nothing her
 
 ## Status
 
-`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: a PyPI release. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: a PyPI release. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
 
 ```bash
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
@@ -135,5 +138,5 @@ uv run python -m factblock scan samples/rates --as-of 2024-08-01
 uv run python -m factblock why samples/rates c3 --as-of 2024-10-01 --json
 uv run python -m factblock leak samples/rates samples/rates-questions.jsonl
 uv run python -m factblock resolve samples/rates belief:fed:direction --as-of 2024-10-01
-uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_leak.py && uv run python tests/test_sync.py && uv run python tests/test_claimreview.py && uv run python tests/test_okf.py && uv run python tests/test_factcheck.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
+uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_recall.py && uv run python tests/test_leak.py && uv run python tests/test_sync.py && uv run python tests/test_claimreview.py && uv run python tests/test_okf.py && uv run python tests/test_factcheck.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
 ```
