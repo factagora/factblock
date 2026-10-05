@@ -99,7 +99,7 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 
 **Speak the standards.** `to-claimreview` writes the verdicts visible as of an instant as schema.org ClaimReview JSON-LD; `to-okf` writes the blocks as an Open Knowledge Format bundle (markdown with frontmatter) that catalogs and agents read; `from-factcheck` brings published fact-checks in (Google's Fact Check Tools API shape) as dated claims with dated verdicts, every row under a batch declared at its review date. None of them is the storage format; they are doors.
 
-**Check your evals.** `leak` takes a question set with dates (`{asked_at, evidence: [block ids]}` per line) and reports how many answers depend on blocks learned after the question's date, naming each block and when it became known. It exits non-zero on a leak, so it fits in CI. If your memory benchmark never reports this number, it is measuring hindsight.
+**Check your evals.** `leak` takes a question set with dates (`{asked_at, evidence: [block ids]}` per line) and reports how many answers depend on blocks learned after the question's date, naming each block and when it became known. It exits non-zero on a leak, so it fits in CI. On [StreamingQA](./bench/streamingqa) (36,378 dated questions about dated news), a recall that ignores time rests on a block learned after the question for **80% of questions**; the same recall as of the question date leaks nothing and says how much it hid. If your memory benchmark never reports this number, it is measuring hindsight.
 
 ## Same files, hosted
 
