@@ -1,0 +1,19 @@
+{
+  "claims": [
+    {"text": "Crime has doubled in the last 2 years.", "claimant": "A. Candidate", "claimDate": "2024-02-10T00:00:00Z",
+     "claimReview": [
+       {"publisher": {"name": "Example Fact Checks", "site": "factchecks.example"}, "url": "https://factchecks.example/crime-doubled",
+        "title": "No, crime has not doubled", "reviewDate": "2024-02-14T00:00:00Z", "textualRating": "Mostly False", "languageCode": "en"},
+       {"publisher": {"name": "Second Checker", "site": "second.example"}, "url": "https://second.example/crime",
+        "title": "Crime claim: the numbers", "reviewDate": "2024-03-01T00:00:00Z", "textualRating": "Pants on Fire!", "languageCode": "en"}]},
+    {"text": "The new bridge opened in 2023.", "claimant": "City Hall", "claimDate": "2024-05-02T00:00:00Z",
+     "claimReview": [
+       {"publisher": {"name": "Example Fact Checks", "site": "factchecks.example"}, "url": "https://factchecks.example/bridge",
+        "title": "Yes, the bridge opened in 2023", "reviewDate": "2024-05-03T00:00:00Z", "textualRating": "True", "languageCode": "en"}]},
+    {"text": "A claim without a claim date.", "claimReview": [
+       {"publisher": {"name": "Example Fact Checks", "site": "factchecks.example"}, "url": "https://factchecks.example/nodate",
+        "title": "Unclear", "reviewDate": "2024-06-01T00:00:00Z", "textualRating": "Four Pinocchios", "languageCode": "en"}]},
+    {"text": "A claim nobody reviewed.", "claimant": "Someone"}
+  ],
+  "nextPageToken": ""
+}

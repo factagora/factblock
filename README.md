@@ -74,6 +74,8 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 
 **From an existing graph.** [`factblock/adapters/graphiti.py`](./factblock/adapters/graphiti.py) turns a Graphiti graph into a bundle; the store's own timestamps become declared backfill batches, because a store that stamped time itself is a witness.
 
+**Speak the standards.** `to-claimreview` writes the verdicts visible as of an instant as schema.org ClaimReview JSON-LD; `to-okf` writes the blocks as an Open Knowledge Format bundle (markdown with frontmatter) that catalogs and agents read; `from-factcheck` brings published fact-checks in (Google's Fact Check Tools API shape) as dated claims with dated verdicts, every row under a batch declared at its review date. None of them is the storage format; they are doors.
+
 **Check your evals.** `leak` takes a question set with dates (`{asked_at, evidence: [block ids]}` per line) and reports how many answers depend on blocks learned after the question's date, naming each block and when it became known. It exits non-zero on a leak, so it fits in CI. If your memory benchmark never reports this number, it is measuring hindsight.
 
 ## Same files, hosted
@@ -96,7 +98,7 @@ Format, not platform. Apache-2.0. tckg is one writer of this format; nothing her
 
 ## Status
 
-`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: a Fact Check Tools adapter (fact-checks in, as dated claims with dated verdicts) and the OKF projection. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: a PyPI release. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
 
 ```bash
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
@@ -113,5 +115,5 @@ uv run python -m factblock scan samples/rates --as-of 2024-08-01
 uv run python -m factblock why samples/rates c3 --as-of 2024-10-01
 uv run python -m factblock leak samples/rates samples/rates-questions.jsonl
 uv run python -m factblock resolve samples/rates belief:fed:direction --as-of 2024-10-01
-uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_leak.py && uv run python tests/test_sync.py && uv run python tests/test_claimreview.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
+uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_leak.py && uv run python tests/test_sync.py && uv run python tests/test_claimreview.py && uv run python tests/test_okf.py && uv run python tests/test_factcheck.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
 ```

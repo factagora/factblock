@@ -92,8 +92,10 @@ Attestation = { ledger: actor, batch: string | null }
 
 ### 3.5 Actors
 
-Actor strings follow one of three shapes, taken from OKF v0.2 so the two formats agree on who did what:
-`<producer>/<version>` for software (`tckg/0.2.0`), `human:<id>` for a person, `process:<id>` for an automated job.
+Actor strings follow one of four shapes. Three are taken from OKF v0.2 so the two formats agree on who did what:
+`<producer>/<version>` for software (`tckg/0.2.0`), `human:<id>` for a person, `process:<id>` for an automated job. The fourth,
+`org:<id>` (`org:factchecks.example`), names an organisation that speaks as one, such as a publisher or a central bank, where
+neither a person nor a process is the right answer.
 
 ### 3.6 Resolution
 
@@ -209,7 +211,8 @@ The reverse direction (ClaimReview, or a fact-check feed such as Google's Fact C
 
 ## 10. Reference implementations
 
-- `factblock` (Python, `factblock/` in this repository): `scan`, `validate`, `resolve`, `why`, `leak`, `write_parquet`, `extract`, `to_claimreview` (9.2). Returns Arrow tables plus a certificate.
+- `factblock` (Python, `factblock/` in this repository): `scan`, `validate`, `resolve`, `why`, `leak`, `write_parquet`, `extract`, `to_claimreview` (9.2), `to_okf` (9.1). Returns Arrow tables plus a certificate.
+- `factblock.adapters.factcheck` (Python, this repository): a third writer. Reads a fact-check feed in the shape of Google's Fact Check Tools API and writes claims as nodes and reviews as resolution rows, each under a backfill batch declared at its review date (9.2, section 6).
 - `factblock.sync` (Python, this repository): moves a bundle between a folder and a store under 6.1. A store is two methods, `pull(as_of)` and `push(manifest, nodes, edges)`; `TckgStore` implements them over tckg's HTTP API (`GET /v1/export`, `POST /v1/memories` with one backfill declaration per batch), and `tests/test_sync.py` holds an in-memory store as the minimal example. tckg's `smoke/10-sync.sh` runs the round trip against a live ledger.
 - tckg `GET /v1/export` writes bundles that `factblock validate` accepts; tckg's smoke suite ([factagora/tckg](https://github.com/factagora/tckg), `smoke/06-export.sh`) proves the round trip on every commit.
 - [tckg](https://github.com/factagora/tckg) (PostgreSQL ledger service): stamps `known_at`, enforces I1 to I5 at write time, exports bundles.

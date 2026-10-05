@@ -3,14 +3,16 @@
    | resolve <bundle> <fact_key> --as-of T [--valid-at T] [--rules-as-of T]
    | why <bundle> <node_id> --as-of T [--valid-at T] [--depth N] | leak <bundle> <questions.jsonl>
    | sync <bundle> <url> --space S [--token T] [--as-of T] [--push-only | --pull-only]
-   | to-claimreview <bundle> --as-of T [--base-url U] | to-parquet <bundle> <out>"""
+   | to-claimreview <bundle> --as-of T [--base-url U] | to-okf <bundle> <out> --as-of T | to-parquet <bundle> <out>
+   | from-factcheck -o <bundle> (--query Q [--language L] [--pages N] | --from-json FILE)"""
 import argparse
 import json
 import os
 import pathlib
 import sys
 
-from . import Bundle, TckgStore, extract, leak, resolve, scan, sync, to_claimreview, validate, why, write_bundle, write_parquet
+from . import Bundle, TckgStore, extract, leak, resolve, scan, sync, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
+from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
 
 
 def main():
@@ -61,6 +63,19 @@ def main():
     cr.add_argument("--as-of", required=True)
     cr.add_argument("--valid-at")
     cr.add_argument("--base-url", help="each review's url becomes <base-url>/<block id>")
+    ok = sub.add_parser("to-okf", help="the nodes visible as of an instant as an OKF bundle (markdown + frontmatter)")
+    ok.add_argument("bundle")
+    ok.add_argument("out")
+    ok.add_argument("--as-of", required=True)
+    ok.add_argument("--valid-at")
+    fc = sub.add_parser("from-factcheck", help="fact-checks (Google Fact Check Tools API shape) in, dated claims with dated verdicts out")
+    fc.add_argument("-o", "--out", required=True, help="bundle directory; created or appended to")
+    fc.add_argument("--query", help="search the live API; needs --api-key or $FACTCHECK_API_KEY")
+    fc.add_argument("--language", help="BCP-47 filter for --query, e.g. en or ko")
+    fc.add_argument("--pages", type=int, default=1, help="pages of 100 to fetch for --query")
+    fc.add_argument("--api-key")
+    fc.add_argument("--from-json", help="a saved claims:search response, or a JSON array of claims")
+    fc.add_argument("--namespace", default="factcheck")
     c = sub.add_parser("to-parquet")
     c.add_argument("bundle")
     c.add_argument("out")
@@ -80,6 +95,23 @@ def main():
         for c in checks:
             print(f"{'ok  ' if c.ok else 'FAIL'} {c.check_id:<20} {c.detail}")
         sys.exit(0 if all(c.ok for c in checks) else 1)
+    elif a.cmd == "to-okf":
+        out = to_okf(a.bundle, a.as_of, a.out, a.valid_at)
+        print(f"wrote {out}: {len(list(out.glob('*.md')))} documents")
+    elif a.cmd == "from-factcheck":
+        if a.from_json:
+            d = json.load(open(a.from_json))
+            claims = d.get("claims", []) if isinstance(d, dict) else d
+        elif a.query:
+            key = a.api_key or os.environ.get("FACTCHECK_API_KEY") or p.error("--api-key or $FACTCHECK_API_KEY is required with --query")
+            claims = factcheck_search(a.query, key, a.language, a.pages)
+        else:
+            p.error("one of --query or --from-json is required")
+        existing = Bundle(a.out) if (pathlib.Path(a.out) / "factblock.json").exists() else None
+        r = bundle_from_factcheck(claims, existing, a.namespace)
+        write_bundle(r, a.out, append=True)
+        s_ = r["summary"]
+        print(f"{a.out}: +{s_['claims']} claims, +{s_['verdicts']} verdicts, {s_['batches']} batches")
     elif a.cmd == "to-claimreview":
         print(json.dumps(to_claimreview(a.bundle, a.as_of, a.base_url, a.valid_at), indent=1, default=str))
     elif a.cmd == "to-parquet":
