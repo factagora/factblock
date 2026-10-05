@@ -29,7 +29,7 @@ def _visible(r, as_of, valid_at):
 
 def _table(rows):
     """pyarrow infers poorly on free-form dicts, so JSON columns go out as strings."""
-    rows = [{**r, **{k: json.dumps(r[k]) for k in JSON_COLS if k in r and r[k] is not None}} for r in rows]
+    rows = [{**{k: v for k, v in r.items() if not k.startswith("_")}, **{k: json.dumps(r[k]) for k in JSON_COLS if k in r and r[k] is not None}} for r in rows]
     return pa.Table.from_pylist(rows)
 
 
@@ -41,7 +41,9 @@ class Scan:
     certificate: dict
 
 
-def scan(bundle, as_of, valid_at=None) -> Scan:
+def visible(bundle, as_of, valid_at=None):
+    """The rows an as-of read shows, as plain dicts, plus the certificate: what scan() does before it
+    builds Arrow tables. recall() and the projections use this; scan() wraps it."""
     if as_of is None:
         raise ValueError("as_of has no default: every read says which instant it asks about (SPEC 4.1)")
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
@@ -64,4 +66,9 @@ def scan(bundle, as_of, valid_at=None) -> Scan:
         cert["masked"] = masked
     if batches:
         cert["backfill"] = {"batches": len(batches), "rows": rows}
+    return nodes, edges, res, cert
+
+
+def scan(bundle, as_of, valid_at=None) -> Scan:
+    nodes, edges, res, cert = visible(bundle, as_of, valid_at)
     return Scan(_table(nodes), _table(edges), _table(res), cert)

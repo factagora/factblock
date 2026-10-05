@@ -85,5 +85,5 @@ def write_bundle(result: dict, out, append: bool = False) -> Path:
         rows = result.get(name, [])
         if name in tables and (rows or (mode == "w" and name != "resolutions")):
             with (out / tables[name]).open(mode) as f:
-                f.write("".join(json.dumps(r, default=lambda d: d.isoformat()) + "\n" for r in rows))
+                f.write("".join(json.dumps({k: v for k, v in r.items() if not k.startswith("_")}, default=lambda d: d.isoformat()) + "\n" for r in rows))
     return out
