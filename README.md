@@ -4,6 +4,8 @@
 
 **A temporal causal knowledge graph that remembers *when* and *why* for your AI.**
 
+![factblock: scan, recall and why over two years of Jim Cramer's calls, read as of different days](./samples/demo.gif)
+
 Your data is full of claims: facts, opinions, predictions, promises. FactBlock extracts them, keeps when they were said and when you learned them, links what caused what, and never overwrites what changed. Your agent recalls them as of any moment, so it decides on what was knowable then, not on hindsight.
 
 ```bash

@@ -3,15 +3,15 @@
 # Run from the repository root with `uv sync` done, so `factblock` resolves to this checkout.
 Output samples/demo.gif
 Set Shell "bash"
-Set FontSize 15
-Set Width 1100
-Set Height 640
+Set FontSize 14
+Set Width 1500
+Set Height 720
 Set Theme "Catppuccin Mocha"
 Set TypingSpeed 40ms
 
 # vhs starts a fresh shell: put this checkout's venv first so `factblock` is the command, not recorded
 Hide
-Type "export PATH=$PWD/.venv/bin:$PATH && factblock --help >/dev/null && clear"
+Type "export PATH=$PWD/.venv/bin:$PATH PS1='$ ' VIRTUAL_ENV_DISABLE_PROMPT=1 && factblock --help >/dev/null && clear"
 Enter
 Sleep 1s
 Show
