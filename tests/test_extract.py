@@ -4,6 +4,9 @@ batch that reuses the entity. Run: uv run python tests/test_extract.py"""
 import json
 import pathlib
 import subprocess
+
+import pyarrow as pa
+import pyarrow.compute  # noqa: F401
 import sys
 import tempfile
 
@@ -50,4 +53,18 @@ with tempfile.TemporaryDirectory() as d:
     assert len(b.backfills) == 3
     assert any(x["declared_known_at"].isoformat().startswith("2024-09-01") for x in b.backfills.values()), "--backfill: known when said"
 
-print("PASS extract: fake provider -> valid bundle, masked before known_at, causal edges, entity reuse on append, CLI")
+    # many dated texts in one call: one batch per line, each known when it was said
+    lines = pathlib.Path(d) / "items.jsonl"
+    lines.write_text('{"text": "Oil climbs.", "observed_at": "2024-10-01", "speaker": "Ann"}\n'
+                     '{"text": "Oil falls back.", "observed_at": "2024-11-01", "source": "memo"}\n')
+    out = subprocess.run([sys.executable, "-m", "factblock", "extract", str(lines), "--provider", "fake", "-o", d, "--backfill"],
+                         capture_output=True, text=True, check=True)
+    assert out.stdout.count("batch extract-") == 2, out.stdout
+    b = factblock.Bundle(d)
+    assert len(b.backfills) == 5 and all(c.ok for c in factblock.validate(b))
+    assert factblock.scan(d, "2024-10-15").nodes.filter(pa.compute.equal(factblock.scan(d, "2024-10-15").nodes["statement"], "Oil falls back.")).num_rows == 0
+    undated = lines.with_name("undated.jsonl"); undated.write_text('{"text": "No date here."}\n')
+    bad = subprocess.run([sys.executable, "-m", "factblock", "extract", str(undated), "--provider", "fake", "-o", d], capture_output=True, text=True)
+    assert bad.returncode == 2 and "line 1: needs text and observed_at" in bad.stderr, bad.stderr
+
+print("PASS extract: fake provider -> valid bundle, masked before known_at, causal edges, entity reuse on append, CLI, a .jsonl of dated texts")

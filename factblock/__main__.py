@@ -86,8 +86,8 @@ def main():
     s = sub.add_parser("sample", help="copy the sample bundle (six dated claims, a reversal, three verdicts) into a folder", description="copy the sample bundle into a folder")
     s.add_argument("out", help="folder to create, e.g. brain/")
     e = sub.add_parser("extract", help="text in, dated blocks and their links appended to a bundle", description="text in, dated blocks and their links appended to a bundle")
-    e.add_argument("source", help="a text file, or - for stdin")
-    e.add_argument("--observed-at", required=True, help="when it was said or written (ISO 8601)")
+    e.add_argument("source", help="a text file, - for stdin, or a .jsonl with one {text, observed_at, speaker?, source?, known_at?} per line")
+    e.add_argument("--observed-at", help="when it was said or written (ISO 8601); required unless each .jsonl line has its own")
     e.add_argument("-o", "--out", required=True, help="bundle directory; created or appended to")
     e.add_argument("--speaker", help="who said it, as written")
     e.add_argument("--source-name", dest="source_name", help="where it came from (a channel, a document)")
@@ -145,14 +145,25 @@ def main():
         shutil.copytree(SAMPLES / "rates", a.out)
         print(f"{a.out}: the sample bundle. Try: factblock scan {a.out} --as-of 2024-05-01")
     elif a.cmd == "extract":
-        text = sys.stdin.read() if a.source == "-" else open(a.source).read()
-        existing = Bundle(a.out) if (pathlib.Path(a.out) / "factblock.json").exists() else None
-        r = extract(text, a.observed_at, speaker=a.speaker, source=a.source_name, provider=a.provider, model=a.model,
-                    known_at=a.known_at, backfill=a.backfill, namespace=a.namespace, existing=existing)
-        write_bundle(r, a.out, append=True)
-        s_ = r["summary"]
-        print(f"{a.out}: +{s_['blocks']} blocks, +{s_['entities']} entities, +{s_['links']} links"
-              + (f" ({s_['links_dropped']} dropped)" if s_['links_dropped'] else "") + f", batch {s_['batch']}")
+        if a.source.endswith(".jsonl"):   # many texts, each with its own date: one batch per line
+            items = [json.loads(l) for l in open(a.source) if l.strip()]
+            for i, it in enumerate(items, 1):
+                if "text" not in it or not (it.get("observed_at") or a.observed_at):
+                    p.error(f"{a.source} line {i}: needs text and observed_at (or pass --observed-at)")
+        else:
+            if not a.observed_at:
+                p.error("--observed-at is required: when was this said or written?")
+            items = [{"text": sys.stdin.read() if a.source == "-" else open(a.source).read()}]
+        # ponytail: a crash mid-file leaves the earlier lines written; re-running repeats them. Split the file to resume.
+        for it in items:
+            existing = Bundle(a.out) if (pathlib.Path(a.out) / "factblock.json").exists() else None
+            r = extract(it["text"], it.get("observed_at") or a.observed_at, speaker=it.get("speaker", a.speaker),
+                        source=it.get("source", a.source_name), provider=a.provider, model=a.model,
+                        known_at=it.get("known_at", a.known_at), backfill=a.backfill, namespace=a.namespace, existing=existing)
+            write_bundle(r, a.out, append=True)
+            s_ = r["summary"]
+            print(f"{a.out}: +{s_['blocks']} blocks, +{s_['entities']} entities, +{s_['links']} links"
+                  + (f" ({s_['links_dropped']} dropped)" if s_['links_dropped'] else "") + f", batch {s_['batch']}")
     elif a.cmd == "scan":
         r = scan(a.bundle, a.as_of, a.valid_at)
         if a.json:

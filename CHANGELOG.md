@@ -44,3 +44,6 @@ First public draft of the format and the reference library.
 - Parquet rows are sorted by UTC instant (Arrow `sort_by`), not by the text of the timestamp; mixed offsets were out of order.
 - `write_bundle` writes rows first and the manifest last via `os.replace`, so a reader never sees a batch declared before its rows.
 - SPEC 3.7 says what both readers and tckg already do: `latest_observed` ranks by `known_at`, ties are a conflict. SPEC 5.4: an Iceberg/Delta/DuckLake snapshot at T is not an as-of read (backfills after T, expiry); apply `WHERE known_at <= T` to the current snapshot.
+
+### Added (2026-10-06)
+- `factblock extract items.jsonl -o brain/`: one `{text, observed_at, speaker?, source?, known_at?}` per line, one batch per line, so a folder of dated transcripts or notes goes in with one command instead of a shell loop. `--observed-at`, `--speaker`, `--source-name` and `--known-at` become defaults that a line can override.
