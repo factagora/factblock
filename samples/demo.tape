@@ -9,6 +9,13 @@ Set Height 640
 Set Theme "Catppuccin Mocha"
 Set TypingSpeed 40ms
 
+# vhs starts a fresh shell: put this checkout's venv first so `factblock` is the command, not recorded
+Hide
+Type "export PATH=$PWD/.venv/bin:$PATH && factblock --help >/dev/null && clear"
+Enter
+Sleep 1s
+Show
+
 Type "factblock scan samples/cramer --as-of 2025-01-01 | head -4"
 Enter
 Sleep 3s
