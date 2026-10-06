@@ -49,6 +49,12 @@ bad = copy.deepcopy(factblock.Bundle(RATES))
 bad.nodes[0]["attestation"] = {"ledger": "tckg/0.2.0", "batch": "nope"}
 failed = {c.check_id for c in factblock.validate(bad) if not c.ok}
 assert failed == {"I2.batch_exists"}, failed
+# SPEC 6: a writer that is not a ledger attests with a declared batch alone; no attestation at all fails
+ok = copy.deepcopy(factblock.Bundle(RATES))
+ok.nodes[0]["attestation"] = {"batch": ok.nodes[0]["attestation"]["batch"]}
+assert all(c.ok for c in factblock.validate(ok)), [c for c in factblock.validate(ok) if not c.ok]
+ok.nodes[0]["attestation"] = {}
+assert {c.check_id for c in factblock.validate(ok) if not c.ok} == {"I2.attested"}
 
 for f in (lambda: factblock.scan(RATES, None), lambda: factblock.resolve(RATES, "x", None)):
     try:

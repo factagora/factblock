@@ -32,3 +32,7 @@ First public draft of the format and the reference library.
 - CLI exits quietly when its output pipe closes (`| head`).
 - README: the logo in the title, `pip install --pre factblock` (the package is an alpha), and absolute links and images so the PyPI page renders them.
 - `bench/streamingqa`: the hindsight number. StreamingQA's 36,378 dated questions as dated blocks; a time-ignorant top-5 recall leaks on 79.7% of questions (41.8% of picks), the as-of recall on none. `factblock.scan` now wraps a table-free `visible()` and `recall` keeps per-node word sets; a recall over 36,378 blocks takes under a second
+
+### Fixed (2026-10-06, found migrating factagora.ai's 46,112 rows into tckg)
+- `validate` accepted only `attestation.ledger`; SPEC I2 and 6 also allow a declared batch alone, which is what a non-ledger writer (an export script) produces. Both now pass, neither fails.
+- `sync` compared edge and resolution instants as strings, so a ledger spelling `...57.89332+00:00` for a folder's `...57.893320+00:00` made a second run re-push 1,297 edges and pull them back into the folder as duplicates. Identity keys now compare instants, not spellings.

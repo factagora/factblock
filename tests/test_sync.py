@@ -58,6 +58,14 @@ assert set(store.batches) == {"b1", "b2", "b3"} and store.rows["nodes"][0]["know
 r = factblock.sync(work, store)
 assert r["pushed"]["accepted"] == 0 and r["pulled"] == {"nodes": 0, "edges": 0, "resolutions": 0}, r
 
+# 2b. a ledger may spell an instant differently ("Z", trimmed microseconds); same edge, still a no-op
+for e in store.rows["edges"]:
+    e["asserted_at"] = e["asserted_at"].replace("+00:00", "Z")
+r = factblock.sync(work, store)
+assert r["pushed"]["batches"] == 0 and r["pulled"] == {"nodes": 0, "edges": 0, "resolutions": 0}, r
+for e in store.rows["edges"]:
+    e["asserted_at"] = e["asserted_at"].replace("Z", "+00:00")
+
 # 3. the store learns something (a verdict and a row stamped by the store itself); pull appends it, folder stays valid
 store.batches["v1"] = {"declared_known_at": "2024-11-01T00:00:00+00:00", "reason": "verdicts"}
 store.rows["resolutions"].append({"target_id": "c1", "value": {"direction": "up"}, "outcome": "true", "method": "price", "ruleset": "r1",

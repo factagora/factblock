@@ -65,7 +65,7 @@ def validate(bundle) -> list[Check]:
     unattested, nobatch, selfatt = [], [], []
     for kind, r in b.blocks():
         a = r.get("attestation") or {}
-        if not a.get("ledger"):
+        if not a.get("ledger") and not a.get("batch"):   # SPEC I2: a ledger stamp or a declared batch
             unattested.append(_label(kind, r))
             continue
         batch = a.get("batch")
@@ -73,9 +73,9 @@ def validate(bundle) -> list[Check]:
             bf = b.backfills.get(batch)
             if bf is None or r.get("known_at") != bf["declared_known_at"]:
                 nobatch.append(_label(kind, r))
-        if r.get("author") and r["author"] == a["ledger"]:
+        if r.get("author") and r["author"] == a.get("ledger"):
             selfatt.append(_label(kind, r))
-    check("I2.attested", unattested, "blocks without attestation.ledger")
+    check("I2.attested", unattested, "blocks with neither attestation.ledger nor attestation.batch")
     check("I2.batch_exists", nobatch, "blocks whose batch is undeclared or whose known_at differs from the batch")
     check("I2.no_self", selfatt, "blocks attested by their own author")
 

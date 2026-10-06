@@ -33,16 +33,23 @@ def _json(rows):
     return json.loads(json.dumps(rows, default=_iso))
 
 
+def _instant(v):
+    """One spelling per instant, so a key built from a parsed datetime matches one built from a ledger's
+    string ("...57.893320+00:00" and "...57.89332Z" are the same edge)."""
+    d = v if isinstance(v, datetime) else datetime.fromisoformat(v.replace("Z", "+00:00"))
+    return d.astimezone(timezone.utc).isoformat()
+
+
 def node_key(r):
     return ("node", r["id"])
 
 
 def edge_key(r):
-    return ("edge", r["source_id"], r["target_id"], r["edge_type"], _iso(r["asserted_at"]))
+    return ("edge", r["source_id"], r["target_id"], r["edge_type"], _instant(r["asserted_at"]))
 
 
 def resolution_key(r):
-    return ("resolution", r["target_id"], _iso(r["decided_at"]))
+    return ("resolution", r["target_id"], _instant(r["decided_at"]))
 
 
 KEYS = {"nodes": node_key, "edges": edge_key, "resolutions": resolution_key}
