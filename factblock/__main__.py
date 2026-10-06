@@ -25,6 +25,8 @@ def _cert(c):
     if c.get("valid_at", "")[:10] != c["as_of"][:10]:
         parts.append(f"valid at {c['valid_at'][:10]}")
     parts.append("hidden: " + (", ".join(f"{n} {k}{'s' if n != 1 else ''}" for k, n in m.items()) if m else "nothing"))
+    if c.get("not_in_force"):
+        parts.append("not in force: " + ", ".join(f"{n} {k}{'s' if n != 1 else ''}" for k, n in c["not_in_force"].items()))
     if b:
         parts.append(f"backfilled: {b['rows']} rows in {b['batches']} batch{'es' if b['batches'] != 1 else ''}")
     return "  ".join(parts)

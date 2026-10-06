@@ -3,8 +3,8 @@ block over causal, argumentative and temporal edges in both directions, every ho
 `as_of` and in force at `valid_at`. The role names which end of the edge the block sits at."""
 from collections import deque
 
-from .bundle import Bundle
-from .scan import scan
+from .bundle import Bundle, parse_instant
+from .scan import visible
 from .validate import CORE_FAMILY
 
 WALKED = {"causal", "argumentative", "temporal"}
@@ -18,19 +18,34 @@ ROLES = {"CAUSES": ("cause", "effect"), "CONTRIBUTING_FACTOR": ("contributing_ca
 
 def why(bundle, node_id, as_of, valid_at=None, depth=3) -> dict:
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
-    s = scan(b, as_of, valid_at)
-    out = {"root": node_id, "as_of": s.certificate["as_of"], "valid_at": s.certificate["valid_at"], "chain": [], "certificate": s.certificate}
-    nodes = {r["id"]: r for r in s.nodes.to_pylist()}
+    vis_nodes, vis_edges, _, bundle_cert = visible(b, as_of, valid_at)
+    t, v = parse_instant(bundle_cert["as_of"]), parse_instant(bundle_cert["valid_at"])
+    cert = {k: bundle_cert[k] for k in ("as_of", "read_at", "valid_at")}
+    out = {"root": node_id, "as_of": cert["as_of"], "valid_at": cert["valid_at"], "chain": [], "certificate": cert}
+    nodes = {r["id"]: r for r in vis_nodes}
     if node_id not in nodes:
-        out["reason"] = "not_yet" if any(r["id"] == node_id for r in b.nodes) else "absent"
+        root = next((r for r in b.nodes if r["id"] == node_id), None)
+        out["reason"] = "not_yet" if root else "absent"
+        if root:   # the one block this walk hid is the root itself
+            cert["masked" if root["known_at"] > t else "not_in_force"] = {"node": 1}
         return out
 
     families = {**CORE_FAMILY, **b.edge_types}
+    shown = {id(e) for e in vis_edges}
     by_node = {}
-    for e in s.edges.to_pylist():
+    for e in b.edges:                      # every walked edge, so the certificate can count the hidden ones
         if families.get(e["edge_type"]) in WALKED:
             by_node.setdefault(e["source_id"], []).append(e)
             by_node.setdefault(e["target_id"], []).append(e)
+    raw = {r["id"]: r for r in b.nodes}
+    hidden = {"masked": {}, "not_in_force": {}}   # SPEC 4.5: the certificate covers this walk, not the bundle
+    counted = set()
+
+    def hide(kind, r, key):
+        if key not in counted:
+            counted.add(key)
+            bucket = hidden["masked" if r["known_at"] > t else "not_in_force"]
+            bucket[kind] = bucket.get(kind, 0) + 1
 
     def row(nid, d, path, via=None, role="subject"):
         n = nodes[nid]
@@ -40,6 +55,7 @@ def why(bundle, node_id, as_of, valid_at=None, depth=3) -> dict:
     seen = {node_id}
     chain = [row(node_id, 0, [node_id])]
     queue = deque([(node_id, 0, [node_id])])
+    batches = set()
     while queue:
         cur, d, path = queue.popleft()
         if d == depth:
@@ -47,11 +63,27 @@ def why(bundle, node_id, as_of, valid_at=None, depth=3) -> dict:
         for e in by_node.get(cur, []):
             at_source = e["source_id"] != cur     # the neighbour sits at the source end
             nxt = e["source_id"] if at_source else e["target_id"]
-            if nxt in seen or nxt not in nodes:
+            if id(e) not in shown:
+                hide("edge", e, ("e", id(e)))
+                continue
+            if nxt not in nodes:
+                if nxt in raw:
+                    hide("node", raw[nxt], ("n", nxt))
+                continue
+            if nxt in seen:
                 continue
             seen.add(nxt)
+            if (e.get("attestation") or {}).get("batch"):
+                batches.add(e["attestation"]["batch"])
             role = ROLES.get(e["edge_type"], (e["edge_type"].lower(), e["edge_type"].lower()))[0 if at_source else 1]
             chain.append(row(nxt, d + 1, path + [nxt], e, role))
             queue.append((nxt, d + 1, path + [nxt]))
+    rows = sum(1 for nid in seen if (nodes[nid].get("attestation") or {}).get("batch"))
+    batches |= {nodes[nid]["attestation"]["batch"] for nid in seen if (nodes[nid].get("attestation") or {}).get("batch")}
+    for k in ("masked", "not_in_force"):
+        if hidden[k]:
+            cert[k] = hidden[k]
+    if batches:
+        cert["backfill"] = {"batches": len(batches), "rows": rows}
     out["chain"] = sorted(chain, key=lambda r: (r["asserted_at"], r["depth"], r["id"]))
     return out

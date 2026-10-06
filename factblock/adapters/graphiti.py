@@ -6,12 +6,18 @@ Mapping (SPEC.md 3; tckg's memory/tckg_driver is the reverse direction):
   group_id                 -> space
   EpisodicNode             -> node kind=episode   (statement=name, asserted_at=valid_at)
   EntityNode               -> node kind=entity    (statement=name)
-  EntityEdge (a fact)      -> node kind=claim     (statement=fact, valid=[valid_at, invalid_at))
+  EntityEdge (a fact)      -> node kind=claim     (statement=fact, valid=[valid_at, invalid_at) when
+                              invalid_at was known at created_at; see "Invalidation" below)
                               + claim MENTIONS source entity, claim MENTIONS target entity
                               + claim DERIVED_FROM each episode it came from
   EpisodicEdge             -> edge episode MENTIONS entity
   created_at               -> known_at, attested by one backfill batch per distinct created_at:
                               Graphiti stamps created_at itself, so it is self-reported (SPEC 6, 9)
+Invalidation: Graphiti closes a fact in place, setting invalid_at and expired_at (when it
+learned the fact had ended) on the old edge. Writing valid_to = invalid_at on a row known at
+created_at would hide, from every read between created_at and expired_at, a fact the store
+still believed then. So a fact with expired_at becomes two rows: the original, open, known at
+created_at; and a closed copy `<uuid>~closed` known at expired_at, which SUPERSEDES it.
 Embeddings are not exported: the bundle cannot name the model (declarations.embedding is null).
 """
 import json
@@ -39,7 +45,8 @@ def bundle_from_graphiti(entities, episodes, facts, episodic_edges, exported_at=
     # Batches are numbered in time order, whatever order the store returned rows in,
     # so an importer that applies them by number applies them chronologically and
     # never sees an edge before its endpoints.
-    instants = sorted({_iso(x.created_at) for group in (entities, episodes, facts, episodic_edges) for x in group})
+    instants = sorted({_iso(x.created_at) for group in (entities, episodes, facts, episodic_edges) for x in group}
+                      | {_iso(f.expired_at) for f in facts if getattr(f, "expired_at", None)})
     batches = {k: f"graphiti-{i + 1}" for i, k in enumerate(instants)}
 
     def batch_for(created_at):
@@ -48,7 +55,7 @@ def bundle_from_graphiti(entities, episodes, facts, episodic_edges, exported_at=
     def stamp(created_at):
         return {"known_at": _iso(created_at), "attestation": {"ledger": LEDGER, "batch": batch_for(created_at)}}
 
-    nodes, edges, spaces = [], [], set()
+    nodes, edges, spaces, closing = [], [], set(), []
     ids = set()
     for e in episodes:
         spaces.add(e.group_id); ids.add(e.uuid)
@@ -81,8 +88,15 @@ def bundle_from_graphiti(entities, episodes, facts, episodic_edges, exported_at=
             payload["graphiti_expired_at"] = _iso(f.expired_at)
         if f.invalid_at and end is None:
             payload["graphiti_invalid_at"] = _iso(f.invalid_at)     # kept, not applied: it did not follow valid_at
-        nodes.append({"id": f.uuid, "kind": "claim", "space": f.group_id, "statement": f.fact, "payload": payload,
-                      "asserted_at": _iso(start), "valid_from": _iso(start), "valid_to": _iso(end), **stamp(f.created_at)})
+        expired = getattr(f, "expired_at", None)
+        claim = {"id": f.uuid, "kind": "claim", "space": f.group_id, "statement": f.fact, "payload": payload,
+                 "asserted_at": _iso(start), "valid_from": _iso(start), "valid_to": None if expired else _iso(end), **stamp(f.created_at)}
+        nodes.append(claim)
+        if expired and end:   # learned at expired_at that it had ended: a new row then, not a rewrite of the old one
+            closed = f"{f.uuid}~closed"
+            ids.add(closed)
+            nodes.append({**claim, "id": closed, "valid_to": _iso(end), **stamp(expired)})
+            closing.append((closed, f.uuid, expired))
     for f in facts:
         start = f.valid_at or f.created_at
         edge(f.uuid, f.source_node_uuid, "MENTIONS", start, f.created_at)
@@ -91,6 +105,8 @@ def bundle_from_graphiti(entities, episodes, facts, episodic_edges, exported_at=
             edge(f.uuid, ep, "DERIVED_FROM", start, f.created_at)
     for x in episodic_edges:
         edge(x.source_node_uuid, x.target_node_uuid, "MENTIONS", x.created_at, x.created_at)
+    for closed, original, expired in closing:
+        edge(closed, original, "SUPERSEDES", expired, expired)
 
     manifest = {
         "factblock_version": "1.0-draft.1",

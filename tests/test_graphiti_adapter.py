@@ -42,4 +42,22 @@ with tempfile.TemporaryDirectory() as d:
     assert f2.get("valid_to") is None and f2["payload"]["graphiti_invalid_at"], "an invalid_at before valid_at is kept, not applied"
     pq = factblock.write_parquet(b, pathlib.Path(d) / "pq")
     assert all(c.ok for c in factblock.validate(pq))
-print("PASS graphiti adapter: 2 batches, validate, scan at two instants, kinds, edges, parquet")
+
+# Invalidation without hindsight: Graphiti learned on 2024-07-01 (expired_at) that f-3 ended on 2024-06-01
+# (invalid_at). As of 2024-06-15 the store still believed it, so the bundle must show it as holding then.
+ended = NS(uuid="f-3", name="IS_CEO_OF", fact="Ann is the CEO of Acme", group_id=g, source_node_uuid="e-ceo", target_node_uuid="e-nvda",
+           episodes=[], valid_at=T("2024-04-10T00:00:00"), invalid_at=T("2024-06-01T00:00:00"), expired_at=T("2024-07-01T00:00:00"),
+           attributes={}, created_at=T("2024-04-15T00:00:00"))
+res = bundle_from_graphiti([nvda, ceo], [ep], [ended], [], exported_at=T("2026-10-04T00:00:00"))
+with tempfile.TemporaryDirectory() as d:
+    b = write_bundle(res, d)
+    assert all(c.ok for c in factblock.validate(b)), [c for c in factblock.validate(b) if not c.ok]
+    ids = lambda s: dict(zip(s.nodes.column("id").to_pylist(), s.nodes.column("superseded_by").to_pylist()))  # noqa: E731
+    then = ids(factblock.scan(b, "2024-06-15"))
+    assert then.get("f-3", "missing") is None and "f-3~closed" not in then, then   # believed, not yet closed
+    now = ids(factblock.scan(b, "2024-07-02"))
+    assert now.get("f-3") == "f-3~closed", now                                      # closed, flagged, kept
+    back = ids(factblock.scan(b, "2024-07-02", valid_at="2024-05-01T00:00:00+00:00"))
+    assert "f-3~closed" in back, back                                                # held in May, known since July
+
+print("PASS graphiti adapter: 2 batches, validate, scan at two instants, kinds, edges, parquet, invalidation without hindsight")

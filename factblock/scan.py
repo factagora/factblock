@@ -56,14 +56,22 @@ def visible(bundle, as_of, valid_at=None):
     superseded = {e["target_id"]: e["source_id"] for e in edges if e["edge_type"] == "SUPERSEDES"}
     nodes = [{**r, "superseded_by": superseded.get(r["id"])} for r in nodes]
 
-    masked = {k: n for k, n in (("node", len(b.nodes) - len(nodes)), ("edge", len(b.edges) - len(edges)),
-                                ("resolution", len(b.resolutions) - len(res))) if n}
+    # SPEC 4.2: masked = learned after as_of (hindsight blocked); not_in_force = known by then but not in force at valid_at
+    masked, not_in_force = {}, {}
+    for k, every, shown in (("node", b.nodes, nodes), ("edge", b.edges, edges), ("resolution", b.resolutions, res)):
+        later = sum(1 for r in every if r["known_at"] > t)
+        if later:
+            masked[k] = later
+        if len(every) - len(shown) - later:
+            not_in_force[k] = len(every) - len(shown) - later
     batches = {r["attestation"]["batch"] for r in nodes + edges + res if r.get("attestation", {}).get("batch")}
     rows = sum(1 for r in nodes + edges + res if r.get("attestation", {}).get("batch"))
     cert = {"as_of": t.isoformat(), "read_at": datetime.now(timezone.utc).isoformat()}
     cert["valid_at"] = v.isoformat()
     if masked:
         cert["masked"] = masked
+    if not_in_force:
+        cert["not_in_force"] = not_in_force
     if batches:
         cert["backfill"] = {"batches": len(batches), "rows": rows}
     return nodes, edges, res, cert

@@ -125,7 +125,7 @@ edge_types:  [{ edge_type, family }]            // producer additions to 3.3
 embedding:   { model, dimensions } | null
 ```
 
-`policy` is one of `latest_valid` (latest `valid_from` wins), `latest_observed` (latest `asserted_at` wins), `source_priority` (first match in `source_order` wins), `strict` (two candidates is a refusal). Declarations have `declared_at` so that they are themselves as-of'd: a reader applies the declaration in force at `as_of`, or at an explicit `rules_as_of`.
+`policy` is one of `latest_valid` (latest `valid_from` wins), `latest_observed` (latest `known_at` wins: when it was observed, so a backfilled row ranks at its batch's declared instant; rows tied on `known_at`, as in one batch, are a conflict, never ordered by arrival), `source_priority` (first match in `source_order` wins), `strict` (two candidates is a refusal). Declarations have `declared_at` so that they are themselves as-of'd: a reader applies the declaration in force at `as_of`, or at an explicit `rules_as_of`.
 
 ## 4. Read semantics
 
@@ -133,13 +133,13 @@ A conforming reader implements these; an engine that embeds the reference librar
 
 **4.1 As-of.** `read(as_of, valid_at?)` returns blocks with `known_at <= as_of` that also hold at `valid_at`: `asserted_at <= valid_at` and `valid_from <= valid_at < valid_to` (null `valid_to` is open). `valid_at` defaults to `as_of`, so the one-argument read means "as best we knew on D, what held on D". `as_of` has no default. A date-only `as_of` means the end of that day in UTC.
 
-**4.2 Certificate.** Every as-of read returns `{ as_of, read_at, masked: {node, edge, resolution}, backfill: {batches, rows} | null, rules_as_of? }`. `masked` counts blocks hidden by 4.1. Omit keys whose value is zero or null.
+**4.2 Certificate.** Every as-of read returns `{ as_of, read_at, masked: {node, edge, resolution}, backfill: {batches, rows} | null, rules_as_of? }`. `masked` counts blocks hidden because `known_at > as_of` (learned later: the hindsight the read blocked). Blocks known by `as_of` but not in force at `valid_at` are not masked; a reader MAY count them under `not_in_force: {node, edge, resolution}`. The split keeps `masked` the same across readers and countable from `known_at` alone (file or row-group statistics). Omit keys whose value is zero or null.
 
 **4.3 Supersession.** A block is `superseded_by` X as of T when an edge `X SUPERSEDES block` is visible as of T. Superseded blocks are returned and flagged, not dropped.
 
 **4.4 Resolve.** `resolve(fact_key, as_of, valid_at?, rules_as_of?)`: candidates are visible nodes carrying `fact_key`; the declared policy picks one. Outcomes: `answered {value, candidates}`, or `no_answer {reason}` with reason in `undeclared_fact`, `no_data`, `not_yet`, `no_value_at`, `unresolved_conflict` (all candidates attached). A reader MUST NOT pick a value by any rule other than the declared policy.
 
-**4.5 Expansion.** Walking edges from a set of nodes applies 4.1 at every hop and filters by family. `why(node_id, as_of, valid_at?, depth=3)` is the named walk: from one block over edges of the causal, argumentative and temporal families, in both directions, to `depth` hops. Each row carries the block, its `depth`, the `path` of ids from the root, the edge it came through (`via`), and a `role` that names which end of that edge the block sits at (for `CAUSES`: `cause` at the source, `effect` at the target; for `SUPERSEDES`: `successor` and `predecessor`; the root is `subject`). A root that is not visible as of T returns an empty chain with reason `not_yet` (exists, learned later) or `absent`, plus the certificate.
+**4.5 Expansion.** Walking edges from a set of nodes applies 4.1 at every hop and filters by family. `why(node_id, as_of, valid_at?, depth=3)` is the named walk: from one block over edges of the causal, argumentative and temporal families, in both directions, to `depth` hops. Each row carries the block, its `depth`, the `path` of ids from the root, the edge it came through (`via`), and a `role` that names which end of that edge the block sits at (for `CAUSES`: `cause` at the source, `effect` at the target; for `SUPERSEDES`: `successor` and `predecessor`; the root is `subject`). A root that is not visible as of T returns an empty chain with reason `not_yet` (exists, learned later) or `absent`, plus the certificate. The certificate of a walk covers the walk, not the bundle: it counts the walked-family edges at the chain's nodes, and the neighbours they lead to, that 4.1 hid (`masked` or `not_in_force` as in 4.2). For a root that is not visible, it counts the root.
 
 ## 5. Physical profiles
 
@@ -163,13 +163,13 @@ One block per line. Instants are RFC 3339 with offset. `valid_to` null is writte
 
 ### 5.3 Parquet profile
 
-One file per table, one explicit Arrow schema per table (`factblock/parquet.py` in this repository is the normative list). Instants are `timestamp[us, UTC]`; `valid_to` is nullable. `kind` and `edge_type` are utf8 (dictionary encoding is a writer option). `payload`, `properties`, `fact_value`, `value`, and `evidence` are utf8 columns holding JSON. `attestation` is `struct<ledger utf8, batch utf8>`. `embedding` is `list<float32>`; a writer MAY use `fixed_size_list` when `declarations.embedding.dimensions` is set. Fields the schema does not name go into an `extra` utf8 column as a JSON object, so a round trip loses nothing (section 7). Rows are sorted by `known_at`, so an as-of read is a prefix scan, and any engine can apply `WHERE known_at <= T` on the file directly. Compression is the writer's choice; the reference writer uses zstd.
+One file per table, one explicit Arrow schema per table (`factblock/parquet.py` in this repository is the normative list). Instants are `timestamp[us, UTC]`; `valid_to` is nullable. `kind` and `edge_type` are utf8 (dictionary encoding is a writer option). `payload`, `properties`, `fact_value`, `value`, and `evidence` are utf8 columns holding JSON. `attestation` is `struct<ledger utf8, batch utf8>`. `embedding` is `list<float32>`; a writer MAY use `fixed_size_list` when `declarations.embedding.dimensions` is set. Fields the schema does not name go into an `extra` utf8 column as a JSON object, so a round trip loses nothing (section 7). Rows are sorted by `known_at` as a UTC instant (not by its text, which orders mixed offsets wrongly), ties broken by the table's identity columns (`id`; `source_id, target_id, edge_type`; `target_id`), so an as-of read is a prefix scan, and any engine can apply `WHERE known_at <= T` on the file directly. Compression is the writer's choice; the reference writer uses zstd.
 
 `factblock to-parquet <bundle> <out>` converts a JSONL bundle. The manifest is copied with `tables` pointing at the `.parquet` files.
 
 ### 5.4 Iceberg (informative)
 
-The three tables can be Iceberg tables. An Iceberg snapshot taken at T is an as-of boundary for `known_at <= T`. A normative mapping is deferred to a later minor version.
+The three tables can be Iceberg tables. An as-of read applies `WHERE known_at <= T` and the 4.1 valid filter to the current snapshot (or a pinned tag). `FOR TIMESTAMP AS OF T` (Iceberg), a Delta version, or a DuckLake snapshot is not an as-of read: a backfill appended after T carries `known_at <= T` and is missing from the snapshot, and expiry can remove the snapshot altogether. A snapshot taken at T bounds what had arrived by T; use it to pin a reproducible read, not to define one. A normative mapping is deferred to a later minor version.
 
 ## 6. Writing
 

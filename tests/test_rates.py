@@ -85,13 +85,19 @@ with tempfile.TemporaryDirectory() as d:
     t = pq.read_table(pq_dir / "nodes.parquet")
     ks = t.column("known_at").to_pylist()
     assert ks == sorted(ks) and str(t.schema.field("known_at").type) == "timestamp[us, tz=UTC]"
+# sorted by instant, not by spelling: 08:00+09:00 is 23:00 UTC the day before, so it comes first
+from datetime import datetime  # noqa: E402
+from factblock.parquet import to_table  # noqa: E402
+mk = lambda i, k: {"id": i, "kind": "claim", "statement": i, "asserted_at": datetime.fromisoformat(k), "valid_from": datetime.fromisoformat(k),  # noqa: E731
+                   "valid_to": None, "known_at": datetime.fromisoformat(k), "attestation": {"ledger": "t", "batch": None}}
+assert to_table([mk("utc", "2023-12-31T23:30:00+00:00"), mk("kst", "2024-01-01T08:00:00+09:00")], "nodes").column("id").to_pylist() == ["kst", "utc"]
 print("PASS factblock parquet: write, validate, scan x3, resolve, round-trip fields, sorted by known_at")
 
 # the real sample: one public figure's two years of statements, links and settled calls, read at three instants
 CRAMER = pathlib.Path(__file__).resolve().parents[1] / "samples" / "cramer"
 assert all(c.ok for c in factblock.validate(CRAMER)), [c for c in factblock.validate(CRAMER) if not c.ok]
 early = factblock.scan(CRAMER, "2024-10-01")
-assert early.nodes.num_rows == 58 and early.certificate["masked"]["node"] == 2033 and early.resolutions.num_rows == 0, early.certificate
+assert early.nodes.num_rows == 58 and early.certificate["masked"]["node"] == 2032 and early.certificate["not_in_force"] == {"node": 1} and early.resolutions.num_rows == 0, early.certificate
 assert factblock.scan(CRAMER, "2025-06-01").resolutions.num_rows == 197
 chain = factblock.why(CRAMER, "1b77a1a885470207", "2026-09-10")["chain"]
 assert len(chain) == 5 and {r["role"] for r in chain} == {"subject", "effect"}, chain

@@ -41,10 +41,14 @@ CREATE OR REPLACE MACRO factblock_certificate(bundle, as_of, valid_at := NULL) A
   vis_e AS (SELECT * FROM factblock_edges(bundle, as_of, valid_at := valid_at)),
   all_n AS (SELECT count(*) AS c FROM read_parquet(bundle || '/nodes.parquet') n, t WHERE n.known_at > t.a),
   all_e AS (SELECT count(*) AS c FROM read_parquet(bundle || '/edges.parquet') e, t WHERE e.known_at > t.a),
+  known_n AS (SELECT count(*) AS c FROM read_parquet(bundle || '/nodes.parquet') n, t WHERE n.known_at <= t.a),
+  known_e AS (SELECT count(*) AS c FROM read_parquet(bundle || '/edges.parquet') e, t WHERE e.known_at <= t.a),
   bf AS (SELECT count(DISTINCT batch) AS batches, count(*) AS rows_
            FROM (SELECT attestation.batch AS batch FROM vis_n WHERE attestation.batch IS NOT NULL
                  UNION ALL SELECT attestation.batch FROM vis_e WHERE attestation.batch IS NOT NULL))
   SELECT t.a AS as_of, t.v AS valid_at, now() AS read_at,
          (SELECT c FROM all_n) AS masked_nodes, (SELECT c FROM all_e) AS masked_edges,
+         (SELECT c FROM known_n) - (SELECT count(*) FROM vis_n) AS not_in_force_nodes,
+         (SELECT c FROM known_e) - (SELECT count(*) FROM vis_e) AS not_in_force_edges,
          bf.batches AS backfill_batches, bf.rows_ AS backfill_rows
     FROM t, bf;

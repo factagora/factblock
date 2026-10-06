@@ -1,5 +1,6 @@
 """Load a bundle (SPEC 5.1): manifest plus node, edge, resolution tables as lists of dicts."""
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -80,10 +81,14 @@ def write_bundle(result: dict, out, append: bool = False) -> Path:
     tables.setdefault("nodes", "nodes.jsonl"); tables.setdefault("edges", "edges.jsonl")
     if result.get("resolutions"):
         tables.setdefault("resolutions", "resolutions.jsonl")
-    mpath.write_text(json.dumps(manifest, indent=1) + "\n")
+    # Rows first, manifest last and atomically (os.replace): a reader never sees a batch declared whose
+    # rows are not there yet, and a crash mid-append leaves the old manifest in place.
     for name in ("nodes", "edges", "resolutions"):
         rows = result.get(name, [])
         if name in tables and (rows or (mode == "w" and name != "resolutions")):
             with (out / tables[name]).open(mode) as f:
                 f.write("".join(json.dumps({k: v for k, v in r.items() if not k.startswith("_")}, default=lambda d: d.isoformat()) + "\n" for r in rows))
+    tmp = mpath.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(manifest, indent=1) + "\n")
+    os.replace(tmp, mpath)
     return out

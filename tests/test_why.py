@@ -27,7 +27,12 @@ assert by_id(factblock.why(RATES, "c1", "2024-10-01", depth=1))["c4"]["role"] ==
 assert by_id(factblock.why(RATES, "c4", "2024-10-01", depth=1))["c1"]["role"] == "predecessor"
 
 may = factblock.why(RATES, "c3", "2024-05-01")
-assert may["chain"] == [] and may["reason"] == "not_yet" and may["certificate"]["masked"]["node"] == 4, may
+assert may["chain"] == [] and may["reason"] == "not_yet" and may["certificate"]["masked"] == {"node": 1}, may   # the root, not the bundle
+# SPEC 4.5: the certificate covers the walk. As of 2024-05-01 c1 is visible and c1 -> c2 (known 2024-04-15) is
+# walked, but c4 SUPERSEDES c1 is learned later: that edge is the one thing this walk hid.
+w = factblock.why(RATES, "c1", "2024-05-01")
+assert w["certificate"].get("masked", {}).get("edge", 0) >= 1, w["certificate"]
+assert factblock.scan(RATES, "2024-05-01").certificate["masked"]["node"] > w["certificate"].get("masked", {}).get("node", 0)
 assert factblock.why(RATES, "nope", "2024-05-01")["reason"] == "absent"
 
 out = subprocess.run([sys.executable, "-m", "factblock", "why", str(RATES), "c3", "--as-of", "2024-08-01"], capture_output=True, text=True, check=True).stdout

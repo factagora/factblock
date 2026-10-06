@@ -25,7 +25,14 @@ with tempfile.TemporaryDirectory() as d:
     # valid_at selects content, as in the library
     rows = con.execute("SELECT id FROM factblock_nodes(?, factblock_day('2024-10-01'), valid_at := TIMESTAMPTZ '2024-06-01') ORDER BY id", [pq]).fetchall()
     assert [r[0] for r in rows] == ["c1", "c2"], rows
+    # with valid_at the two certificates still agree (SPEC 4.2): masked is learned-later only,
+    # not_in_force is known but not in force at valid_at
+    for day, at in (("2024-10-01", "2024-06-01T00:00:00+00:00"), ("2024-10-01", "2024-03-25T00:00:00+00:00"), ("2024-08-01", "2024-12-01T00:00:00+00:00")):
+        lib = factblock.scan(pq, day, valid_at=at)
+        cert = con.execute("SELECT masked_nodes, masked_edges, not_in_force_nodes, not_in_force_edges FROM factblock_certificate(?, factblock_day(?), valid_at := CAST(? AS TIMESTAMPTZ))", [pq, day, at]).fetchone()
+        m, f = lib.certificate.get("masked", {}), lib.certificate.get("not_in_force", {})
+        assert cert == (m.get("node", 0), m.get("edge", 0), f.get("node", 0), f.get("edge", 0)), (day, at, cert, lib.certificate)
     # plain SQL on top of the macro, the thing the pack exists for
     n = con.execute("SELECT count(*) FROM factblock_nodes(?, factblock_day('2024-10-01')) WHERE kind = 'claim' AND superseded_by IS NOT NULL", [pq]).fetchone()[0]
     assert n == 1
-print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants; valid_at; SQL on top")
+print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants and under valid_at; SQL on top")

@@ -24,7 +24,7 @@ subject: c3  2024-06-20  Housing demand falls as mortgages track yields
     cause (CAUSES): c2  2024-04-10  Bond yields rise after the rate hike
         cause (CAUSES): c1  2024-03-20  The Fed raises interest rates
             successor (SUPERSEDES): c4  2024-09-18  The Fed cuts interest rates
-as of 2024-10-01  hidden: 1 resolution  backfilled: 9 rows in 3 batches
+as of 2024-10-01  hidden: nothing  backfilled: 4 rows in 3 batches
 ```
 
 Run the same command `--as-of 2024-05-01` and the chain stops at `c2`, because `c3` was not known yet. Add `--json` to any read for the machine form.
@@ -47,7 +47,7 @@ Two years of one public figure's statements, as files. [`samples/cramer`](https:
 
 ```
 $ factblock scan samples/cramer --as-of 2025-01-01 | head -1
-as of 2025-01-01  hidden: 1790 nodes, 1025 edges, 753 resolutions  backfilled: 471 rows in 52 batches
+as of 2025-01-01  hidden: 1775 nodes, 1025 edges, 753 resolutions  not in force: 15 nodes  backfilled: 471 rows in 52 batches
 
 $ factblock why samples/cramer 1b77a1a885470207 --as-of 2026-09-10
 subject: 1b77a1a885470207  2025-07-17  The current data center buildout is the largest construction boom since World War II.

@@ -36,3 +36,11 @@ First public draft of the format and the reference library.
 ### Fixed (2026-10-06, found migrating factagora.ai's 46,112 rows into tckg)
 - `validate` accepted only `attestation.ledger`; SPEC I2 and 6 also allow a declared batch alone, which is what a non-ledger writer (an export script) produces. Both now pass, neither fails.
 - `sync` compared edge and resolution instants as strings, so a ledger spelling `...57.89332+00:00` for a folder's `...57.893320+00:00` made a second run re-push 1,297 edges and pull them back into the folder as duplicates. Identity keys now compare instants, not spellings.
+
+### Fixed (2026-10-06, from the table-format review)
+- Certificate (SPEC 4.2): `masked` counts only blocks learned after `as_of`; blocks known but not in force at `valid_at` move to a new `not_in_force` key. The Python reader counted both as masked and the DuckDB macro only the first, so the same read gave two certificates (samples/rates with `valid_at`: 4 vs 0). `factblock_certificate` gains `not_in_force_nodes`/`not_in_force_edges`; the DuckDB test now compares under `valid_at` too.
+- `why` (SPEC 4.5): the certificate covers the walk (hidden edges at the chain's nodes and the neighbours they lead to), not the bundle. A five-block cramer chain carried `masked: {node: 1790, ...}`; it now carries what that chain hid.
+- Graphiti adapter: an invalidated fact no longer leaks hindsight. Graphiti closes facts in place; writing `valid_to = invalid_at` on a row known at `created_at` hid the fact from reads between `created_at` and `expired_at`, when the store still believed it. The original row stays open and a closed copy `<uuid>~closed`, known at `expired_at`, SUPERSEDES it.
+- Parquet rows are sorted by UTC instant (Arrow `sort_by`), not by the text of the timestamp; mixed offsets were out of order.
+- `write_bundle` writes rows first and the manifest last via `os.replace`, so a reader never sees a batch declared before its rows.
+- SPEC 3.7 says what both readers and tckg already do: `latest_observed` ranks by `known_at`, ties are a conflict. SPEC 5.4: an Iceberg/Delta/DuckLake snapshot at T is not an as-of read (backfills after T, expiry); apply `WHERE known_at <= T` to the current snapshot.

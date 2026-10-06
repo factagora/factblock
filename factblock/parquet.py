@@ -50,9 +50,10 @@ def _row(r: dict, schema: pa.Schema) -> dict:
 
 
 def to_table(rows: list[dict], name: str) -> pa.Table:
-    key = SORT[name]
-    rows = sorted(rows, key=lambda r: tuple(str(r.get(k)) for k in key))
-    return pa.Table.from_pylist([_row(r, SCHEMAS[name]) for r in rows], schema=SCHEMAS[name])
+    # SPEC 5.3: by UTC instant, ties by the table's identity columns. Arrow compares timestamps as UTC
+    # int64; sorting the Python values as strings put "+09:00" rows out of instant order.
+    t = pa.Table.from_pylist([_row(r, SCHEMAS[name]) for r in rows], schema=SCHEMAS[name])
+    return t.sort_by([(k, "ascending") for k in SORT[name]])
 
 
 def write_parquet(bundle, out) -> Path:
