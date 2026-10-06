@@ -1,15 +1,15 @@
-# FactBlock: agent memory for decisions
+# <img src="https://raw.githubusercontent.com/factagora/factblock/main/.github/logo.svg" alt="" height="40" align="top"> FactBlock: agent memory for decisions
 
-[![test](https://github.com/factagora/factblock/actions/workflows/test.yml/badge.svg)](https://github.com/factagora/factblock/actions/workflows/test.yml) [![PyPI](https://img.shields.io/pypi/v/factblock)](https://pypi.org/project/factblock/) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
+[![test](https://github.com/factagora/factblock/actions/workflows/test.yml/badge.svg)](https://github.com/factagora/factblock/actions/workflows/test.yml) [![PyPI](https://img.shields.io/pypi/v/factblock)](https://pypi.org/project/factblock/) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/factagora/factblock/blob/main/LICENSE)
 
 **A temporal causal knowledge graph that remembers *when* and *why* for your AI.**
 
-![factblock: scan, recall and why over two years of Jim Cramer's calls, read as of different days](./samples/demo.gif)
+![factblock: scan, recall and why over two years of Jim Cramer's calls, read as of different days](https://raw.githubusercontent.com/factagora/factblock/main/samples/demo.gif)
 
 Your data is full of claims: facts, opinions, predictions, promises. FactBlock extracts them, keeps when they were said and when you learned them, links what caused what, and never overwrites what changed. Your agent recalls them as of any moment, so it decides on what was knowable then, not on hindsight.
 
 ```bash
-pip install factblock
+pip install --pre factblock                           # alpha: --pre until 1.0
 factblock sample brain/                               # six dated claims, a reversal, three verdicts
 factblock scan brain/ --as-of 2024-05-01              # what was known that day, and what was hidden
 factblock recall brain/ "interest rates" --as-of 2024-05-01   # the blocks about something, as of that day
@@ -43,7 +43,7 @@ That string goes into your agent's prompt. `factblock.recall(...)` returns the s
 
 ## What comes out
 
-Two years of one public figure's statements, as files. [`samples/cramer`](./samples/cramer) is Jim Cramer on CNBC, 2024-09 to 2026-09: 2,091 blocks, 1,169 links he drew between them, 779 priced calls scored at their horizon. Every block links to the recording and the timestamp.
+Two years of one public figure's statements, as files. [`samples/cramer`](https://github.com/factagora/factblock/tree/main/samples/cramer) is Jim Cramer on CNBC, 2024-09 to 2026-09: 2,091 blocks, 1,169 links he drew between them, 779 priced calls scored at their horizon. Every block links to the recording and the timestamp.
 
 ```
 $ factblock scan samples/cramer --as-of 2025-01-01 | head -1
@@ -105,13 +105,13 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 
 **Recall as context.** `recall` ranks the visible blocks about a query (keywords over statement, quote and speaker) and `context` turns them into prompt lines, with `as_of` set to the decision time (now, or a past instant for a backtest). `scan` returns everything visible as Arrow tables when you want to build your own.
 
-**Analytics.** `to-parquet` writes the Parquet profile. DuckDB reads it with no Python through [`duckdb/factblock.sql`](./duckdb/factblock.sql): `factblock_nodes(bundle, as_of)`, `factblock_edges`, `factblock_certificate`. Spark and Databricks read the same files.
+**Analytics.** `to-parquet` writes the Parquet profile. DuckDB reads it with no Python through [`duckdb/factblock.sql`](https://github.com/factagora/factblock/blob/main/duckdb/factblock.sql): `factblock_nodes(bundle, as_of)`, `factblock_edges`, `factblock_certificate`. Spark and Databricks read the same files.
 
-**From an existing graph.** [`factblock/adapters/graphiti.py`](./factblock/adapters/graphiti.py) turns a Graphiti graph into a bundle; the store's own timestamps become declared backfill batches, because a store that stamped time itself is a witness.
+**From an existing graph.** [`factblock/adapters/graphiti.py`](https://github.com/factagora/factblock/blob/main/factblock/adapters/graphiti.py) turns a Graphiti graph into a bundle; the store's own timestamps become declared backfill batches, because a store that stamped time itself is a witness.
 
 **Speak the standards.** `to-claimreview` writes the verdicts visible as of an instant as schema.org ClaimReview JSON-LD; `to-okf` writes the blocks as an Open Knowledge Format bundle (markdown with frontmatter) that catalogs and agents read; `from-factcheck` brings published fact-checks in (Google's Fact Check Tools API shape) as dated claims with dated verdicts, every row under a batch declared at its review date. None of them is the storage format; they are doors.
 
-**Check your evals.** `leak` takes a question set with dates (`{asked_at, evidence: [block ids]}` per line) and reports how many answers depend on blocks learned after the question's date, naming each block and when it became known. It exits non-zero on a leak, so it fits in CI. On [StreamingQA](./bench/streamingqa) (36,378 dated questions about dated news), a recall that ignores time rests on a block learned after the question for **80% of questions**; the same recall as of the question date leaks nothing and says how much it hid. If your memory benchmark never reports this number, it is measuring hindsight.
+**Check your evals.** `leak` takes a question set with dates (`{asked_at, evidence: [block ids]}` per line) and reports how many answers depend on blocks learned after the question's date, naming each block and when it became known. It exits non-zero on a leak, so it fits in CI. On [StreamingQA](https://github.com/factagora/factblock/tree/main/bench/streamingqa) (36,378 dated questions about dated news), a recall that ignores time rests on a block learned after the question for **80% of questions**; the same recall as of the question date leaks nothing and says how much it hid. If your memory benchmark never reports this number, it is measuring hindsight.
 
 ## Same files, hosted
 
@@ -121,19 +121,19 @@ It also gives what a folder cannot: one ledger shared by many agents and users, 
 
 `factblock sync brain/ <url> --space <space>` moves rows both ways by identity: what only the folder has goes up, what only the ledger has comes down, nothing is changed in place. A row's `known_at` travels as the batch that attests it, so the ledger learns a 2024 transcript as known in 2024, not today, and the folder learns a verdict at the instant the ledger stamped it. Run it again and it is a no-op. `--pull-only` into a folder that does not exist yet clones a space. The token is `$TCKG_TOKEN` or `--token`.
 
-**Bring your own store.** `sync` talks to a store through two methods, `pull(as_of)` and `push(manifest, nodes, edges)` ([`factblock/sync.py`](./factblock/sync.py), the `Store` protocol). `TckgStore` is the one for tckg over HTTP; [`tests/test_sync.py`](./tests/test_sync.py) has a forty-line in-memory one that shows the single rule a store has to keep: declare the bundle's batches as your own backfill batches, never adopt an imported row as learned now. A SQLite, Neo4j, or warehouse store is the same two methods.
+**Bring your own store.** `sync` talks to a store through two methods, `pull(as_of)` and `push(manifest, nodes, edges)` ([`factblock/sync.py`](https://github.com/factagora/factblock/blob/main/factblock/sync.py), the `Store` protocol). `TckgStore` is the one for tckg over HTTP; [`tests/test_sync.py`](https://github.com/factagora/factblock/blob/main/tests/test_sync.py) has a forty-line in-memory one that shows the single rule a store has to keep: declare the bundle's batches as your own backfill batches, never adopt an imported row as learned now. A SQLite, Neo4j, or warehouse store is the same two methods.
 
 The same ledger runs closed for companies at [app.factagora.com](https://app.factagora.com): your support logs, your sales promises, your own assistant's assertions, as claims with verdicts, inside your tenant.
 
 ## The format
 
-[`SPEC.md`](./SPEC.md) is short. Five invariants (present, attested, unique, typed, declared), a JSONL profile and a Parquet profile, read semantics, and the conformance checks `validate` runs (eleven of them). Projections to OKF and ClaimReview are described, and `to-claimreview` writes the verdicts visible as of an instant as schema.org JSON-LD, so a bundle can feed systems that speak those.
+[`SPEC.md`](https://github.com/factagora/factblock/blob/main/SPEC.md) is short. Five invariants (present, attested, unique, typed, declared), a JSONL profile and a Parquet profile, read semantics, and the conformance checks `validate` runs (eleven of them). Projections to OKF and ClaimReview are described, and `to-claimreview` writes the verdicts visible as of an instant as schema.org JSON-LD, so a bundle can feed systems that speak those.
 
-Format, not platform. Apache-2.0. tckg is one writer of this format; nothing here requires it. Contributions are welcome under the DCO: see [CONTRIBUTING.md](./CONTRIBUTING.md).
+Format, not platform. Apache-2.0. tckg is one writer of this format; nothing here requires it. Contributions are welcome under the DCO: see [CONTRIBUTING.md](https://github.com/factagora/factblock/blob/main/CONTRIBUTING.md).
 
 ## Status
 
-`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](./factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: a PyPI release. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](https://github.com/factagora/factblock/tree/main/factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: a PyPI release. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
 
 ```bash
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
