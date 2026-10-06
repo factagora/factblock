@@ -68,7 +68,7 @@ def _print_resolve(k, r):
 
 def main():
     p = argparse.ArgumentParser(prog="factblock", description="Agent memory for decisions: dated claims and their causal links, in a folder, read as of any instant.")
-    sub = p.add_subparsers(dest="cmd", required=True, metavar="command")
+    sub = p.add_subparsers(dest="cmd", metavar="command")
 
     def cmd(name, help_, as_of=True, valid_at=True, json_=True):
         s = sub.add_parser(name, help=help_, description=help_)
@@ -131,6 +131,10 @@ def main():
     fc.add_argument("--from-json", help="a saved claims:search response, or a JSON array of claims")
     fc.add_argument("--namespace", default="factcheck")
     a = p.parse_args()
+    if not a.cmd:                       # bare `factblock`: show what it can do, not an error
+        p.print_help()
+        print("\nStart here: factblock sample brain/ && factblock scan brain/ --as-of 2024-05-01")
+        return
     out_json = lambda d: print(json.dumps(d, indent=1, default=str))  # noqa: E731
 
     if a.cmd == "sample":
