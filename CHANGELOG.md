@@ -47,3 +47,6 @@ First public draft of the format and the reference library.
 
 ### Added (2026-10-06)
 - `factblock extract items.jsonl -o brain/`: one `{text, observed_at, speaker?, source?, known_at?}` per line, one batch per line, so a folder of dated transcripts or notes goes in with one command instead of a shell loop. `--observed-at`, `--speaker`, `--source-name` and `--known-at` become defaults that a line can override.
+
+### Changed (2026-10-07)
+- `recall` and `context` carry what happened to each block since, as far as it was known at `as_of`: `superseded_by` (the replacing block, from a visible SUPERSEDES row), `verdict` (the latest visible resolution), `source` and `known_at`. `context` prints them as indented lines and marks blocks learned a day or more after they were said. A correction or verdict learned after `as_of` stays hidden, so the same query reads differently at different instants.

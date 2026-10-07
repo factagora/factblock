@@ -180,6 +180,10 @@ def main():
         else:
             for i in r["items"]:
                 print(f"{i['id']:<12} {i['kind']:<11} {_day(i['asserted_at'])}  {i['statement']}" + (f"   ({i['speaker']})" if i.get("speaker") else ""))
+                if i.get("superseded_by"):
+                    print(f"{'':<25}  replaced by {i['superseded_by']['id']}: {i['superseded_by'].get('statement')}")
+                if i.get("verdict"):
+                    print(f"{'':<25}  verdict: {i['verdict']['outcome']} ({_day(i['verdict']['decided_at'])})")
             print(f"{len(r['items'])} of {r['matched']} matching   {_cert(r['certificate'])}")
     elif a.cmd == "why":
         r = why(a.bundle, a.node_id, a.as_of, a.valid_at, a.depth)

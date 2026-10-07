@@ -31,13 +31,16 @@ Run the same command `--as-of 2024-05-01` and the chain stops at `c2`, because `
 
 ```python
 import factblock
-print(factblock.context("brain/", "interest rates", as_of="2024-05-01"))
-# - 2024-03-20: The Fed raises interest rates
-# - 2024-04-10: Bond yields rise after the rate hike
-# (as of 2024-05-01; 9 later blocks hidden)
+print(factblock.context("brain/", "interest rates", as_of="2024-10-01"))
+# - 2024-09-18: The Fed cuts interest rates
+# - 2024-03-20: The Fed raises interest rates (learned 2024-04-15)
+#   replaced 2024-09-18 by: The Fed cuts interest rates
+#   verdict: true (decided 2024-05-01 by process:tckg-resolver)
+# - 2024-04-10: Bond yields rise after the rate hike (learned 2024-04-15)
+# (as of 2024-10-01; 1 later block hidden)
 ```
 
-That string goes into your agent's prompt. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
+That string goes into your agent's prompt. The old claim is still there, marked as replaced, with the verdict it had as of that day; ask `as_of="2025-01-01"` and the verdict reads `false`, because it was re-resolved in December. A date filter would show both claims side by side with nothing to say which one stands. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
 
 `brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
 

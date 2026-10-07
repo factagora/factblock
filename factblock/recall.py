@@ -1,6 +1,11 @@
 """Recall: the blocks about something, as of an instant. The read an agent makes before it answers.
 Keyword matching over statement, quote and speaker (a term hits a word when they are equal, or share a
 stem of four or more characters), ranked by how many query terms hit, then by recency of assertion. Same visibility rule as scan, same certificate, so what a recall hides is said.
+
+Each item also carries what happened to the block afterwards, as far as it was known at as_of: the block
+that replaced it (a SUPERSEDES row), its latest verdict (a resolutions row), where it came from
+(payload.source) and when it was learned (known_at). These are separate rows with their own known_at,
+so a correction or verdict learned later than as_of is not shown. This is the part a date filter cannot do.
 ponytail: substring and prefix matching, no embeddings; add a vector rank when declarations.embedding
 is set and a bundle with vectors shows up."""
 import re
@@ -32,8 +37,14 @@ def _hits(terms, n):
 
 def recall(bundle, query, as_of, valid_at=None, limit=10, kinds=DEFAULT_KINDS) -> dict:
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
-    nodes, _, _, cert = visible(b, as_of, valid_at)
+    nodes, _, res, cert = visible(b, as_of, valid_at)
     terms = _terms(query)
+    by_id = {n["id"]: n for n in nodes}
+    raw = None
+    verdicts = {}
+    for r in res:   # latest decided verdict known by as_of
+        if r["target_id"] not in verdicts or r["decided_at"] > verdicts[r["target_id"]]["decided_at"]:
+            verdicts[r["target_id"]] = r
     items = []
     for n in nodes:
         if kinds and n["kind"] not in kinds:
@@ -41,17 +52,50 @@ def recall(bundle, query, as_of, valid_at=None, limit=10, kinds=DEFAULT_KINDS) -
         payload = n.get("payload") or {}
         score = _hits(terms, n)
         if score:
-            items.append({"id": n["id"], "kind": n["kind"], "statement": n.get("statement"), "asserted_at": n["asserted_at"],
-                          "speaker": payload.get("speaker"), "score": score})
+            item = {"id": n["id"], "kind": n["kind"], "statement": n.get("statement"), "asserted_at": n["asserted_at"],
+                    "known_at": n["known_at"], "speaker": payload.get("speaker"), "source": payload.get("source"), "score": score}
+            if n.get("superseded_by"):
+                succ = by_id.get(n["superseded_by"])
+                if succ is None:   # the replacing edge is visible; its block may not be in force at valid_at
+                    raw = raw or {x["id"]: x for x in b.nodes}
+                    succ = raw.get(n["superseded_by"], {"id": n["superseded_by"]})
+                item["superseded_by"] = {"id": succ["id"], "statement": succ.get("statement"), "asserted_at": succ.get("asserted_at")}
+            v = verdicts.get(n["id"])
+            if v:
+                item["verdict"] = {"outcome": v.get("outcome") or v.get("value"), "decided_at": v["decided_at"], "resolver": v.get("resolver")}
+            items.append(item)
     items.sort(key=lambda x: (-x["score"], -x["asserted_at"].timestamp()))
     return {"query": query, "as_of": cert["as_of"], "items": items[:limit], "matched": len(items), "certificate": cert}
 
 
+def _source(s):
+    if isinstance(s, dict):
+        return s.get("title") or s.get("url")
+    return s
+
+
 def context(bundle, query, as_of, valid_at=None, limit=10) -> str:
-    """The recall as lines for a prompt: one dated statement per line, then what was hidden."""
+    """The recall as lines for a prompt: one dated statement per line, indented lines for what happened
+    to it since (replaced, verdict), then what was hidden. Learned-later and source go on the first line."""
     r = recall(bundle, query, as_of, valid_at, limit)
-    lines = [f"- {i['asserted_at'].date().isoformat()}" + (f" {i['speaker']}:" if i.get("speaker") else ":") + f" {i['statement']}" for i in r["items"]]
+    lines = []
+    for i in r["items"]:
+        head = f"- {i['asserted_at'].date().isoformat()}" + (f" {i['speaker']}:" if i.get("speaker") else ":") + f" {i['statement']}"
+        notes = []
+        if (i["known_at"] - i["asserted_at"]).days >= 1:
+            notes.append(f"learned {i['known_at'].date().isoformat()}")
+        if _source(i.get("source")):
+            notes.append(f"source: {_source(i['source'])}")
+        lines.append(head + (f" ({'; '.join(notes)})" if notes else ""))
+        if i.get("superseded_by"):
+            s = i["superseded_by"]
+            when = s["asserted_at"].date().isoformat() if s.get("asserted_at") else "later"
+            lines.append(f"  replaced {when} by: {s.get('statement') or s['id']}")
+        if i.get("verdict"):
+            v = i["verdict"]
+            lines.append(f"  verdict: {v['outcome']} (decided {v['decided_at'].date().isoformat()}" + (f" by {v['resolver']})" if v.get("resolver") else ")"))
     m = r["certificate"].get("masked", {})
     if m:
-        lines.append(f"(as of {r['as_of'][:10]}; {sum(m.values())} later blocks hidden)")
+        n = sum(m.values())
+        lines.append(f"(as of {r['as_of'][:10]}; {n} later block{'s' if n != 1 else ''} hidden)")
     return "\n".join(lines)
