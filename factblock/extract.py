@@ -55,8 +55,11 @@ def _prompt(profile, text, observed_at, speaker, source):
 
 
 def _gemini(profile, user, model):
-    from google import genai  # pip install factblock[gemini]; GEMINI_API_KEY, or GOOGLE_GENAI_USE_VERTEXAI=1 + GOOGLE_CLOUD_PROJECT
-    from google.genai import types
+    try:
+        from google import genai  # GEMINI_API_KEY, or GOOGLE_GENAI_USE_VERTEXAI=1 + GOOGLE_CLOUD_PROJECT
+        from google.genai import types
+    except ImportError:
+        raise ImportError("provider 'gemini' needs the Gemini SDK: pip install 'factblock[gemini]'; or provider='fake' to try the format without a model") from None
     client = genai.Client()
     cfg = dict(system_instruction=profile["instructions"], response_mime_type="application/json", temperature=0.2,
                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True))  # no tools here; silences the SDK's AFC notice
@@ -69,7 +72,10 @@ def _gemini(profile, user, model):
 
 
 def _openai(profile, user, model):
-    from openai import OpenAI  # pip install factblock[openai]; OPENAI_API_KEY, OPENAI_BASE_URL for compatible servers
+    try:
+        from openai import OpenAI  # OPENAI_API_KEY, OPENAI_BASE_URL for compatible servers
+    except ImportError:
+        raise ImportError("provider 'openai' needs the OpenAI SDK: pip install 'factblock[openai]'; or provider='fake' to try the format without a model") from None
     client = OpenAI()
     r = client.chat.completions.create(
         model=model or "gpt-4o-mini", temperature=0.2,
@@ -109,6 +115,8 @@ def extract(text: str, observed_at, *, speaker: str | None = None, source: str |
     now), declared as one backfill batch; `backfill=True` sets it to `observed_at`, the usual choice for
     material from the past ("treat it as known when it was said"). `existing` lets entities reuse ids
     already in a bundle."""
+    if provider not in PROVIDERS:
+        raise ValueError(f"provider must be one of {', '.join(sorted(PROVIDERS))}; got {provider!r}")
     profile = load_profile()
     observed_at = parse_instant(observed_at)
     now = datetime.now(timezone.utc)

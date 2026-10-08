@@ -1,0 +1,22 @@
+# FactBlock
+
+> Agent memory for decisions. An open file format and Python library (`pip install --pre factblock`) for memory that is read as of a point in time: only what was known then, only what was in force then, with corrections and verdicts attached. Plain files, no server.
+
+Use it when an agent answers from information that changes: prices and policies that get replaced, answers that get corrected, promises and predictions that get settled, backtests that must not see the future. Every read takes `as_of`. A change is never an edit: it is a new block plus a `SUPERSEDES` link, and a verdict is a separate row, each with its own `known_at`.
+
+## Docs
+
+- [README](https://raw.githubusercontent.com/factagora/factblock/main/README.md): install, the first five minutes, `context()` for prompts, `recall()`, `why()`, analytics, syncing with a hosted ledger
+- [SPEC](https://raw.githubusercontent.com/factagora/factblock/main/SPEC.md): the format. Three clocks, five invariants, read semantics, JSONL and Parquet profiles, writing and import rules
+- [Agent skill](https://raw.githubusercontent.com/factagora/factblock/main/.claude/skills/factblock/SKILL.md): the API in one page, for coding agents
+
+## Examples
+
+- [Support agent](https://raw.githubusercontent.com/factagora/factblock/main/examples/support-agent/README.md): five dated support questions, a date filter vs FactBlock (0/5 vs 5/5)
+- [Real sample](https://raw.githubusercontent.com/factagora/factblock/main/samples/cramer/README.md): two years of one public figure's statements, links and settled calls
+- [StreamingQA bench](https://raw.githubusercontent.com/factagora/factblock/main/bench/streamingqa/README.md): how often a time-ignorant recall leaks the future (79.7% of questions)
+
+## Optional
+
+- [CHANGELOG](https://raw.githubusercontent.com/factagora/factblock/main/CHANGELOG.md)
+- [CONTRIBUTING](https://raw.githubusercontent.com/factagora/factblock/main/CONTRIBUTING.md)

@@ -14,7 +14,7 @@ ponytail: substring and prefix matching, no embeddings; add a vector rank when d
 is set and a bundle with vectors shows up."""
 import re
 
-from .bundle import Bundle, parse_instant
+from .bundle import Bundle, BundleLike, Instant, parse_instant
 from .scan import visible
 
 DEFAULT_KINDS = ("claim", "prediction")
@@ -39,7 +39,10 @@ def _hits(terms, n):
     return sum(1 for t in terms if t in words or (len(t) > 3 and t[:4] in pre4 and any(w.startswith(t) or t.startswith(w) for w in words)))
 
 
-def recall(bundle, query, as_of, valid_at=None, limit=10, kinds=DEFAULT_KINDS) -> dict:
+def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10,
+           kinds: tuple[str, ...] = DEFAULT_KINDS) -> dict:
+    """Use before an agent answers: the blocks matching `query` as known at `as_of`, ranked, each with what
+    replaced it, its verdict, source and known_at. Returns {"items", "matched", "certificate", ...}."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     nodes, _, res, cert = visible(b, as_of, valid_at)
     terms = _terms(query)
@@ -84,8 +87,8 @@ def _source(s):
     return s
 
 
-def context(bundle, query, as_of, valid_at=None, limit=10) -> str:
-    """The recall as lines for a prompt: one dated statement per line, indented lines for what happened
+def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10) -> str:
+    """Use to put memory into a prompt. The recall as lines: one dated statement per line, indented lines for what happened
     to it since (replaced, verdict), then what was hidden. Learned-later and source go on the first line."""
     r = recall(bundle, query, as_of, valid_at, limit)
     lines = []

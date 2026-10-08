@@ -2,17 +2,19 @@
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import pyarrow as pa
 
-from .bundle import Bundle, parse_instant
+from .bundle import Bundle, BundleLike, Instant, parse_instant
 
 JSON_COLS = ("payload", "properties", "fact_value", "attestation", "value", "evidence")   # free-form or mixed-type: out as JSON strings
 
 
 def _as_of(v):
-    """A date means the end of that day in UTC (SPEC 4.1)."""
+    """A date means the end of that day in UTC (SPEC 4.1), as a string or a date object."""
+    if isinstance(v, date) and not isinstance(v, datetime):
+        v = v.isoformat()
     if isinstance(v, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
         return parse_instant(v + "T23:59:59.999999+00:00")
     return parse_instant(v)
@@ -41,11 +43,11 @@ class Scan:
     certificate: dict
 
 
-def visible(bundle, as_of, valid_at=None):
+def visible(bundle: BundleLike, as_of: Instant, valid_at: Instant | None = None) -> tuple[list[dict], list[dict], list[dict], dict]:
     """The rows an as-of read shows, as plain dicts, plus the certificate: what scan() does before it
     builds Arrow tables. recall() and the projections use this; scan() wraps it."""
     if as_of is None:
-        raise ValueError("as_of has no default: every read says which instant it asks about (SPEC 4.1)")
+        raise ValueError("as_of has no default: every read says which instant it asks about, e.g. as_of='2024-05-01' (SPEC 4.1)")
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     t = _as_of(as_of)
     v = parse_instant(valid_at) if valid_at else t   # SPEC 4.1: valid_at defaults to as_of
@@ -77,6 +79,8 @@ def visible(bundle, as_of, valid_at=None):
     return nodes, edges, res, cert
 
 
-def scan(bundle, as_of, valid_at=None) -> Scan:
+def scan(bundle: BundleLike, as_of: Instant, valid_at: Instant | None = None) -> Scan:
+    """Use for analytics: everything the bundle knew as of an instant, as Arrow tables (.nodes, .edges,
+    .resolutions) plus the certificate of what was hidden. For an agent's prompt use context() instead."""
     nodes, edges, res, cert = visible(bundle, as_of, valid_at)
     return Scan(_table(nodes), _table(edges), _table(res), cert)

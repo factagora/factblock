@@ -30,6 +30,7 @@ def _rating(r):
 
 
 def to_claimreview(bundle, as_of, base_url=None, valid_at=None) -> dict:
+    """Use to publish verdicts: the ones visible as of an instant as schema.org ClaimReview JSON-LD (SPEC 9.2)."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     s = scan(b, as_of, valid_at)
     t = _as_of(as_of); v = parse_instant(valid_at) if valid_at else t

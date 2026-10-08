@@ -1,17 +1,28 @@
 """Load a bundle (SPEC 5.1): manifest plus node, edge, resolution tables as lists of dicts."""
 import json
 import os
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Optional, Union
 
 INSTANT_KEYS = ("asserted_at", "valid_from", "valid_to", "known_at", "decided_at")
 
 
-def parse_instant(v):
-    """RFC 3339 string -> aware datetime. None stays None."""
-    if v is None or isinstance(v, datetime):
-        return v
-    d = datetime.fromisoformat(v.replace("Z", "+00:00"))
+Instant = Union[str, date, datetime]   # '2024-05-01', '2024-05-01T12:00:00Z', a date, or a datetime (naive = UTC)
+
+
+def parse_instant(v: Optional[Instant]) -> Optional[datetime]:
+    """An aware datetime from an ISO 8601 string, a datetime or a date (midnight UTC). Naive means UTC. None stays None."""
+    if v is None:
+        return None
+    if isinstance(v, datetime):
+        return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+    if isinstance(v, date):
+        return datetime(v.year, v.month, v.day, tzinfo=timezone.utc)
+    try:
+        d = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+    except ValueError:
+        raise ValueError(f"not an instant: {v!r}. Use ISO 8601, e.g. '2024-05-01' (end of that day for as_of) or '2024-05-01T12:00:00Z'") from None
     return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
 
 
@@ -33,9 +44,16 @@ def _read_table(path: Path) -> list[dict]:
 
 
 class Bundle:
+    """A FactBlock bundle read into memory: a folder with factblock.json plus nodes, edges and resolutions
+    (JSONL or Parquet). Every read function takes a path or a Bundle; pass a Bundle to read the files once."""
+
     def __init__(self, path):
         self.path = Path(path)
-        self.manifest = json.loads((self.path / "factblock.json").read_text())
+        mpath = self.path / "factblock.json"
+        if not mpath.exists():
+            raise FileNotFoundError(f"no FactBlock bundle at {self.path}: factblock.json is missing. "
+                                    f"Make one with `factblock sample {self.path}` or `factblock extract <text> --observed-at <date> -o {self.path}`")
+        self.manifest = json.loads(mpath.read_text())
         tables = self.manifest.get("tables", {})
         self.nodes = _read_table(self.path / tables.get("nodes", "nodes.jsonl"))
         self.edges = _read_table(self.path / tables.get("edges", "edges.jsonl"))
@@ -58,6 +76,9 @@ class Bundle:
             yield "edge", r
         for r in self.resolutions:
             yield "resolution", r
+
+
+BundleLike = Union[str, "os.PathLike[str]", Bundle]   # a bundle folder path, or a Bundle already read
 
 
 def write_bundle(result: dict, out, append: bool = False) -> Path:

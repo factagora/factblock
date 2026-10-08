@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from .bundle import Bundle
+from .bundle import Bundle, BundleLike
 
 CORE_FAMILY = {
     "CAUSES": "causal", "CONTRIBUTING_FACTOR": "causal", "TRIGGERS": "causal", "PREVENTS": "causal",
@@ -43,7 +43,8 @@ def _unique(rows, key, label):
     return bad
 
 
-def validate(bundle) -> list[Check]:
+def validate(bundle: "BundleLike") -> list[Check]:
+    """Use after writing or receiving a bundle: one Check per invariant (SPEC 2). All ok means it is a valid FactBlock bundle."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     out = []
 

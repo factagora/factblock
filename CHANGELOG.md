@@ -52,3 +52,12 @@ First public draft of the format and the reference library.
 - `recall` and `context` carry what happened to each block since, as far as it was known at `as_of`: `superseded_by` (the replacing block, from a visible SUPERSEDES row), `verdict` (the latest visible resolution), `source` and `known_at`. `context` prints them as indented lines and marks blocks learned a day or more after they were said. A correction or verdict learned after `as_of` stays hidden, so the same query reads differently at different instants.
 - `examples/support-agent`: five dated support questions (announced price, a bot answer corrected, a promise and its outcome, a policy learned late, a retired API), each answered from a date-filtered memory and from `factblock.context()`. A context fails when it presents a stale statement as current or omits the verdict: date filter 0/5, FactBlock 5/5. Deterministic, no model. `tests/test_support_example.py`.
 - `recall` keeps a block whose validity ended before `valid_at` when it has a verdict known by `as_of`, marked `ended`. A prediction or promise used to vanish from recall the moment its deadline passed, which is when its verdict arrives; on samples/cramer 17 settled calls came back.
+
+### Added (2026-10-08, for coding agents)
+- `llms.txt` at the root, `AGENTS.md` for agents working in this repository, and `.claude/skills/factblock/SKILL.md`, a one-page skill to copy into a project.
+- README "For coding agents": the API in one runnable block (kept honest by `tests/test_readme_agents.py`), three rules, and a table from Mem0 and Graphiti terms to FactBlock's.
+- `py.typed`, type hints on the read functions (`BundleLike`, `Instant`), and docstrings whose first line says when to use each one.
+
+### Changed (2026-10-08)
+- Error messages say what to do: a folder without `factblock.json` names the commands that make one; an unparseable instant shows the formats that work; an unknown `provider` lists the valid ones; a missing model SDK names the extra to install.
+- `as_of` and `valid_at` accept `date` and `datetime` objects (a naive datetime is UTC, a date as `as_of` is the end of that day), not only strings.

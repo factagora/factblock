@@ -116,6 +116,33 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 
 **Check your evals.** `leak` takes a question set with dates (`{asked_at, evidence: [block ids]}` per line) and reports how many answers depend on blocks learned after the question's date, naming each block and when it became known. It exits non-zero on a leak, so it fits in CI. On [StreamingQA](https://github.com/factagora/factblock/tree/main/bench/streamingqa) (36,378 dated questions about dated news), a recall that ignores time rests on a block learned after the question for **80% of questions**; the same recall as of the question date leaks nothing and says how much it hid. If your memory benchmark never reports this number, it is measuring hindsight.
 
+## For coding agents
+
+The whole API in one block. It runs as is; `tests/test_readme_agents.py` keeps it that way.
+
+```bash
+pip install --pre factblock
+factblock sample brain/          # or: factblock extract notes.txt --observed-at 2024-03-20 -o brain/ --provider gemini
+```
+
+```python
+import factblock
+print(factblock.context("brain/", "interest rates", as_of="2024-10-01"))   # prompt lines, as known that day
+r = factblock.recall("brain/", "interest rates", as_of="2024-10-01")       # same, as dicts
+c1 = next(i for i in r["items"] if i["id"] == "c1")
+print(c1["superseded_by"]["statement"], c1["verdict"]["outcome"])          # what replaced it, how it was settled
+```
+
+Three rules: every read takes `as_of` (no default); a change is a new block plus `SUPERSEDES`, never an edit; never set `known_at` yourself (`extract` and `write_bundle` declare a batch). Claude Code users can copy [`.claude/skills/factblock`](https://github.com/factagora/factblock/tree/main/.claude/skills/factblock) into their project; other agents read [`llms.txt`](https://github.com/factagora/factblock/blob/main/llms.txt).
+
+| If you know | In FactBlock |
+|---|---|
+| Mem0 `m.add(messages, user_id=...)` | `factblock extract` or `extract(text, observed_at=...)` + `write_bundle(..., append=True)`; the user is a `space` |
+| Mem0 `m.search(query, user_id=...)` | `recall(bundle, query, as_of=...)` or `context(...)` for the prompt |
+| Graphiti edge `valid_at` / `invalid_at` | `valid_from` / `valid_to` on the block, plus `known_at`: when you learned it |
+| Graphiti `expired_at` (an edge closed later) | the old block stays; a new block `SUPERSEDES` it, known from that moment |
+| A vector store with a date filter | `recall(as_of=...)` also hides what was learned later, keeps what was replaced (marked), and attaches verdicts |
+
 ## Same files, hosted
 
 A folder is one writer's memory. [factagora.ai](https://factagora.ai) is where a `brain/` meets other people's. Upload it and it comes back with **more rows, never changed rows**: verdicts on predictions whose horizon has passed (mechanical ones from prices and published figures, judgment calls from the community, each with evidence), links to what other people claimed about the same thing (`SUPPORTS`, `CONTRADICTS`), entities resolved across worldviews. Every added row carries its own `known_at`, stamped by the server rather than by you, so a verdict is as replayable as the claim it judges: as of last June, the prediction was still open.

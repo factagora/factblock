@@ -3,7 +3,7 @@ block over causal, argumentative and temporal edges in both directions, every ho
 `as_of` and in force at `valid_at`. The role names which end of the edge the block sits at."""
 from collections import deque
 
-from .bundle import Bundle, parse_instant
+from .bundle import Bundle, BundleLike, Instant, parse_instant
 from .scan import visible
 from .validate import CORE_FAMILY
 
@@ -16,7 +16,9 @@ ROLES = {"CAUSES": ("cause", "effect"), "CONTRIBUTING_FACTOR": ("contributing_ca
          "RESTATES": ("restatement", "restated"), "CONCURRENT_SIGNAL": ("concurrent", "concurrent")}
 
 
-def why(bundle, node_id, as_of, valid_at=None, depth=3) -> dict:
+def why(bundle: BundleLike, node_id: str, as_of: Instant, valid_at: Instant | None = None, depth: int = 3) -> dict:
+    """Use to explain one block: its causes, effects, supports, contradictions and replacements as known
+    at `as_of`, each with a role and the path from the root. Empty chain with reason not_yet or absent."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     vis_nodes, vis_edges, _, bundle_cert = visible(b, as_of, valid_at)
     t, v = parse_instant(bundle_cert["as_of"]), parse_instant(bundle_cert["valid_at"])

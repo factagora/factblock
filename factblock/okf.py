@@ -66,6 +66,7 @@ def _doc(n, b, edges, verdicts):
 
 
 def to_okf(bundle, as_of, out, valid_at=None) -> Path:
+    """Use to hand a bundle to people or agents that read markdown: one OKF concept document per visible block (SPEC 9.1)."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     s = scan(b, as_of, valid_at)
     t = _as_of(as_of); v = parse_instant(valid_at) if valid_at else t

@@ -2,7 +2,7 @@
 candidate attached. Mirrors tckg.resolve() so a file and the ledger answer the same."""
 from datetime import datetime, timezone
 
-from .bundle import Bundle, parse_instant
+from .bundle import Bundle, BundleLike, Instant, parse_instant
 from .scan import _as_of
 
 
@@ -17,9 +17,12 @@ def _covers(r, at):
     return r["valid_from"] <= at and (to is None or at < to)
 
 
-def resolve(bundle, fact_key, as_of, valid_at=None, rules_as_of=None) -> dict:
+def resolve(bundle: BundleLike, fact_key: str, as_of: Instant, valid_at: Instant | None = None,
+            rules_as_of: Instant | None = None) -> dict:
+    """Use when one value is needed for a declared fact (a price, a stance): the value its declared policy
+    picks as of an instant, or no_answer with a reason and every candidate. Never a guess (SPEC 4.4)."""
     if as_of is None:
-        raise ValueError("as_of has no default (SPEC 4.1)")
+        raise ValueError("as_of has no default: every read says which instant it asks about, e.g. as_of='2024-05-01' (SPEC 4.1)")
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     t = _as_of(as_of)
     v = parse_instant(valid_at) if valid_at else t
