@@ -1,0 +1,1 @@
+{"target_id": "sso-promise", "value": "SSO not shipped; moved to Q3", "outcome": "did_not", "method": "release_log", "criteria": "SSO generally available on the Pro plan by June 30", "resolver": "human:pm-lee", "decided_at": "2026-07-01T12:00:00Z", "known_at": "2026-07-01T12:00:00Z", "attestation": {"batch": "pm-review-2026-07-01"}}

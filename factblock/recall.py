@@ -6,11 +6,15 @@ Each item also carries what happened to the block afterwards, as far as it was k
 that replaced it (a SUPERSEDES row), its latest verdict (a resolutions row), where it came from
 (payload.source) and when it was learned (known_at). These are separate rows with their own known_at,
 so a correction or verdict learned later than as_of is not shown. This is the part a date filter cannot do.
+
+One exception to the visibility rule: a block whose validity ended before valid_at (a prediction past its
+horizon, a promise past its deadline) but that has a verdict known by as_of is kept and marked `ended`.
+Its verdict is what "did it happen?" asks for; hiding the block the moment it was settled would hide the answer.
 ponytail: substring and prefix matching, no embeddings; add a vector rank when declarations.embedding
 is set and a bundle with vectors shows up."""
 import re
 
-from .bundle import Bundle
+from .bundle import Bundle, parse_instant
 from .scan import visible
 
 DEFAULT_KINDS = ("claim", "prediction")
@@ -45,6 +49,10 @@ def recall(bundle, query, as_of, valid_at=None, limit=10, kinds=DEFAULT_KINDS) -
     for r in res:   # latest decided verdict known by as_of
         if r["target_id"] not in verdicts or r["decided_at"] > verdicts[r["target_id"]]["decided_at"]:
             verdicts[r["target_id"]] = r
+    t, v = parse_instant(cert["as_of"]), parse_instant(cert["valid_at"])
+    ended = [n for n in b.nodes if n["id"] in verdicts and n["id"] not in by_id and n["known_at"] <= t
+             and n.get("valid_to") is not None and n["valid_to"] <= v and n["asserted_at"] <= v]
+    nodes = nodes + [{**n, "superseded_by": None, "_ended": True} for n in ended]
     items = []
     for n in nodes:
         if kinds and n["kind"] not in kinds:
@@ -54,6 +62,8 @@ def recall(bundle, query, as_of, valid_at=None, limit=10, kinds=DEFAULT_KINDS) -
         if score:
             item = {"id": n["id"], "kind": n["kind"], "statement": n.get("statement"), "asserted_at": n["asserted_at"],
                     "known_at": n["known_at"], "speaker": payload.get("speaker"), "source": payload.get("source"), "score": score}
+            if n.get("_ended"):
+                item["ended"] = n["valid_to"]
             if n.get("superseded_by"):
                 succ = by_id.get(n["superseded_by"])
                 if succ is None:   # the replacing edge is visible; its block may not be in force at valid_at
@@ -87,6 +97,8 @@ def context(bundle, query, as_of, valid_at=None, limit=10) -> str:
         if _source(i.get("source")):
             notes.append(f"source: {_source(i['source'])}")
         lines.append(head + (f" ({'; '.join(notes)})" if notes else ""))
+        if i.get("ended"):
+            lines.append(f"  ended {i['ended'].date().isoformat()}")
         if i.get("superseded_by"):
             s = i["superseded_by"]
             when = s["asserted_at"].date().isoformat() if s.get("asserted_at") else "later"

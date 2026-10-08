@@ -40,7 +40,7 @@ print(factblock.context("brain/", "interest rates", as_of="2024-10-01"))
 # (as of 2024-10-01; 1 later block hidden)
 ```
 
-That string goes into your agent's prompt. The old claim is still there, marked as replaced, with the verdict it had as of that day; ask `as_of="2025-01-01"` and the verdict reads `false`, because it was re-resolved in December. A date filter would show both claims side by side with nothing to say which one stands. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
+That string goes into your agent's prompt. The old claim is still there, marked as replaced, with the verdict it had as of that day; ask `as_of="2025-01-01"` and the verdict reads `false`, because it was re-resolved in December. A date filter would show both claims side by side with nothing to say which one stands. [`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent) runs five support questions both ways: a date filter puts a stale answer into the prompt on all five, FactBlock on none. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
 
 `brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
 

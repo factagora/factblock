@@ -1,0 +1,5 @@
+{"id": "q1", "kind": "announced, not in force yet", "asked_at": "2026-02-20T10:00:00Z", "question": "How much does the Pro plan cost?", "query": "Pro plan cost", "current": ["price-20"], "stale": ["price-25"]}
+{"id": "q2", "kind": "the bot's own answer, corrected", "asked_at": "2026-03-20T10:00:00Z", "question": "How many seats come with Pro?", "query": "Pro seats", "current": ["seats-5"], "stale": ["bot-seats-10"]}
+{"id": "q3", "kind": "a promise and its outcome", "asked_at": "2026-07-05T10:00:00Z", "question": "Did SSO ship for customer A as promised?", "query": "SSO customer A", "current": [], "stale": [], "verdict": {"sso-promise": "did_not"}}
+{"id": "q4", "kind": "learned later (audit replay)", "asked_at": "2026-04-10T10:00:00Z", "question": "What refund window did the bot know when customer C asked on April 10?", "query": "refund days", "current": ["refund-30"], "stale": ["refund-14"]}
+{"id": "q5", "kind": "ended", "asked_at": "2026-06-10T10:00:00Z", "question": "Can I still use the v1 API?", "query": "v1 API", "current": ["api-v1-off"], "stale": ["api-v1"]}
