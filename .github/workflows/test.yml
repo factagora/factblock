@@ -18,3 +18,4 @@ jobs:
       - run: uv run python tests/test_claimreview.py
       - run: uv run python tests/test_okf.py
       - run: uv run python tests/test_factcheck.py
+      - run: uv run python tests/test_support_example.py
