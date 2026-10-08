@@ -34,9 +34,10 @@ factblock = "factblock.__main__:run"
 [project.optional-dependencies]
 gemini = ["google-genai>=1.62"]   # factblock extract --provider gemini (GEMINI_API_KEY, or Vertex via GOOGLE_GENAI_USE_VERTEXAI=1)
 openai = ["openai>=1.50"]         # --provider openai, and any OpenAI-compatible server through OPENAI_BASE_URL
+demo = ["rich>=13"]               # factblock demo: the animated walkthrough behind samples/demo.gif
 
 [dependency-groups]
-dev = ["duckdb>=1.1"]
+dev = ["duckdb>=1.1", "rich>=13"]   # rich: tests/test_demo.py
 
 [build-system]
 requires = ["hatchling"]

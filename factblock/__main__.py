@@ -132,6 +132,10 @@ def main():
     fc.add_argument("--api-key")
     fc.add_argument("--from-json", help="a saved claims:search response, or a JSON array of claims")
     fc.add_argument("--namespace", default="factcheck")
+    sub.add_parser("demo", help="an animated walkthrough of a bundle, for screens and recordings (pip install --pre 'factblock[demo]')", add_help=False)
+    if sys.argv[1:2] == ["demo"]:      # its own argument parser; Rich is an optional extra
+        from .demo import main as demo
+        return demo(sys.argv[2:])
     a = p.parse_args()
     if not a.cmd:                       # bare `factblock`: show what it can do, not an error
         p.print_help()

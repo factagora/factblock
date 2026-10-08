@@ -30,6 +30,13 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 - `as_of` and `valid_at` accept `date` and `datetime` objects (a naive datetime is UTC, a date as `as_of` is the end of that day), not only strings.
 - README: the logo in the title, `pip install --pre factblock` (the package is an alpha), and absolute links and images so the PyPI page renders them.
 
+## Unreleased
+
+### Added
+- `factblock demo <scene>`: an animated walkthrough of a bundle in the terminal (Rich, optional extra `factblock[demo]`). Scenes: `timeline` (scan at several dates), `why` (a chain growing, coloured by edge family), `replaced` (SUPERSEDES, then an earlier date), `verdict` (a block before it was said, open, settled; dates picked from the data), `leak` (a bench results file), `title`, `end`. Every number comes from the same reads as the plain commands; each panel names the command that gives it.
+- `samples/demo.tape` records it with vhs into `samples/demo.gif` (README), `samples/demo.mp4` and `samples/demo-keyframe.png` (for slides). The plain-CLI recording is kept as `samples/demo-cli.gif` / `demo-cli.tape`.
+- `bench/streamingqa/run.py` writes `results.json` next to itself; the committed one holds the published run (797 of 1,000).
+
 ## 1.0.0a1 (2026-10-05)
 
 First release on PyPI: the first public draft of the format (1.0-draft.1, 2026-10-04) and the reference library.

@@ -99,6 +99,10 @@ def main():
         by[src["recent_or_past"]][0] += 1
         by[src["recent_or_past"]][1] += bool(q["leaked"])
     slots = sum(len(q["evidence"]) for q in qs)
+    (pathlib.Path(__file__).parent / "results.json").write_text(json.dumps({   # what README and `factblock demo leak` read
+        "corpus": "StreamingQA (DeepMind, CC-BY 4.0)", "k": a.k, "seed": a.seed, "questions": r["questions"],
+        "leaked_questions": r["leaked_questions"], "leaked_blocks": r["leaked_blocks"], "picks": slots,
+        "as_of_leaked_questions": 0, "as_of_hidden_per_question": round(sum(hidden) / len(hidden))}, indent=1) + "\n")
     print(f"{a.questions} questions, top-{a.k}, {time.time() - t0:.0f}s")
     print()
     print("| read | questions that rest on a block learned after they were asked | leaked blocks among all picks |")

@@ -1,0 +1,11 @@
+{
+ "corpus": "StreamingQA (DeepMind, CC-BY 4.0)",
+ "k": 5,
+ "seed": 0,
+ "questions": 1000,
+ "leaked_questions": 797,
+ "leaked_blocks": 2088,
+ "picks": 5000,
+ "as_of_leaked_questions": 0,
+ "as_of_hidden_per_question": 10015
+}
