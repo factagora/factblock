@@ -7,11 +7,12 @@
     t.save("rates.html")                # .html needs nothing; .png and .svg need vl-convert-python
     t.spec()                            # the Vega-Lite spec, for a web page or a chat answer
 
-One lane per statement. On it: when it was said, when it took effect if later, when it was learned if later,
-the window until its horizon or deadline, when a later statement replaced it, and each verdict with its date.
-Everything is read as of `as_of`: a verdict, a replacement or a series value learned later is not drawn, so the
-chart is the one you could have drawn that day. With a series, each statement is also an arrow on the series
-from the day it was said to its horizon (or as far as the series goes), coloured by its verdict.
+Two drawings, each one idea. Without a series, one bar per statement from the day it was said to the day it was
+replaced, judged or due, coloured by what became of it, with the statement written next to it (group the rows
+with group_by). With a series, a line with each statement as a labelled point on the day it was said. The full
+history of each statement (took effect, learned late, replaced by what, every verdict) is in the tooltip and in
+the rows. Everything is read as of `as_of`: a verdict, a replacement or a series value learned later is not drawn,
+so the chart is the one you could have drawn that day.
 
 The rows are plain dicts, so any renderer can draw them; spec() is the reference drawing."""
 from __future__ import annotations
@@ -29,9 +30,6 @@ from .scan import _as_of
 RIGHT = {"true", "came_true", "kept", "mostly_true"}
 WRONG = {"false", "did_not", "broken", "mostly_false", "misleading"}
 STATUS = {"right": "#0ca30c", "wrong": "#d03b3b", "mixed": "#fab219", "open": "#8c8b85", "replaced": "#b8b7af"}
-EVENTS = {"said": ("#2a78d6", "circle"), "in force": ("#2a78d6", "triangle-right"), "learned later": ("#6250d6", "diamond"),
-          "replaced": ("#8c8b85", "square"), "verdict: right": ("#0ca30c", "triangle-up"), "verdict: wrong": ("#d03b3b", "cross"),
-          "verdict: mixed": ("#fab219", "diamond")}
 REASONS = {"CAUSES", "CONTRIBUTING_FACTOR", "TRIGGERS", "PREVENTS", "SUPPORTS"}
 CONFIG = {"background": "#fcfcfb", "font": "Inter, system-ui, sans-serif",
           "axis": {"labelColor": "#52514e", "titleColor": "#52514e", "gridColor": "#ecebe7", "domainColor": "#c3c2b7", "tickColor": "#c3c2b7"},
@@ -108,14 +106,9 @@ class Timeline:
                 "series_name": self.series_name, "certificate": self.certificate}
 
     def spec(self, width: int = 760) -> dict:
-        """The Vega-Lite v5 spec: lanes alone, or the series with each statement as an arrow above the lanes."""
-        lanes = _lanes_spec(self, width)
-        if not self.series:
-            return {"$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": CONFIG,
-                    "title": {"text": self.title, "subtitle": _subtitle(self)}, **lanes}
-        return {"$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": CONFIG,
-                "title": {"text": self.title, "subtitle": _subtitle(self)},
-                "vconcat": [_series_spec(self, width), lanes], "resolve": {"scale": {"x": "shared", "color": "independent", "shape": "independent"}}}
+        """The Vega-Lite v5 spec: one bar per statement, or with a series, the line with each statement as a labelled point."""
+        body = _series_spec(self, width) if self.series else _bars_spec(self, width)
+        return {"$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": CONFIG, **body}
 
     def save(self, path) -> Path:
         """Write the chart: .html (no dependencies, opens in a browser), .json (the data), .vl.json (the spec),
@@ -149,11 +142,12 @@ class Timeline:
 
 def timeline(bundle: BundleLike, as_of: Instant, query: str = "", *, ids: list[str] | None = None,
              kinds: tuple[str, ...] | None = None, limit: int = 30, valid_at: Instant | None = None,
-             series=None, series_name: str | None = None) -> Timeline:
-    """Use to see what happened to statements over time, as known on as_of: one lane per statement with when it
-    was said, took effect, was learned, was replaced and was judged. Pick statements by `query` (recall's keyword
-    match; "" for all, newest first), by `ids`, and `kinds`; at most `limit` lanes. Pass `series` (a CSV path or
-    (date, value) pairs) to draw them over a numeric series, as with_series() does."""
+             series=None, series_name: str | None = None, group_by: str | None = None) -> Timeline:
+    """Use to see what happened to statements over time, as known on as_of: one bar per statement from when it was
+    said to when it was replaced, judged or due, coloured by the outcome. Pick statements by `query` (recall's
+    keyword match; "" for all, newest first), by `ids`, and `kinds`; at most `limit`. `group_by` names a payload
+    field (speaker, customer, asset) to group the rows by. Pass `series` (a CSV path or (date, value) pairs) to
+    draw them as points on a numeric series, as with_series() does."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     t = _as_of(as_of)
     if ids:
@@ -204,50 +198,64 @@ def timeline(bundle: BundleLike, as_of: Instant, query: str = "", *, ids: list[s
         due = n.get("valid_to") if n["kind"] in ("prediction", "commitment") else None
         v = latest.get(n["id"])
         status = _outcome(v.get("outcome") or v.get("value")) if v else ("replaced" if any(x["id"] == n["id"] and x["event"] == "replaced" and x["t"] <= _day(t) for x in events) else "open")
+        mine = [x for x in events if x["id"] == n["id"]]
+        stops = [x["t"] for x in mine if x["event"] == "replaced"] + [_day(r["decided_at"]) for r in verdicts if r["target_id"] == n["id"]] + ([_day(due)] if due else [])
         claims.append({"id": n["id"], "lane": lane_of[n["id"]], "kind": n["kind"], "statement": n.get("statement"),
-                       "said": _day(n["asserted_at"]), "due": _day(due) if due else None, "direction": p.get("direction"),
-                       "speaker": p.get("speaker"), "source": _url(p), "reasons": reasons, "status": status,
-                       "verdict": (v.get("outcome") or v.get("value")) if v else None})
+                       "label": _short(n.get("statement"), 70), "said": _day(n["asserted_at"]), "end": min(stops) if stops else _day(t),
+                       "due": _day(due) if due else None, "direction": p.get("direction"), "speaker": p.get("speaker"),
+                       "group": str(p.get(group_by, n.get(group_by)) or "other") if group_by else None,
+                       "source": _url(p), "reasons": reasons, "status": status, "verdict": (v.get("outcome") or v.get("value")) if v else None})
     for r in verdicts:
         n = by[r["target_id"]]
         o = r.get("outcome") or r.get("value")
         ev(n, r["decided_at"], f"verdict: {_outcome(o)}", f"{o} (decided {_day(r['decided_at'])}" + (f" by {r['resolver']})" if r.get("resolver") else ")"))
     events.sort(key=lambda e: (e["t"], e["lane"]))
+    for c in claims:   # the whole story of a statement in one line, for the tooltip
+        c["history"] = "; ".join(f"{e['t']} {e['event']}" + (f" ({e['detail']})" if e["detail"] and e["event"] != "said" else "") for e in events if e["id"] == c["id"])
     what = f"about {query!r}" if query else ("selected" if ids else "the newest")
     title = f"{len(claims)} statements, {what}, as known on {_day(t)}" if what != "the newest" else f"The {len(claims)} newest statements, as known on {_day(t)}"
     tl = Timeline(t.isoformat(), claims, events, cert, title)
     return tl.with_series(series, series_name) if series is not None else tl
 
 
-def _subtitle(tl):
-    s = ["One lane per statement: said, took effect, learned, replaced, judged. Nothing learned after the as-of day is drawn."]
-    if tl.series:
-        s.insert(0, f"Above: {tl.series_name}. Each statement sits on the day it was said; a call with a horizon is an arrow to it (or to the last value), coloured by its verdict.")
-    return s
+def _when(day):
+    d = parse_instant(day)
+    return {"year": d.year, "month": d.month, "date": d.day}
 
 
-def _x(tl):
-    return {"field": "t", "type": "temporal", "title": None, "axis": {"format": "%b %Y", "tickCount": 8}}
+def _as_of_rule(tl):
+    return {"mark": {"type": "rule", "strokeDash": [4, 4], "color": "#52514e"}, "encoding": {"x": {"datum": _when(tl.as_of[:10]), "type": "temporal"}}}
 
 
-def _lanes_spec(tl, width):
-    order = [c["lane"] for c in tl.claims]
-    y = {"field": "lane", "type": "nominal", "title": None, "sort": order, "axis": {"labelLimit": 360, "labelFontSize": 11}}
-    spans = [{"lane": c["lane"], "t": c["said"], "t2": c["due"], "id": c["id"]} for c in tl.claims if c["due"]]
-    tip = [{"field": "t", "type": "temporal", "title": "date", "format": "%d %b %Y"}, {"field": "event"}, {"field": "statement"},
-           {"field": "detail"}, {"field": "id", "title": "FactBlock id"}, {"field": "source"}]
-    return {"width": width, "height": max(60, 22 * len(order)), "layer": [
-        {"data": {"values": spans}, "mark": {"type": "rule", "strokeWidth": 7, "opacity": 0.22, "color": "#2a78d6", "strokeCap": "round"},
-         "encoding": {"x": {"field": "t", "type": "temporal"}, "x2": {"field": "t2"}, "y": y,
-                      "tooltip": [{"field": "t", "title": "said", "type": "temporal", "format": "%d %b %Y"}, {"field": "t2", "title": "horizon or deadline"}]}},
-        {"data": {"values": [{"t": tl.as_of[:10]}]}, "mark": {"type": "rule", "strokeDash": [4, 4], "color": "#52514e"},
-         "encoding": {"x": {"field": "t", "type": "temporal"}}},
-        {"data": {"values": tl.events}, "mark": {"type": "point", "filled": True, "size": 90, "opacity": 1, "stroke": "#fcfcfb", "strokeWidth": 1.5, "cursor": "pointer"},
-         "encoding": {"x": _x(tl), "y": y, "href": {"field": "source"},
-                      "color": {"field": "event", "type": "nominal", "title": "Event", "scale": {"domain": list(EVENTS), "range": [c for c, _ in EVENTS.values()]}},
-                      "shape": {"field": "event", "type": "nominal", "title": "Event", "scale": {"domain": list(EVENTS), "range": [s for _, s in EVENTS.values()]}},
-                      "tooltip": tip}},
-    ]}
+def _status(title="What became of it"):
+    return {"field": "status", "type": "nominal", "title": title, "scale": {"domain": list(STATUS), "range": list(STATUS.values())}}
+
+
+TIP = [{"field": "statement"}, {"field": "status", "title": "as known"}, {"field": "history"}, {"field": "id", "title": "FactBlock id"}, {"field": "source"}]
+
+
+def _bars_spec(tl, width):
+    lo, hi = parse_instant(min(c["said"] for c in tl.claims)), parse_instant(tl.as_of)
+    span = max((hi - lo).days, 1)
+    rows = []
+    for c in tl.claims:   # a bar at least visible; a label that would run off the right edge ends at the bar instead
+        end = max(c["end"], _day(parse_instant(c["said"]) + timedelta(days=max(2, span // 150))))
+        rows.append({**c, "end": end, "right": (parse_instant(c["said"]) - lo).days > 0.6 * span})
+    y = {"field": "lane", "type": "nominal", "sort": [c["lane"] for c in tl.claims], "axis": None}
+    x = {"field": "said", "type": "temporal", "title": None, "axis": {"format": "%b %Y", "tickCount": 8, "orient": "top"}}
+    text = {"type": "text", "baseline": "bottom", "dy": -7, "fontSize": 11.5, "color": "#0b0b0b"}
+    layer = [
+        _as_of_rule(tl),
+        {"mark": {"type": "bar", "height": 9, "cornerRadius": 4.5, "cursor": "pointer"},
+         "encoding": {"x": x, "x2": {"field": "end"}, "y": y, "color": _status(), "href": {"field": "source"}, "tooltip": TIP}},
+        {"transform": [{"filter": "!datum.right"}], "mark": {**text, "align": "left"}, "encoding": {"x": {"field": "said", "type": "temporal"}, "y": y, "text": {"field": "label"}}},
+        {"transform": [{"filter": "datum.right"}], "mark": {**text, "align": "right"}, "encoding": {"x": {"field": "end", "type": "temporal"}, "y": y, "text": {"field": "label"}}},
+    ]
+    title = {"text": tl.title, "subtitle": f"Each bar runs from the day a statement was said to the day it was replaced, judged or due, coloured by what became of it as known on {tl.as_of[:10]}. Hover for its history."}
+    if any(c["group"] for c in tl.claims):
+        return {"title": title, "data": {"values": rows}, "facet": {"row": {"field": "group", "title": None, "header": {"labelAngle": 0, "labelAlign": "left", "labelFontSize": 13, "labelFontWeight": 600}}},
+                "spec": {"width": width, "height": {"step": 34}, "layer": layer}, "resolve": {"scale": {"y": "independent"}}}
+    return {"title": title, "data": {"values": rows}, "width": width, "height": {"step": 34}, "layer": layer}
 
 
 def _series_spec(tl, width):
@@ -257,28 +265,27 @@ def _series_spec(tl, width):
         i = bisect.bisect_right(days, parse_instant(day)) - 1
         return tl.series[i][1] if i >= 0 else None
 
-    last = _day(tl.series[-1][0])
-    arrows = []
-    for c in tl.claims:
-        y0 = at(c["said"])
-        if y0 is None:
-            continue
-        end = min(c["due"], last) if c["due"] else c["said"]   # no horizon, no arrow: a mark where it was said
-        arrows.append({**{k: c[k] for k in ("id", "statement", "status", "verdict", "source")}, "direction": c["direction"] or "statement",
-                       "t": c["said"], "v": y0, "t2": end, "v2": at(end), "lane": c["lane"]})
-    line = [{"t": _day(d), "v": v} for d, v in tl.series]
-    x = _x(tl)
-    color = {"field": "status", "type": "nominal", "title": "Verdict as known", "scale": {"domain": list(STATUS), "range": list(STATUS.values())}}
-    tip = [{"field": "t", "type": "temporal", "title": "said", "format": "%d %b %Y"}, {"field": "statement"}, {"field": "direction"},
-           {"field": "verdict"}, {"field": "id", "title": "FactBlock id"}, {"field": "source"}]
-    return {"width": width, "height": 240, "layer": [
-        {"data": {"values": line}, "mark": {"type": "line", "color": "#52514e", "strokeWidth": 1.5},
-         "encoding": {"x": x, "y": {"field": "v", "type": "quantitative", "title": tl.series_name, "scale": {"zero": False}},
-                      "tooltip": [{"field": "t", "type": "temporal", "format": "%d %b %Y"}, {"field": "v", "title": tl.series_name}]}},
-        {"data": {"values": arrows}, "mark": {"type": "rule", "strokeWidth": 2, "opacity": 0.75},
-         "encoding": {"x": x, "y": {"field": "v", "type": "quantitative"}, "x2": {"field": "t2"}, "y2": {"field": "v2"}, "color": color, "tooltip": tip}},
-        {"data": {"values": arrows}, "mark": {"type": "point", "filled": True, "size": 80, "stroke": "#fcfcfb", "strokeWidth": 1.5, "cursor": "pointer"},
-         "encoding": {"x": x, "y": {"field": "v", "type": "quantitative"}, "color": color, "href": {"field": "source"},
-                      "shape": {"field": "direction", "type": "nominal", "title": "Call", "scale": {"domain": ["up", "down", "statement"], "range": ["triangle-up", "triangle-down", "circle"]}},
-                      "tooltip": tip}},
-    ]}
+    pts = [{**c, "v": at(c["said"]), "call": c["direction"] or "statement", "label": None} for c in tl.claims if at(c["said"]) is not None]
+    # write out only a few: the settled ones, newest first, up to six; the rest are points with a tooltip
+    settled = sorted((p for p in pts if p["status"] in ("right", "wrong", "mixed")), key=lambda p: p["said"], reverse=True)[:6]
+    for i, p in enumerate(sorted(settled, key=lambda p: p["said"])):
+        p["label"], p["above"] = _short(p["statement"], 46), i % 2 == 0
+    x = {"field": "t", "type": "temporal", "title": None, "axis": {"format": "%b %Y", "tickCount": 8}}
+    px = {**x, "field": "said"}
+    y = {"field": "v", "type": "quantitative", "title": tl.series_name, "scale": {"zero": False}}
+    label = {"type": "text", "fontSize": 11, "color": "#0b0b0b"}
+    return {
+        "title": {"text": tl.title, "subtitle": f"{tl.series_name}, with each statement where it was said, coloured by what became of it as known on {tl.as_of[:10]}. Settled ones are labelled; hover any point for its history."},
+        "config": {**CONFIG, "legend": {**CONFIG["legend"], "orient": "bottom", "direction": "horizontal"}},
+        "width": width, "height": 320,
+        "layer": [
+            {"data": {"values": [{"t": _day(d), "v": v} for d, v in tl.series]}, "mark": {"type": "line", "color": "#52514e", "strokeWidth": 1.5},
+             "encoding": {"x": x, "y": y, "tooltip": [{"field": "t", "type": "temporal", "format": "%d %b %Y"}, {"field": "v", "title": tl.series_name}]}},
+            _as_of_rule(tl),
+            {"data": {"values": pts}, "mark": {"type": "point", "filled": True, "size": 110, "stroke": "#fcfcfb", "strokeWidth": 1.5, "opacity": 1, "cursor": "pointer"},
+             "encoding": {"x": px, "y": y, "color": _status(), "href": {"field": "source"}, "tooltip": TIP,
+                          "shape": {"field": "call", "type": "nominal", "title": "Call", "scale": {"domain": ["up", "down", "statement"], "range": ["triangle-up", "triangle-down", "circle"]}}}},
+            {"data": {"values": pts}, "transform": [{"filter": "datum.label && datum.above"}], "mark": {**label, "dy": -12, "baseline": "bottom"}, "encoding": {"x": px, "y": y, "text": {"field": "label"}}},
+            {"data": {"values": pts}, "transform": [{"filter": "datum.label && !datum.above"}], "mark": {**label, "dy": 12, "baseline": "top"}, "encoding": {"x": px, "y": y, "text": {"field": "label"}}},
+        ],
+    }

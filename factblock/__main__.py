@@ -123,6 +123,7 @@ def main():
     tl.add_argument("--limit", type=int, default=30, help="at most this many statements; default 30")
     tl.add_argument("--series", help="a CSV whose first column is a date and second a number (a FRED download works as is)")
     tl.add_argument("--series-name", help="the series label; default the file name")
+    tl.add_argument("--group-by", help="a payload field to group the rows by, e.g. speaker or customer")
     tl.add_argument("-o", "--out", help="write .html (no dependencies), .png or .svg (pip install vl-convert-python), .json (the rows) or .vl.json (the spec); default: print the rows as JSON")
     k = cmd("leak", "which answers in a dated question set rest on blocks learned after the question was asked", as_of=False, valid_at=False)
     k.add_argument("questions", help="JSONL: {id?, asked_at, evidence: [block id, ...]} per line. A date-only asked_at is the start of that day (UTC)")
@@ -228,7 +229,7 @@ def main():
         r = resolve(a.bundle, a.fact_key, a.as_of, a.valid_at, a.rules_as_of)
         out_json(r) if a.json else _print_resolve(a.fact_key, r)
     elif a.cmd == "timeline":
-        t = timeline(a.bundle, a.as_of, a.query, limit=a.limit, valid_at=a.valid_at, series=a.series, series_name=a.series_name)
+        t = timeline(a.bundle, a.as_of, a.query, limit=a.limit, valid_at=a.valid_at, series=a.series, series_name=a.series_name, group_by=a.group_by)
         if a.out:
             print(f"{t.save(a.out)}: {t!r}")
         else:

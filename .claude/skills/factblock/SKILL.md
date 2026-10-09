@@ -42,7 +42,7 @@ s = factblock.scan("brain/", as_of="2026-04-10")                         # every
 ## Show it over time
 
 ```python
-t = factblock.timeline("brain/", as_of="2026-04-10", query="refund policy")   # one lane per statement: said, in force, replaced, verdicts
+t = factblock.timeline("brain/", as_of="2026-04-10", query="refund policy")   # one bar per statement: said until replaced, judged or due; group_by="speaker" groups rows
 t.with_series("prices.csv", "Price")                                          # over a numeric series (date, value CSV); values after as_of are dropped
 t.save("out.html")                                                             # or .png/.svg with factblock[viz]; t.spec() is Vega-Lite, t.to_dict() the rows
 ```

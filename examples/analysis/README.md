@@ -45,7 +45,7 @@ The reasons are the links he drew himself (`CAUSES`, `SUPPORTS`, ...), stored ne
 
 Every number above is made of blocks with ids and sources. Two drill-downs in the notebook show them.
 
-**Every call on the market, over the market**, with [`factblock.timeline`](../../README.md#timelines), the library's reusable view: one lane per statement (said, replaced, judged) and, over the S&P 500, each call as an arrow from the day it was said to its horizon, coloured by its verdict. Read as of 30 June 2025, so nothing later is drawn. The index comes from FRED at run time; it is licensed, so it is not in the repository.
+**Every call on the market, over the market**, with [`factblock.timeline`](../../README.md#timelines), the library's reusable view: each call on the S&P 500 where it was said, coloured by what became of it, the settled ones labelled. Read as of 30 June 2025, so nothing later is drawn. The index comes from FRED at run time; it is licensed, so it is not in the repository.
 
 ![His calls on the market over the S&P 500, as known on 30 June 2025](img/timeline.png)
 

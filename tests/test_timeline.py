@@ -27,7 +27,8 @@ assert not any(e["event"] == "replaced" for e in early.events)
 
 s = t.with_series(FFR, "Fed funds rate (%)")
 assert s.series[-1][0].date().isoformat() <= "2025-01-01" and s.series[0][1] == 5.33
-assert s.spec()["vconcat"][0]["layer"][0]["encoding"]["y"]["title"] == "Fed funds rate (%)"
+assert s.spec()["layer"][0]["encoding"]["y"]["title"] == "Fed funds rate (%)"
+assert [p.get("label") for p in s.spec()["layer"][2]["data"]["values"] if p["id"] == "c1"] == ["The Fed raises interest rates"]   # settled: labelled
 try:
     t.with_series([("2030-01-01", 1.0)]); raise AssertionError("a series entirely after as_of must be refused")
 except ValueError as e:
@@ -37,7 +38,10 @@ promises = ROOT / "examples" / "promises" / "brain"
 assert {c["id"]: c["status"] for c in factblock.timeline(promises, "2026-04-01").claims} == {"p1": "open", "p2": "open", "p3": "open"}
 late = factblock.timeline(promises, "2026-05-10")
 assert {c["id"]: (c["status"], c["due"]) for c in late.claims} == {"p1": ("right", "2026-04-30"), "p2": ("wrong", "2026-03-31"), "p3": ("open", "2026-06-30")}
-assert late.spec()["layer"][0]["data"]["values"][0]["t2"]   # deadlines are drawn as spans
+assert {c["id"]: c["end"] for c in late.claims} == {"p1": "2026-04-30", "p2": "2026-03-31", "p3": "2026-06-30"}   # bars end at the deadline
+g = factblock.timeline(promises, "2026-05-10", group_by="customer")
+assert {c["group"] for c in g.claims} == {"Globex", "Initech"} and g.spec()["facet"]["row"]["field"] == "group"
+assert {c["id"]: c["end"] for c in t.claims}["c1"] == "2024-05-01"   # the first thing that happened to it: a verdict
 
 assert [c["id"] for c in factblock.timeline(RATES, "2025-01-01", ids=["c4", "c1"]).claims] == ["c1", "c4"]
 try:
@@ -46,7 +50,8 @@ except ValueError as e:
     assert "c4" in str(e)
 
 m = t._repr_mimebundle_()
-assert "application/vnd.vegalite.v5+json" in m and m["application/vnd.vegalite.v5+json"]["layer"][2]["encoding"]["href"] == {"field": "source"}
+assert "application/vnd.vegalite.v5+json" in m and m["application/vnd.vegalite.v5+json"]["layer"][1]["encoding"]["href"] == {"field": "source"}
+assert "2024-12-01 verdict: wrong" in {c["id"]: c["history"] for c in t.claims}["c1"]
 with tempfile.TemporaryDirectory() as d:
     d = pathlib.Path(d)
     s.save(d / "t.html"); s.save(d / "t.json"); s.save(d / "t.vl.json")
@@ -54,4 +59,4 @@ with tempfile.TemporaryDirectory() as d:
     p = subprocess.run([sys.executable, "-m", "factblock", "timeline", str(RATES), "--as-of", "2025-01-01", "-q", "interest rates",
                         "--series", str(FFR), "-o", str(d / "c.html")], capture_output=True, text=True)
     assert p.returncode == 0 and (d / "c.html").exists() and "3 statements" in p.stdout, p.stdout + p.stderr
-print("PASS timeline: events as known on as_of (re-resolution, replacement), series cut at as_of, deadlines as spans, ids, HTML/JSON from library and CLI")
+print("PASS timeline: events as known on as_of (re-resolution, replacement), series cut at as_of, bars end at the first replacement, verdict or deadline, rows grouped, settled points labelled, ids, HTML/JSON from library and CLI")

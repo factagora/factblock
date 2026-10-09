@@ -99,23 +99,27 @@ Declared facts make conflicts explicit. Declare `belief:fed:direction` with a po
 
 ## Timelines
 
-Once your data is a bundle, one call draws what happened to each statement over time, as known on a day you pick: when it was said, took effect, was learned, was replaced, and each verdict. Add a numeric series (prices, rates, any CSV with a date and a value) and each statement sits on it, a call with a horizon drawn as an arrow to that horizon in the colour of its verdict.
+Once your data is a bundle, one call draws what happened to each statement over time, as known on a day you pick.
 
 ```python
-t = factblock.timeline("brain/", as_of="2025-01-01", query="interest rates")
-t                                                  # in Jupyter, the chart; hover for the block id, click for the source
-t = t.with_series("samples/fed-funds-rate.csv", "Fed funds rate (%)")
-t.save("rates.html")                               # .html needs nothing; .png and .svg need factblock[viz]
-t.claims, t.events                                 # the rows behind the chart, for your own renderer
+t = factblock.timeline("examples/promises/brain", as_of="2026-05-10", group_by="customer")
+t                                                  # in Jupyter, the chart; hover for the history and block id, click for the source
+t.save("promises.html")                            # .html needs nothing; .png and .svg need factblock[viz]
 ```
 
-```bash
-factblock timeline brain/ --as-of 2025-01-01 -q "interest rates" --series samples/fed-funds-rate.csv -o rates.html
+![Three sales promises grouped by customer: one kept, one broken, one open, as known on 10 May 2026](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline-bars.png)
+
+One bar per statement, from the day it was said to the day it was replaced, judged or due, coloured by what became of it. The rest of its story (took effect, learned late, replaced by what, every verdict with its date) is in the tooltip and in `t.claims` and `t.events`. Read as of an earlier day and the verdicts, replacements and statements learned after it are not drawn.
+
+Add a numeric series (prices, rates, any CSV with a date and a value) and the same statements sit on it where they were said:
+
+```python
+t = factblock.timeline("samples/cramer", as_of="2025-06-30", query="SPY").with_series("sp500.csv", "S&P 500")
 ```
 
-![Three statements about interest rates over the fed funds rate, as known on 1 January 2025](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline-rates.png)
+![His calls on the market over the S&P 500 as known on 30 June 2025; the two settled calls are labelled, both wrong](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline.png)
 
-The rate never went up, yet "The Fed raises interest rates" was judged right in May and only re-judged wrong in December. Both verdicts are rows with their own dates, so the chart shows the correction instead of overwriting it. Read as of an earlier day and the second verdict, the cut and the later rates are simply not drawn. The spec is Vega-Lite (`t.spec()`), so the same chart renders in a notebook, a web page, or as an image in a chat answer; `t.to_dict()` is the data for any other renderer. `samples/fed-funds-rate.csv` is FRED's DFF series, public domain.
+Values after the as-of day are dropped too. On the command line: `factblock timeline brain/ --as-of 2025-06-30 -q SPY --series sp500.csv -o spy.html`. The chart is a Vega-Lite spec (`t.spec()`), so it renders the same in a notebook, a web page, or as an image in a chat answer; `t.to_dict()` is the data for any other renderer. `samples/fed-funds-rate.csv` (FRED DFF, public domain) goes with `samples/rates`; the S&P 500 is licensed, so download it from FRED (`SP500`) yourself.
 
 ## Claims it is good at
 
