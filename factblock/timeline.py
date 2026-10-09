@@ -359,7 +359,7 @@ def _bars_spec(tl, width):
         rows.append({**c, "end": end, "right": (parse_instant(c["said"]) - lo).days > 0.6 * span})
     y = {"field": "lane", "type": "nominal", "sort": [c["lane"] for c in tl.claims], "axis": None}
     x = {"field": "said", "type": "temporal", "title": None, "axis": {"format": "%b %Y", "tickCount": 8, "orient": "top"}}
-    text = {"type": "text", "baseline": "bottom", "dy": -7, "fontSize": 11.5, "color": "#0b0b0b"}
+    text = {"type": "text", "baseline": "bottom", "dy": -7, "fontSize": 11.5, "color": "#0b0b0b", "limit": 380}   # px; longer text ends in an ellipsis
     layer = [
         _as_of_rule(tl),
         {"mark": {"type": "bar", "height": 9, "cornerRadius": 4.5, "cursor": "pointer"},
