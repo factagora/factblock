@@ -1,10 +1,17 @@
-"""Three views of a FactBlock bundle, computed in DuckDB and rendered anywhere.
+"""Views of a FactBlock bundle, computed in DuckDB and rendered anywhere.
 
-    con, pq = connect("samples/cramer")                 # Parquet copy + the macro pack (duckdb/factblock.sql)
-    v = stance(con, pq, "SPY", as_of="2026-09-10")      # how a view changed over time
-    v = evidence(con, pq, "fdc79a63b9b44a7f", as_of=...)  # what one statement rests on, and what it led to
-    v = status(con, pq, as_of=...)                      # how many calls per subject are open, settled, replaced
-    pick("Why was he bullish in March?")                # -> "evidence": which view a question needs
+Three findings, each one a thing a table of statements cannot answer on its own:
+
+    con, pq = connect("samples/cramer")      # Parquet copy + the macro pack (duckdb/factblock.sql)
+    track_record(con, pq, as_of)             # his hit rate as it could be known each month (verdicts carry known_at)
+    reversals(con, pq, as_of)                # did changing his mind help? (replaced calls are kept, not overwritten)
+    reasons(con, pq, as_of)                  # were calls he gave reasons for more accurate? (links + verdicts)
+
+and two drill-downs to the statements behind them:
+
+    stance(con, pq, "SPY", as_of)            # every call on one subject, up or down, and what became of it
+    evidence(con, pq, block_id, as_of)       # what one statement rests on, and what it led to
+    pick("Why was he bullish in March?")     # -> "evidence": which view a question needs
 
 Every view is a plain dict, the same for a notebook, a chat answer or a web page:
 
@@ -153,44 +160,147 @@ def evidence(con, pq, block_id, as_of):
     return {"view": "evidence", "title": spec["title"]["text"], "as_of": str(as_of), "rows": rows, "links": links, "spec": spec}
 
 
-def status(con, pq, as_of, top=10):
-    """Calls known by as_of per subject (payload.asset), split by what became of them: came true, did not,
-    no verdict yet, replaced. The subjects with the most calls, each bar segment with the ids behind it."""
+HEADLINE = {**CONFIG, "title": {**CONFIG["title"], "fontSize": 17, "subtitleFontSize": 12.5, "subtitlePadding": 6, "offset": 14}}
+
+
+def track_record(con, pq, as_of):
+    """His hit rate on the first of each month, read two ways. As it was known: only verdicts known by then
+    (each verdict carries its own known_at, the day its horizon price settled). With hindsight: every call
+    made by then, scored with today's verdicts, which is what a table of final outcomes gives a backtest.
+    The gap is the verdicts that did not exist yet."""
     t = _day(as_of)
     rows = _rows(con, f"""
-        WITH n AS (SELECT id, json_extract_string(payload, '$.asset') AS subject FROM read_parquet(? || '/nodes.parquet')
-                    WHERE known_at <= {t} AND kind = 'prediction' AND json_extract_string(payload, '$.asset') IS NOT NULL),
-             s AS (SELECT DISTINCT target_id FROM read_parquet(? || '/edges.parquet') WHERE edge_type = 'SUPERSEDES' AND known_at <= {t}),
-             c AS (SELECT n.subject, n.id, CASE v.outcome WHEN 'came_true' THEN 'came true' WHEN 'did_not' THEN 'did not'
-                          ELSE CASE WHEN s.target_id IS NOT NULL THEN 'replaced' ELSE 'no verdict' END END AS status
-                     FROM n LEFT JOIN factblock_verdicts(?, {t}) v ON v.target_id = n.id LEFT JOIN s ON s.target_id = n.id),
-             top AS (SELECT subject, count(*) AS total FROM c GROUP BY 1 ORDER BY total DESC, subject LIMIT {int(top)})
-        SELECT c.subject, top.total, c.status, count(*) AS n, list(c.id ORDER BY c.id) AS ids
-          FROM c JOIN top USING (subject) GROUP BY ALL ORDER BY top.total DESC, c.subject""", [pq, pq, pq])
-    order = list(STATUS)
+        WITH m AS (SELECT unnest(generate_series(DATE '2024-01-01', date_trunc('month', {t})::DATE, INTERVAL 1 MONTH))::DATE AS day),
+             v AS (SELECT r.target_id, r.outcome, r.known_at, n.asserted_at FROM factblock_verdicts(?, {t}) r
+                     JOIN read_parquet(? || '/nodes.parquet') n ON n.id = r.target_id)
+        SELECT day::VARCHAR AS day,
+               count(*) FILTER (WHERE v.known_at < day) AS known, avg((v.outcome = 'came_true')::INT) FILTER (WHERE v.known_at < day) AS known_rate,
+               count(*) FILTER (WHERE v.asserted_at < day) AS hindsight, avg((v.outcome = 'came_true')::INT) FILTER (WHERE v.asserted_at < day) AS hindsight_rate
+          FROM m, v GROUP BY day HAVING count(*) FILTER (WHERE v.known_at < day) >= 25 ORDER BY day""", [pq, pq])
+    for r in rows:
+        r["future"] = r["hindsight"] - r["known"]
+    pick_ = max((r for r in rows if r["known"] >= 100), key=lambda r: abs(r["hindsight_rate"] - r["known_rate"]))
+    lines = [{"day": r["day"], "series": k, "rate": r[f], "calls": r[n], "label": f"{r[f]:.0%} of {r[n]}" if r is pick_ else None}
+             for r in rows for k, f, n in (("as it was known that day", "known_rate", "known"), ("with hindsight (a table of final outcomes)", "hindsight_rate", "hindsight"))]
+    day = f"{int(pick_['day'][8:10])} {('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')[int(pick_['day'][5:7]) - 1]} {pick_['day'][:4]}"
+    head = f"On {day} his record read {pick_['known_rate']:.0%}. A backtest on today's data says {pick_['hindsight_rate']:.0%} for that same day."
+    series = {"as it was known that day": "#2a78d6", "with hindsight (a table of final outcomes)": "#eb6834"}
+    x = {"field": "day", "type": "temporal", "title": None, "axis": {"format": "%b %Y", "tickCount": 8}}
     spec = {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": CONFIG, "width": 640, "height": 26 * top,
-        "title": {"text": f"Calls per subject, as known on {str(as_of)[:10]}",
-                  "subtitle": "Settled by the price move at each call's horizon. No verdict: not settled yet, or no horizon. Replaced: a later call superseded it."},
-        "data": {"values": rows},
-        "transform": [{"calculate": f"indexof({order}, datum.status)", "as": "o"}],
-        "mark": {"type": "bar", "stroke": "#fcfcfb", "strokeWidth": 2, "cornerRadiusEnd": 0},
-        "encoding": {
-            "y": {"field": "subject", "type": "nominal", "title": None, "sort": {"field": "total", "order": "descending"}},
-            "x": {"field": "n", "type": "quantitative", "title": "calls", "stack": "zero"},
-            "order": {"field": "o"},
-            "color": {"field": "status", "type": "nominal", "title": "What became of it", "scale": {"domain": order, "range": list(STATUS.values())}},
-            "tooltip": [{"field": "subject"}, {"field": "status"}, {"field": "n", "title": "calls"}, {"field": "ids", "title": "FactBlock ids"}],
-        },
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": HEADLINE,
+        "title": {"text": head, "subtitle": [f"The backtest counted {pick_['future']} verdicts that did not exist yet. Share of his settled calls that came true, on the first of each month.",
+                                             "FactBlock stores each verdict as a row with its own known_at, so the record replays as it stood. A table of final outcomes can only draw the orange line."]},
+        "vconcat": [
+            {"width": 760, "height": 230, "data": {"values": lines}, "layer": [
+                {"mark": {"type": "rule", "strokeDash": [4, 4], "color": "#8c8b85"}, "encoding": {"y": {"datum": 0.5}}},
+                {"mark": {"type": "line", "strokeWidth": 2.5, "point": {"filled": True, "size": 40}},
+                 "encoding": {"x": x, "y": {"field": "rate", "type": "quantitative", "title": "calls right (dashed: coin flip)", "axis": {"format": ".0%"}, "scale": {"domain": [0.4, 0.6], "zero": False, "clamp": True}},
+                              "color": {"field": "series", "type": "nominal", "title": None, "legend": {"orient": "top-right", "labelFontSize": 12, "labelLimit": 400, "direction": "vertical"},
+                                        "scale": {"domain": list(series), "range": list(series.values())}},
+                              "tooltip": [{"field": "day", "type": "temporal", "format": "%d %b %Y"}, {"field": "series"},
+                                          {"field": "rate", "format": ".1%", "title": "right"}, {"field": "calls", "title": "settled calls"}]}},
+                {"transform": [{"filter": "datum.label != null"}],
+                 "mark": {"type": "text", "align": "left", "dx": 8, "fontSize": 13, "fontWeight": 600},
+                 "encoding": {"x": x, "y": {"field": "rate", "type": "quantitative"}, "text": {"field": "label"},
+                              "color": {"field": "series", "type": "nominal", "scale": {"domain": list(series), "range": list(series.values())}, "legend": None}}},
+            ]},
+            {"width": 760, "height": 80, "data": {"values": rows},
+             "title": {"text": "Verdicts from the future: in the hindsight line, not yet known that day", "fontSize": 12, "fontWeight": 500, "color": "#52514e"},
+             "mark": {"type": "bar", "color": "#eb6834", "opacity": 0.75, "cornerRadiusEnd": 2, "width": {"band": 0.6}},
+             "encoding": {"x": {**x, "timeUnit": "yearmonth", "axis": None}, "y": {"field": "future", "type": "quantitative", "title": None, "axis": {"tickCount": 3}},
+                          "tooltip": [{"field": "day", "type": "temporal", "format": "%d %b %Y"}, {"field": "future", "title": "verdicts not yet known"}]}},
+        ],
     }
-    return {"view": "status", "title": spec["title"]["text"], "as_of": str(as_of), "rows": rows, "spec": spec}
+    return {"view": "track_record", "title": head, "as_of": str(as_of), "rows": rows, "spec": spec}
+
+
+REVERSAL = {"fixed a wrong call": "#0ca30c", "broke a right call": "#d03b3b", "both right": "#8c8b85", "both wrong": "#b8b7af"}
+
+
+def reversals(con, pq, as_of):
+    """Every call he later replaced with the opposite call (a SUPERSEDES row from the new call to the old one),
+    and, where both have a verdict by as_of, whether the reversal fixed a wrong call or broke a right one.
+    Possible only because the replaced call is kept, not overwritten."""
+    t = _day(as_of)
+    rows = _rows(con, f"""
+        WITH r AS (SELECT e.target_id AS old_id, e.source_id AS new_id, vo.outcome AS old_v, vn.outcome AS new_v
+                     FROM read_parquet(? || '/edges.parquet') e
+                     LEFT JOIN factblock_verdicts(?, {t}) vo ON vo.target_id = e.target_id
+                     LEFT JOIN factblock_verdicts(?, {t}) vn ON vn.target_id = e.source_id
+                    WHERE e.edge_type = 'SUPERSEDES' AND e.known_at <= {t})
+        SELECT CASE WHEN old_v IS NULL OR new_v IS NULL THEN 'not both settled'
+                    WHEN old_v = 'did_not' AND new_v = 'came_true' THEN 'fixed a wrong call'
+                    WHEN old_v = 'came_true' AND new_v = 'did_not' THEN 'broke a right call'
+                    WHEN old_v = 'came_true' THEN 'both right' ELSE 'both wrong' END AS outcome,
+               count(*) AS n, list([old_id, new_id] ORDER BY old_id) AS pairs
+          FROM r GROUP BY 1""", [pq, pq, pq])
+    by = {r["outcome"]: r for r in rows}
+    total = sum(r["n"] for r in rows)
+    settled = [by.get(k, {"outcome": k, "n": 0, "pairs": []}) for k in REVERSAL]
+    both = sum(r["n"] for r in settled)
+    fixed, broke = (by.get(k, {"n": 0})["n"] for k in ("fixed a wrong call", "broke a right call"))
+    head = f"He reversed himself {total} times. Where both calls were settled, {fixed} reversals fixed a wrong call and {broke} broke a right one."
+    for r in settled:
+        r["share"] = r["n"] / both if both else 0
+    spec = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": HEADLINE, "width": 760, "height": 190,
+        "title": {"text": head, "subtitle": [f"The {both} reversals where the old and the new call both have a verdict. Changing his mind did not change his accuracy.",
+                                             "A store that overwrites keeps only the new call. FactBlock keeps both (the new one SUPERSEDES the old), so both can be scored."]},
+        "data": {"values": settled},
+        "layer": [
+            {"mark": {"type": "bar", "cornerRadiusEnd": 3, "height": 30},
+             "encoding": {"y": {"field": "outcome", "type": "nominal", "title": None, "sort": list(REVERSAL), "axis": {"labelFontSize": 13, "labelLimit": 220}},
+                          "x": {"field": "n", "type": "quantitative", "title": "reversals"},
+                          "color": {"field": "outcome", "type": "nominal", "legend": None, "scale": {"domain": list(REVERSAL), "range": list(REVERSAL.values())}},
+                          "tooltip": [{"field": "outcome"}, {"field": "n", "title": "reversals"}, {"field": "pairs", "title": "[old, new] FactBlock ids"}]}},
+            {"mark": {"type": "text", "align": "left", "dx": 6, "fontSize": 13, "fontWeight": 600, "color": "#0b0b0b"},
+             "encoding": {"y": {"field": "outcome", "type": "nominal", "sort": list(REVERSAL)}, "x": {"field": "n", "type": "quantitative"}, "text": {"field": "n"}}},
+        ],
+    }
+    return {"view": "reversals", "title": head, "as_of": str(as_of), "total": total, "rows": settled, "spec": spec}
+
+
+def reasons(con, pq, as_of):
+    """Settled calls split by whether he gave a reason for them: an incoming link he drew himself (CAUSES,
+    CONTRIBUTING_FACTOR, TRIGGERS, SUPPORTS) known by as_of. The links are recorded, not verified; the outcome is."""
+    t = _day(as_of)
+    rows = _rows(con, f"""
+        WITH c AS (SELECT n.id, v.outcome,
+                          EXISTS (SELECT 1 FROM factblock_edges(?, {t}) e WHERE e.target_id = n.id
+                                     AND e.edge_type IN ('CAUSES', 'CONTRIBUTING_FACTOR', 'TRIGGERS', 'SUPPORTS')) AS has_reason
+                     FROM read_parquet(? || '/nodes.parquet') n JOIN factblock_verdicts(?, {t}) v ON v.target_id = n.id
+                    WHERE n.known_at <= {t} AND n.kind = 'prediction')
+        SELECT CASE WHEN has_reason THEN 'gave a reason' ELSE 'no reason given' END AS calls,
+               count(*) AS settled, avg((outcome = 'came_true')::INT) AS hit_rate, list(id ORDER BY id) AS ids
+          FROM c GROUP BY 1 ORDER BY 1""", [pq, pq, pq])
+    a, b = (next(r for r in rows if r["calls"] == k) for k in ("gave a reason", "no reason given"))
+    for r in rows:
+        r["label"] = f"{r['hit_rate']:.0%} right, of {r['settled']}"
+    head = f"Giving a reason did not make him more accurate: {a['hit_rate']:.0%} with a reason, {b['hit_rate']:.0%} without."
+    spec = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": HEADLINE, "width": 760, "height": 130,
+        "title": {"text": head, "subtitle": ["Settled calls, split by whether he linked a reason to them (CAUSES, SUPPORTS, ...). The links are his own, recorded,",
+                                             "not verified; the outcome is checked against the price. Links and verdicts live in one bundle, so this is one join."]},
+        "data": {"values": rows},
+        "layer": [
+            {"mark": {"type": "bar", "cornerRadiusEnd": 3, "height": 34, "color": "#2a78d6"},
+             "encoding": {"y": {"field": "calls", "type": "nominal", "title": None, "axis": {"labelFontSize": 13}},
+                          "x": {"field": "hit_rate", "type": "quantitative", "title": "right", "scale": {"domain": [0, 1]}, "axis": {"format": ".0%"}},
+                          "tooltip": [{"field": "calls"}, {"field": "settled"}, {"field": "hit_rate", "format": ".1%", "title": "right"}]}},
+            {"mark": {"type": "text", "align": "left", "dx": 6, "fontSize": 13, "fontWeight": 600, "color": "#0b0b0b"},
+             "encoding": {"y": {"field": "calls", "type": "nominal"}, "x": {"field": "hit_rate", "type": "quantitative"}, "text": {"field": "label"}}},
+            {"mark": {"type": "rule", "strokeDash": [4, 4], "color": "#8c8b85"}, "encoding": {"x": {"datum": 0.5}}},
+            {"mark": {"type": "text", "dy": -78, "color": "#52514e", "fontSize": 11}, "encoding": {"x": {"datum": 0.5}, "text": {"value": "coin flip"}}},
+        ],
+    }
+    return {"view": "reasons", "title": head, "as_of": str(as_of), "rows": rows, "spec": spec}
 
 
 def pick(question):
-    """Which view a question needs: why/because/evidence -> evidence; change/when/over time -> stance; else status."""
+    """Which view a question needs: why/because/evidence -> evidence; change/when/over time -> stance; else track_record."""
     q = question.lower()
     if any(w in q for w in ("why", "because", "evidence", "based on", "reason", "근거", "이유", "왜")):
         return "evidence"
     if any(w in q for w in ("change", "changed", "when", "over time", "flip", "turn", "변화", "바뀌", "언제")):
         return "stance"
-    return "status"
+    return "track_record"

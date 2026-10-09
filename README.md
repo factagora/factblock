@@ -45,9 +45,9 @@ That string goes into your agent's prompt. The old claim is still there, marked 
 
 `brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
 
-**Analyse it, then hand it to a model.** The same files are a table. [`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis) charts two years of one commentator's market calls in DuckDB: how his view changed, what one call rested on, where each call stands. Then it gives a model the same data as of a date and traces every line the model cites back to the recording. Every mark carries its FactBlock id and source.
+**Analyse it, then hand it to a model.** The same files are a table, and they keep what a table of statements loses: when each fact became known, what replaced what, which reasons were given. [`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis) runs three findings over two years of one commentator's market calls in DuckDB, then gives a model the same data as of a date and traces every line it cites back to the recording.
 
-![Calls on SPY over two years, coloured by what became of each: came true, did not, no verdict yet, replaced](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/stance.png)
+![On 1 Jul 2025 his record read 46%. A backtest on today's data says 53% for that same day, using 108 verdicts that did not exist yet.](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/track_record.png)
 
 ## What comes out
 
