@@ -389,12 +389,18 @@ def _series_spec(tl, width):
     pts = [{**c, "v": at(c["said"]), "call": c["direction"] or "statement", "label": None} for c in tl.claims if at(c["said"]) is not None]
     # write out only a few: the settled ones, newest first, up to six; the rest are points with a tooltip
     settled = sorted((p for p in pts if p["status"] in ("right", "wrong", "mixed")), key=lambda p: p["said"], reverse=True)[:6]
+    # labels close enough in time to collide split by value: the higher point's label above, the lower one's below
+    span = max((parse_instant(tl.as_of) - days[0]).days, 1) if days else 1
+    gap = lambda p, q: abs((parse_instant(p["said"]) - parse_instant(q["said"])).days)
     for i, p in enumerate(sorted(settled, key=lambda p: p["said"])):
-        p["label"], p["above"] = _short(p["statement"], 46), i % 2 == 0
+        near = [q for q in settled if q is not p and gap(p, q) < 0.6 * span]
+        p["label"], p["above"] = _short(p["statement"], 46), all(p["v"] >= q["v"] for q in near) if near else i % 2 == 0
+        at_x = (parse_instant(p["said"]) - days[0]).days / span   # near an edge, the label runs inward
+        p["align"] = "left" if at_x < 0.25 else "right" if at_x > 0.75 else "center"
     x = {"field": "t", "type": "temporal", "title": None, "axis": {"format": "%b %Y", "tickCount": 8}}
     px = {**x, "field": "said"}
     y = {"field": "v", "type": "quantitative", "title": tl.series_name, "scale": {"zero": False}}
-    label = {"type": "text", "fontSize": 11, "color": "#0b0b0b"}
+    label = {"type": "text", "fontSize": 11, "color": "#0b0b0b", "align": {"expr": "datum.align"}, "limit": {"expr": "width * 0.3"}}   # labels further apart than 0.6 of the span never touch
     return {
         "title": {"text": tl.title, "subtitle": [f"{tl.series_name}, with each statement where it was said,",
                                                  f"coloured by what became of it as known on {tl.as_of[:10]}.",

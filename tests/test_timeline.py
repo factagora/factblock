@@ -2,6 +2,7 @@
 as_of (a re-resolution shows as a second verdict, a later replacement is not drawn early), a series is cut at
 as_of, deadlines become spans, and the chart saves as HTML and JSON from the library and the CLI.
 Run: uv run python tests/test_timeline.py"""
+import datetime
 import json
 import pathlib
 import subprocess
@@ -82,4 +83,14 @@ with tempfile.TemporaryDirectory() as d:
 texts = [l["mark"] for l in factblock.timeline(RATES, "2025-01-01").spec()["layer"] if l["mark"]["type"] == "text"]
 assert texts and all("expr" in m["limit"] for m in texts), texts
 assert factblock.timeline(RATES, "2025-01-01").spec()["config"]["legend"]["orient"] == "bottom"
+# series labels: close in time means split by value (never both above), and each is capped to a share of the width
+with tempfile.TemporaryDirectory() as d:
+    rise = pathlib.Path(d) / "rise.csv"
+    rise.write_text("date,v\n" + "".join(f"2024-{m:02d}-01,{m}\n2025-{m:02d}-01,{12 + m}\n" for m in range(1, 13)))
+    sp = factblock.timeline(ROOT / "samples" / "cramer", "2025-06-30", "SPY", limit=20).with_series(rise).spec()
+pts = [p for p in next(l for l in sp["layer"] if l["mark"]["type"] == "point")["data"]["values"] if p["label"]]
+day = lambda p: int(p["said"].replace("-", ""))
+near = [(p, q) for p in pts for q in pts if day(p) < day(q) and abs((datetime.date.fromisoformat(q["said"]) - datetime.date.fromisoformat(p["said"])).days) < 0.6 * 545]
+assert len(pts) >= 3 and near and not any(p["above"] and q["above"] for p, q in near), [(p["said"], p["above"]) for p in pts]
+assert all("expr" in l["mark"]["limit"] for l in sp["layer"] if l["mark"]["type"] == "text")
 print("PASS timeline: events as known on as_of (re-resolution, replacement), series cut at as_of, bars end at the first replacement, verdict or deadline, rows grouped, settled points labelled, ids, HTML/JSON/markdown from library and CLI, the v1 data contract, an MCP Apps tool result and view, labels fit any width")
