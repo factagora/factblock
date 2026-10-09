@@ -1,8 +1,9 @@
 """Views of a FactBlock bundle, computed in DuckDB and rendered anywhere.
 
-Three findings, each one a thing a table of statements cannot answer on its own:
+Findings, each one a thing a table of statements cannot answer on its own:
 
     con, pq = connect("samples/cramer")      # Parquet copy + the macro pack (duckdb/factblock.sql)
+    backtest(con, pq, as_of)                 # a selection rule run as of each call vs with hindsight (look-ahead bias)
     track_record(con, pq, as_of)             # his hit rate as it could be known each month (verdicts carry known_at)
     reversals(con, pq, as_of)                # did changing his mind help? (replaced calls are kept, not overwritten)
     reasons(con, pq, as_of)                  # were calls he gave reasons for more accurate? (links + verdicts)
@@ -163,6 +164,66 @@ def evidence(con, pq, block_id, as_of):
 HEADLINE = {**CONFIG, "title": {**CONFIG["title"], "fontSize": 17, "subtitleFontSize": 12.5, "subtitlePadding": 6, "offset": 14}}
 
 
+STRATEGY = {"rule, picked with hindsight": "#eb6834", "every call": "#8c8b85", "rule, picked as of each call": "#2a78d6"}
+
+
+def backtest(con, pq, as_of, threshold=0.5, min_settled=3):
+    """Follow his calls (long on up, short on down, entry and exit as each verdict scores them) under one rule:
+    only on subjects where his record is at least `threshold` over `min_settled` settled calls. The record is
+    read two ways. As of each call: verdicts known before the call was made. With hindsight: every verdict known
+    today, which is what a table of final outcomes gives. The running return per call is the equity curve."""
+    t = _day(as_of)
+    calls = _rows(con, f"""
+        WITH c AS (SELECT n.id, n.asserted_at AS said, v.known_at AS settled, json_extract_string(n.payload, '$.asset') AS subject,
+                          CASE json_extract_string(n.payload, '$.direction') WHEN 'up' THEN 1 ELSE -1 END
+                            * (v.value->>'return')::DOUBLE AS pnl, v.outcome = 'came_true' AS hit
+                     FROM read_parquet(? || '/nodes.parquet') n JOIN factblock_verdicts(?, {t}) v ON v.target_id = n.id
+                    WHERE json_extract_string(n.payload, '$.direction') IN ('up', 'down') AND json_extract_string(n.payload, '$.asset') IS NOT NULL
+                      AND (v.value->>'return') IS NOT NULL)
+        SELECT c.id, c.settled::DATE::VARCHAR AS settled, c.subject, c.pnl,
+               (SELECT count(*) FROM c q WHERE q.subject = c.subject AND q.settled < c.said) AS asof_n,
+               (SELECT avg(q.hit::INT) FROM c q WHERE q.subject = c.subject AND q.settled < c.said) AS asof_rate,
+               (SELECT count(*) FROM c q WHERE q.subject = c.subject AND q.id <> c.id) AS hind_n,
+               (SELECT avg(q.hit::INT) FROM c q WHERE q.subject = c.subject AND q.id <> c.id) AS hind_rate
+          FROM c ORDER BY c.settled, c.id""", [pq, pq])
+    picks = {"every call": lambda c: True,
+             "rule, picked as of each call": lambda c: c["asof_n"] >= min_settled and c["asof_rate"] >= threshold,
+             "rule, picked with hindsight": lambda c: c["hind_n"] >= min_settled and c["hind_rate"] >= threshold}
+    rows, summary = [], {}
+    for name, keep in picks.items():
+        total = n = 0
+        for c in calls:
+            if keep(c):
+                total += c["pnl"]; n += 1
+                rows.append({"day": c["settled"], "strategy": name, "per_call": total / n, "calls": n, "id": c["id"], "subject": c["subject"]})
+        summary[name] = {"calls": n, "per_call": total / n if n else 0.0}
+    rows = [r for r in rows if r["calls"] >= 20]   # a running average over a handful of calls is noise
+    names = {k: f"{k}: {v['per_call']:+.1%} a call over {v['calls']} calls" for k, v in summary.items()}
+    for r in rows:
+        r["strategy"] = names[r["strategy"]]
+    h, a, e = (summary[k] for k in ("rule, picked with hindsight", "rule, picked as of each call", "every call"))
+    head = f"Following only his best subjects looks like {h['per_call']:+.1%} a call. Picked with what was known at the time, it makes {a['per_call']:+.1%}."
+    x = {"field": "day", "type": "temporal", "title": "verdict date", "axis": {"format": "%b %Y", "tickCount": 8}}
+    color = {"field": "strategy", "type": "nominal", "title": None, "scale": {"domain": [names[k] for k in STRATEGY], "range": list(STRATEGY.values())}}
+    spec = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": HEADLINE, "width": 760, "height": 300,
+        "title": {"text": head, "subtitle": [
+            f"Rule: follow his calls only on subjects where at least {threshold:.0%} of his {min_settled}+ settled calls came true. Following every call makes {e['per_call']:+.1%}.",
+            "The hindsight line reads his record from final outcomes, so it picks with verdicts that did not exist yet. FactBlock dates every",
+            "verdict (known_at), so the rule can be run as it would have been: blue. Running average return per call (from the 20th call), long on up, short on down."]},
+        "data": {"values": rows},
+        "layer": [
+            {"mark": {"type": "rule", "color": "#c3c2b7"}, "encoding": {"y": {"datum": 0}}},
+            {"mark": {"type": "line", "strokeWidth": 2.5, "interpolate": "step-after"},
+             "encoding": {"x": x, "y": {"field": "per_call", "type": "quantitative", "title": "average return per call so far", "axis": {"format": "+.0%"}},
+                          "color": {**color, "legend": {"orient": "bottom", "direction": "vertical", "labelFontSize": 12.5, "labelLimit": 500}},
+                          "tooltip": [{"field": "strategy"}, {"field": "day", "type": "temporal", "format": "%d %b %Y"}, {"field": "per_call", "format": "+.1%", "title": "per call so far"},
+                                      {"field": "calls"}, {"field": "subject", "title": "last call on"}, {"field": "id", "title": "FactBlock id"}]}},
+        ],
+    }
+    return {"view": "backtest", "title": head, "as_of": str(as_of), "rows": rows, "summary": summary, "spec": spec}
+
+
 def track_record(con, pq, as_of):
     """His hit rate on the first of each month, read two ways. As it was known: only verdicts known by then
     (each verdict carries its own known_at, the day its horizon price settled). With hindsight: every call
@@ -297,10 +358,12 @@ def reasons(con, pq, as_of):
 
 
 def pick(question):
-    """Which view a question needs: why/because/evidence -> evidence; change/when/over time -> stance; else track_record."""
+    """Which view a question needs: why -> evidence; backtest/follow/return -> backtest; change/when -> stance; else track_record."""
     q = question.lower()
     if any(w in q for w in ("why", "because", "evidence", "based on", "reason", "근거", "이유", "왜")):
         return "evidence"
+    if any(w in q for w in ("backtest", "follow", "strategy", "rule", "return", "백테스트", "따라", "수익")):
+        return "backtest"
     if any(w in q for w in ("change", "changed", "when", "over time", "flip", "turn", "변화", "바뀌", "언제")):
         return "stance"
     return "track_record"

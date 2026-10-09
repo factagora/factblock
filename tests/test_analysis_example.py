@@ -37,6 +37,13 @@ assert next(r for r in e["rows"] if r["id"] == "ba4c1a04d78f5848")["status"] == 
 early = views.evidence(con, pq, "fdc79a63b9b44a7f", "2025-03-22")   # the 03-25 follow-up was not said yet
 assert "ba4c1a04d78f5848" not in {r["id"] for r in early["rows"]} and len(early["links"]) == 4
 
+# backtest: the as-of rule reads only verdicts known before each call; the hindsight rule reads them all
+bt = views.backtest(con, pq, AS_OF)
+sm = bt["summary"]
+assert sm["every call"]["calls"] == 779 and sm["rule, picked with hindsight"]["calls"] == 209 and sm["rule, picked as of each call"]["calls"] == 75
+assert sm["rule, picked with hindsight"]["per_call"] > sm["every call"]["per_call"] > sm["rule, picked as of each call"]["per_call"]
+assert bt["title"].startswith("Following only his best subjects looks like +9.3% a call.")
+
 # track record: the as-known line uses only verdicts known by each day, the hindsight line every verdict on calls made by then
 tr = views.track_record(con, pq, AS_OF)
 jul = next(r for r in tr["rows"] if r["day"] == "2025-07-01")
@@ -59,6 +66,7 @@ settled = {r["target_id"] for r in b.resolutions} & {n["id"] for n in b.nodes if
 assert sum(r["settled"] for r in rs["rows"]) == len(settled) and set().union(*(set(r["ids"]) for r in rs["rows"])) == settled
 
 assert [views.pick(q) for q in ("Why is he bullish?", "When did his view change?", "How accurate is he overall?")] == ["evidence", "stance", "track_record"]
+assert views.pick("What if I had followed his calls?") == "backtest"
 
 # your own data: the template CSV through import and the same views
 with tempfile.TemporaryDirectory() as d:
@@ -66,4 +74,4 @@ with tempfile.TemporaryDirectory() as d:
     c2, p2 = views.connect(d + "/b")
     assert [(r["id"], r["status"]) for r in views.stance(c2, p2, "ACME", "2026-06-01")["rows"]] == [("c1", "replaced"), ("c2", "came true")]
     assert views.reversals(c2, p2, "2026-06-01")["total"] == 1
-print("PASS analysis example: track record (as known vs hindsight), reversals, reasons, stance and evidence match the reader; ids and sources on every mark; links marked recorded; template CSV runs")
+print("PASS analysis example: backtest (as of vs hindsight), track record (as known vs hindsight), reversals, reasons, stance and evidence match the reader; ids and sources on every mark; links marked recorded; template CSV runs")

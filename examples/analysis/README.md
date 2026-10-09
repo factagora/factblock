@@ -1,6 +1,6 @@
-# What a bundle can tell you that a table cannot
+# Backtest what someone said, without hindsight
 
-Two years of Jim Cramer's calls on CNBC ([`samples/cramer`](../../samples/cramer): 2,091 statements, 1,169 links he drew between them, 779 calls settled by the price move at their horizon), analysed in DuckDB. Each chart answers a question from something a plain table of statements does not keep. The same data then becomes a model's context, and every line the model cites leads back to the recording.
+Two years of Jim Cramer's calls on CNBC ([`samples/cramer`](../../samples/cramer): 2,091 statements, 1,169 links he drew between them, 779 calls settled by the price move at their horizon), analysed in DuckDB the way time series usually are. Each chart answers a question from something a plain table of statements does not keep. The same data then becomes a model's context, and every line the model cites leads back to the recording.
 
 ```bash
 git clone https://github.com/factagora/factblock && cd factblock
@@ -10,19 +10,32 @@ jupyter lab examples/analysis/analysis.ipynb
 
 The [notebook](analysis.ipynb) is committed with its outputs, so you can read it on GitHub without running anything. In Jupyter the charts are interactive: hover for the statement and its FactBlock id, click to open the recording.
 
-## 1. His record at the time was not his record today
+| Time-series analysis you know | Here | What FactBlock adds |
+|---|---|---|
+| Backtest equity curve, look-ahead bias | 1. A selection rule run as of each call vs with hindsight | Every verdict is dated (`known_at`), so the rule reads only the record that existed when each call was made |
+| Real-time data vintages vs revised series | 2. His record as it stood each month vs as it reads today | The same dates replay the record on any past day |
+| Revisions and restatements | 3. Calls he later reversed, both scored | A replaced call is kept (`SUPERSEDES`), never overwritten |
+| Conditioning on a feature | 4. Calls with and without a stated reason | The reasons he linked and the verdicts are in one bundle |
+
+## 1. A rule that looks great in hindsight earns nothing extra
+
+![Following only his best subjects looks like +9.3% a call. Picked with what was known at the time, it makes +4.9%.](img/backtest.png)
+
+The rule is the kind every backtest tries: follow his calls only on subjects where his record is good (at least half of 3+ settled calls came true). Read his record from a table of final outcomes and the rule picks 209 calls at +9.3% each, almost double following everything (+5.2%). But that record includes verdicts that did not exist when each call was made. Run as of each call, with only the verdicts known before it, the same rule picks 75 calls at +4.9%: no better than following everything. The whole edge was hindsight.
+
+## 2. His record at the time was not his record today
 
 ![On 1 Jul 2025 his record read 46%. A backtest on today's data says 53% for that same day.](img/track_record.png)
 
-Every verdict is a row with its own `known_at`: the day the horizon price settled. So the record replays as it stood on any day (blue). A table that keeps only the final outcome can only draw the orange line, which scores past days with verdicts that did not exist yet. On 1 July 2025 that is 108 verdicts from the future, and 46% becomes 53%. A backtest of anything that followed him would make the same mistake.
+Every verdict is a row with its own `known_at`: the day the horizon price settled. So the record replays as it stood on any day (blue). A table that keeps only the final outcome can only draw the orange line, which scores past days with verdicts that did not exist yet. On 1 July 2025 that is 108 verdicts from the future, and 46% becomes 53%. This is the mistake the rule in chart 1 makes, seen on its own.
 
-## 2. Changing his mind did not change his accuracy
+## 3. Changing his mind did not change his accuracy
 
 ![He reversed himself 108 times. Where both calls were settled, 10 reversals fixed a wrong call and 10 broke a right one.](img/reversals.png)
 
 When he turned from "avoid Oklo" (February 2025) to "Oklo is a good investment" (June 2025), the new call does not overwrite the old one: it `SUPERSEDES` it, and both stay in the bundle with their own verdicts. That is what makes the question answerable at all. A store that updates in place keeps only the latest view.
 
-## 3. Giving reasons did not make his calls better
+## 4. Giving reasons did not make his calls better
 
 ![Giving a reason did not make him more accurate: 54% with a reason, 56% without.](img/reasons.png)
 
@@ -44,8 +57,8 @@ The same call reads differently two weeks later. On 26 March, "the bulls hold th
 
 | Piece | What it does |
 |---|---|
-| [`views.py`](views.py) | The analysis. `track_record()`, `reversals()` and `reasons()` (the findings) and `stance()`, `evidence()` (the drill-downs) run SQL in DuckDB over the Parquet profile and the macro pack ([`duckdb/factblock.sql`](../../duckdb/factblock.sql)). Each returns `{"view", "title", "as_of", "rows", "spec"}`: the title is the finding, the rows carry the FactBlock ids behind each mark, and the spec is Vega-Lite over those rows. Nothing renders here. |
-| Rendering | The caller's choice. Jupyter renders the spec as is. A web page passes it to vega-embed. A chat answer turns it into a PNG with `vl_convert.vegalite_to_png(spec)`. `views.pick(question)` chooses the view a question needs: why → evidence, change → stance, overall → track record. |
+| [`views.py`](views.py) | The analysis. `backtest()`, `track_record()`, `reversals()` and `reasons()` (the findings) and `stance()`, `evidence()` (the drill-downs) run SQL in DuckDB over the Parquet profile and the macro pack ([`duckdb/factblock.sql`](../../duckdb/factblock.sql)). Each returns `{"view", "title", "as_of", "rows", "spec"}`: the title is the finding, the rows carry the FactBlock ids behind each mark, and the spec is Vega-Lite over those rows. Nothing renders here. |
+| Rendering | The caller's choice. Jupyter renders the spec as is. A web page passes it to vega-embed. A chat answer turns it into a PNG with `vl_convert.vegalite_to_png(spec)`. `views.pick(question)` chooses the view a question needs: why → evidence, follow or backtest → backtest, change → stance, overall → track record. |
 | `factblock.context(ids=True)` | The model's context, from the same bundle and the same as-of rule. |
 
 The as-of rule is the same in both readers: `tests/test_duckdb.py` checks that the SQL macros and the Python library return the same rows, replacements, certificates and verdicts, and `tests/test_analysis_example.py` checks these views against the library.
@@ -54,7 +67,7 @@ The as-of rule is the same in both readers: `tests/test_duckdb.py` checks that t
 
 ## Use your own data
 
-Each view needs one thing from your data: the track record needs verdict rows, reversals need `replaces`, reasons need links, and the market drill-down needs a subject (`asset`) and a direction (`up` or `down`). Start from [`template.csv`](template.csv):
+Each view needs one thing from your data: the backtest needs verdict rows whose `value` holds the call's `return` (as `samples/cramer` has), the track record needs verdict rows, reversals need `replaces`, reasons need links, and the market drill-down needs a subject (`asset`) and a direction (`up` or `down`). Start from [`template.csv`](template.csv):
 
 ```
 id,kind,said_at,due,text,asset,direction,speaker,source,replaces,target,outcome,decided_at
