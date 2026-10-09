@@ -34,6 +34,7 @@ What `context()` puts into the prompt for "Globex" as of 2026-05-10:
 - 2026-02-01 Sam: Audit log export for Globex by April 30.
   ended 2026-04-30
   verdict: kept (decided 2026-05-03 by human:lee)
+(as of 2026-05-10)
 ```
 
 ## How it is modelled
@@ -41,4 +42,4 @@ What `context()` puts into the prompt for "Globex" as of 2026-05-10:
 - A promise is a block of kind `commitment`. Its `valid_to` is the deadline: the `due` column, through the end of that day.
 - A verdict is a separate row in `resolutions.jsonl` (`kept`, `partly_kept`, `broken`, `withdrawn`), with its own `decided_at` and `known_at`. A read as of a date sees only the verdicts recorded by then, so on April 1 the SSO promise is past due and unresolved, and on April 10 it is broken.
 - Past its deadline, a commitment stays in `recall` marked `ended`, with its verdict or without one. Hiding it would hide the answer to "did we keep it?".
-- `recall(..., verdict="broken")`, `"open"` or `"resolved"` filters by the latest visible verdict; an empty query lists everything.
+- `recall(..., verdict="broken")`, `"open"`, `"resolved"` or `"overdue"` (past the deadline, no verdict) filters by the latest visible verdict; an empty query lists everything. On the command line: `factblock recall examples/promises/brain "" --as-of 2026-04-01 --verdict overdue`.

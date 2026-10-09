@@ -28,7 +28,7 @@ def _cert(c):
     if c.get("not_in_force"):
         parts.append("not in force: " + ", ".join(f"{n} {k}{'s' if n != 1 else ''}" for k, n in c["not_in_force"].items()))
     if b:
-        parts.append(f"backfilled: {b['rows']} rows in {b['batches']} batch{'es' if b['batches'] != 1 else ''}")
+        parts.append(f"known_at declared by a writer: {b['rows']} row{'s' if b['rows'] != 1 else ''} in {b['batches']} batch{'es' if b['batches'] != 1 else ''}")
     return "  ".join(parts)
 
 
@@ -109,7 +109,7 @@ def main():
     cmd("scan", "what the folder knew as of an instant: blocks, edges, verdicts, and what was hidden")
     rc = cmd("recall", "the blocks about something as of an instant, ranked; the read an agent makes before it answers")
     rc.add_argument("query", help="words to look for in statements, quotes and speakers; \"\" for every block, newest first")
-    rc.add_argument("--verdict", help="only blocks whose latest verdict is this outcome (e.g. did_not), or open (none yet), or resolved")
+    rc.add_argument("--verdict", help="only blocks whose latest verdict is this outcome (did_not for a prediction, broken for a commitment), or open (none yet), resolved (any), overdue (past due, no verdict)")
     rc.add_argument("--limit", type=int, default=10)
     rc.add_argument("--all-kinds", action="store_true", help="also the things statements are about (entity, factor, timeseries, episode); every kind of statement is in by default")
     w = cmd("why", "the chain behind one block as of an instant: causes, effects, successors, contradictions")
@@ -202,7 +202,8 @@ def main():
             out_json(r)
         else:
             for i in r["items"]:
-                print(f"{i['id']:<12} {i['kind']:<11} {_day(i['asserted_at'])}  {i['statement']}" + (f"   ({i['speaker']})" if i.get("speaker") else ""))
+                print(f"{i['id']:<12} {i['kind']:<11} {_day(i['asserted_at'])}  {i['statement']}" + (f"   ({i['speaker']})" if i.get("speaker") else "")
+                      + (f"   due {_day(i['due'])}" if i.get("due") else "") + (f"   ended {_day(i['ended'])}" + ("" if i.get("verdict") else ", no verdict") if i.get("ended") else ""))
                 if i.get("superseded_by"):
                     print(f"{'':<25}  replaced {_day(i['superseded_by']['since'])} by {i['superseded_by']['id']}: {i['superseded_by'].get('statement')}")
                 if i.get("verdict"):
@@ -229,9 +230,9 @@ def main():
             if q["leaked"] or q["missing"]:
                 # same day: show the minute, or "asked 03-21, known 03-21" reads as no leak at all
                 at = lambda s: s[:16].replace("T", " ") if any(l["known_at"][:10] == q["asked_at"][:10] for l in q["leaked"]) else s[:10]  # noqa: E731
-                print(f"{q['id']}: asked {at(q['asked_at'])}, " + ", ".join(f"{l['id']} known {at(l['known_at'])} ({l['reason']})" for l in q["leaked"])
+                print(f"{q['id']}: asked {at(q['asked_at'])}{' (date only, read as 00:00 UTC)' if q['day_only'] else ''}, " + ", ".join(f"{l['id']} known {at(l['known_at'])} ({l['reason']})" for l in q["leaked"])
                       + (f", missing {q['missing']}" if q["missing"] else ""))
-        print(f"{r['leaked_questions']}/{r['questions']} questions leak ({r['leak_rate']:.0%}), {r['leaked_blocks']} blocks learned after the question"
+        print(f"{r['leaked_questions']}/{r['questions']} questions leak ({r['leak_rate']:.0%}), {r['leaked_blocks']} citation{'s' if r['leaked_blocks'] != 1 else ''} of blocks learned after the question"
               + (f", {r['missing_blocks']} evidence ids not in the bundle" if r["missing_blocks"] else ""))
         sys.exit(1 if r["leaked_questions"] or r["missing_blocks"] else 0)   # an id the bundle lacks cannot be checked
     elif a.cmd == "validate":

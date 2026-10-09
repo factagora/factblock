@@ -20,7 +20,7 @@ assert ids(factblock.recall(RATES, "TSLA", "2024-10-01")) == ["t1", "t2"]
 assert factblock.recall(RATES, "housing", "2024-10-01", limit=1)["matched"] == 1
 assert factblock.recall(RATES, "nothing here", "2024-10-01")["items"] == []
 ctx = factblock.context(RATES, "interest rates", "2024-05-01")
-assert ctx.startswith("- 2024-03-20: The Fed raises interest rates") and "later blocks hidden" in ctx, ctx
+assert ctx.startswith("- 2024-03-20: The Fed raises interest rates") and ctx.endswith("(as of 2024-05-01)"), ctx
 # what happened to a block since, as far as it was known then: replaced (SUPERSEDES row), verdict (resolutions row)
 c1 = lambda t: next(i for i in factblock.recall(RATES, "interest rates", t)["items"] if i["id"] == "c1")  # noqa: E731
 assert "superseded_by" not in c1("2024-05-01") and "verdict" not in c1("2024-05-01")   # verdict known 05-02, cut 09

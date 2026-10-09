@@ -50,8 +50,14 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
     `kinds` None means every kind of statement (claims, predictions, commitments, any kind you use) but not
     the things they are about (entity, factor, timeseries, episode); () means every kind; a tuple means
     exactly those. Matches dropped by `kinds` are counted per kind in `excluded`. An empty query matches every
-    block, newest first. `verdict` keeps only blocks whose latest visible verdict is that outcome (e.g. "did_not"),
-    or "open" (none yet) or "resolved" (any)."""
+    block, newest first. `verdict` keeps only blocks whose latest visible verdict is that outcome ("did_not" for a
+    prediction, "broken" for a commitment, SPEC 3.6), or "open" (none yet), "resolved" (any), "overdue" (past its
+    horizon or deadline with no verdict).
+
+    Each item: id, kind, statement, asserted_at, known_at, in_force_from, speaker, source, score, and when they
+    apply: superseded_by {id, statement, asserted_at, since}, upcoming {id, statement, asserted_at, from},
+    verdict {outcome, decided_at, resolver}, due (a prediction's or commitment's valid_to, still ahead) or
+    ended (it has passed). Keys that do not apply are absent."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     nodes, _, res, cert = visible(b, as_of, valid_at)
     terms = _terms(query)
@@ -71,14 +77,18 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
         payload = n.get("payload") or {}
         score = _hits(terms, n) if terms else 1
         v = verdicts.get(n["id"])
-        if verdict and not (v is None if verdict == "open" else v is not None and verdict in ("resolved", v.get("outcome") or v.get("value"))):
+        if verdict == "overdue":
+            if v is not None or not n.get("_ended"):
+                continue
+        elif verdict and not (v is None if verdict == "open" else v is not None and verdict in ("resolved", v.get("outcome") or v.get("value"))):
             continue
         if score and not wanted(n):
             excluded[n["kind"]] = excluded.get(n["kind"], 0) + 1
             continue
         if score:
             item = {"id": n["id"], "kind": n["kind"], "statement": n.get("statement"), "asserted_at": n["asserted_at"],
-                    "known_at": n["known_at"], "speaker": payload.get("speaker"), "source": payload.get("source"), "score": score}
+                    "known_at": n["known_at"], "in_force_from": n["valid_from"], "speaker": payload.get("speaker"),
+                    "source": payload.get("source"), "score": score}
             if n.get("_ended"):
                 item["ended"] = n["valid_to"]
             elif n["kind"] in SETTLED and n.get("valid_to"):
@@ -123,13 +133,15 @@ def _source(s):
 def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10,
             kinds: tuple[str, ...] | None = None, verdict: str | None = None) -> str:
     """Use to put memory into a prompt. The recall as lines: one dated statement per line, indented lines for what happened
-    to it since (replaced, about to change, verdict), announced changes not in force yet, then what was hidden. Learned-later and source go on the first line. Never empty:
+    to it since (replaced, about to change, verdict), announced changes not in force yet, then the as-of date. Learned-later and source go on the first line. Never empty:
     when nothing matches it says so, so the model is told it has no memory of this rather than nothing at all."""
     r = recall(bundle, query, as_of, valid_at, limit, kinds, verdict)
     lines = [] if r["items"] or r["upcoming"] else [f"(nothing about {query!r} known as of {r['as_of'][:10]})"]
     for i in r["items"]:
         head = f"- {i['asserted_at'].date().isoformat()}" + (f" {i['speaker']}:" if i.get("speaker") else ":") + f" {i['statement']}"
         notes = []
+        if i.get("in_force_from") and i["in_force_from"].date() != i["asserted_at"].date():
+            notes.append(f"in force from {i['in_force_from'].date().isoformat()}")
         if (i["known_at"] - i["asserted_at"]).days >= 1:
             notes.append(f"learned {i['known_at'].date().isoformat()}")
         if i.get("due"):
@@ -152,8 +164,7 @@ def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | 
             lines.append(f"  verdict: {v['outcome']} (decided {v['decided_at'].date().isoformat()}" + (f" by {v['resolver']})" if v.get("resolver") else ")"))
     for u in r["upcoming"]:
         lines.append(f"- {u['asserted_at'].date().isoformat()}: {u['statement'] or u['id']} (takes effect {u['from'].date().isoformat()})")
-    m = r["certificate"].get("masked", {})
-    if m:
-        n = sum(m.values())
-        lines.append(f"(as of {r['as_of'][:10]}; {n} later block{'s' if n != 1 else ''} hidden)")
+    # the date only: how much was hidden stays in the certificate, because in a backtest even a count of later
+    # statements tells the model something about the future
+    lines.append(f"(as of {r['as_of'][:10]})")
     return "\n".join(lines)

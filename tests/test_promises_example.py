@@ -23,6 +23,8 @@ assert all(c.ok for c in factblock.validate(EX / "brain"))
 status = runpy.run_path(str(EX / "run.py"))["status"]
 assert status("2026-03-15", "Globex") == {"p1": "open", "p3": "open"}
 assert status("2026-04-01")["p2"] == "past due"
+assert [i["id"] for i in factblock.recall(EX / "brain", "", "2026-04-01", verdict="overdue")["items"]] == ["p2"]
+assert factblock.recall(EX / "brain", "", "2026-04-10", verdict="overdue")["items"] == []   # broken by then
 assert status("2026-04-10") == {"p1": "open", "p2": "broken", "p3": "open"}
 assert status("2026-05-10") == {"p1": "kept", "p2": "broken", "p3": "open"}
 ctx = factblock.context(EX / "brain", "Globex", "2026-05-10")

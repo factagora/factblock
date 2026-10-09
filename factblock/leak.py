@@ -15,10 +15,15 @@ def _questions(q):
     return list(q)
 
 
+def _day_only(v):
+    return (isinstance(v, date) and not isinstance(v, datetime)) or (isinstance(v, str) and len(v.strip()) == 10)
+
+
 def _asked(v):
     """A question asked on a date could have been asked at its first moment, so a date-only asked_at is the
     start of that day in UTC: a block learned later that day is a leak. Reads (scan, recall) take the end of
-    the day instead; for an eval gate the strict end is the safe one. Give a full timestamp to be exact."""
+    the day instead; for an eval gate the strict end is the safe one. Give a full timestamp to be exact, and pass
+    the same timestamp to the reads that built the agent's context."""
     if isinstance(v, date) and not isinstance(v, datetime):
         v = v.isoformat()
     return parse_instant(v)
@@ -27,7 +32,9 @@ def _asked(v):
 def leak(bundle, questions) -> dict:
     """questions: a JSONL path or dicts of {id?, asked_at, evidence: [block id, ...]}. A date-only asked_at
     means the start of that day (UTC), so a block learned later that day counts as a leak. A question without
-    asked_at or an evidence list raises ValueError; ids the bundle lacks are listed under `missing`."""
+    asked_at or an evidence list raises ValueError; ids the bundle lacks are listed under `missing`.
+    `leaked_blocks` counts citations (a block cited by two leaking questions counts twice); each question
+    carries `day_only` when its asked_at had no time."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     rows = {r["id"]: r for r in b.nodes}
     out = []
@@ -45,7 +52,7 @@ def leak(bundle, questions) -> dict:
             elif not _visible(r, t, v):
                 leaked.append({"id": nid, "known_at": r["known_at"].isoformat(), "asserted_at": r["asserted_at"].isoformat(),
                                "reason": "known_later" if r["known_at"] > t else "not_in_force"})
-        out.append({"id": q.get("id", i), "asked_at": t.isoformat(), "evidence": len(q["evidence"]), "leaked": leaked, "missing": missing})
+        out.append({"id": q.get("id", i), "asked_at": t.isoformat(), "day_only": _day_only(q["asked_at"]), "evidence": len(q["evidence"]), "leaked": leaked, "missing": missing})
     n = len(out)
     bad = sum(1 for q in out if q["leaked"])
     return {"questions": n, "leaked_questions": bad, "leak_rate": round(bad / n, 4) if n else 0.0,

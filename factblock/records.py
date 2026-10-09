@@ -44,7 +44,15 @@ def read_records(path) -> list[dict]:
 def from_records(rows: Iterable[dict], *, known_at: Instant | None = None, backfill: bool = False,
                  namespace: str = "local") -> dict:
     """Use when you have structured rows, not prose: each row becomes one block (or one verdict) with the
-    dates its columns give. See the module docstring for the columns. Pass the result to write_bundle."""
+    dates its columns give. Pass the result to write_bundle(result, out, append=True); read_records(path)
+    reads a .csv or .jsonl into rows. `factblock import` on the command line does both.
+
+    statement  id?, statement|text, asserted_at|said_at, valid_from|effective_from?, valid_to|effective_to|due?,
+               known_at?, kind? (default claim), replaces? (id;id, writes SUPERSEDES); other columns go to payload
+    verdict    target, outcome, decided_at, known_at?, value?, resolver?, method?, evidence? (url;url)
+
+    known_at, when missing on a row: `known_at=` if given, else the row's asserted_at (or decided_at) with
+    backfill=True, else now."""
     now = datetime.now(timezone.utc)
     fallback = parse_instant(known_at) if known_at else None
     nodes, edges, resolutions = [], [], []

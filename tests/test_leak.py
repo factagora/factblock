@@ -44,7 +44,8 @@ import tempfile  # noqa: E402
 with tempfile.TemporaryDirectory() as d:
     factblock.write_bundle({"nodes": [{"id": "n2", "kind": "claim", "statement": "guidance cut", "asserted_at": "2025-03-20T21:00:00Z",
                                        "known_at": "2025-03-21T02:00:00Z"}]}, d)
-    assert factblock.leak(d, [{"asked_at": "2025-03-21", "evidence": ["n2"]}])["leaked_questions"] == 1
+    r = factblock.leak(d, [{"asked_at": "2025-03-21", "evidence": ["n2"]}])
+    assert r["leaked_questions"] == 1 and r["per_question"][0]["day_only"] is True
     assert factblock.leak(d, [{"asked_at": "2025-03-21T03:00:00Z", "evidence": ["n2"]}])["leaked_questions"] == 0
     qf = pathlib.Path(d) / "q.jsonl"
     qf.write_text('{"id": "q2", "asked_at": "2025-03-21T00:00:00Z", "evidence": ["n2"]}\n')

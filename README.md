@@ -38,7 +38,7 @@ print(factblock.context("brain/", "interest rates", as_of="2024-10-01"))
 #   replaced 2024-09-18 by: The Fed cuts interest rates
 #   verdict: true (decided 2024-05-01 by process:tckg-resolver)
 # - 2024-04-10: Bond yields rise after the rate hike (learned 2024-04-15)
-# (as of 2024-10-01; 1 later block hidden)
+# (as of 2024-10-01)
 ```
 
 That string goes into your agent's prompt. The old claim is still there, marked as replaced, with the verdict it had as of that day; ask `as_of="2025-01-01"` and the verdict reads `false`, because it was re-resolved in December. A date filter would show both claims side by side with nothing to say which one stands. [`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent) runs five support questions both ways: a date filter puts a stale answer into the prompt on all five, FactBlock on none. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
@@ -107,7 +107,7 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 
 ## Use it with your AI
 
-**Recall as context.** `recall` ranks the visible blocks about a query and `context` turns them into prompt lines. Matching is by keyword over the statement and the payload's text (speaker, quote, imported columns): a shared four-letter stem counts, so `cost` finds "costs" but `price` does not; an empty query lists everything, newest first. `verdict="did_not"` (or `"open"`, `"resolved"`) narrows to settled or unsettled blocks, `kinds=` to kinds of your own such as `commitment`. A change that was announced but is not in force yet is shown as `changes <date> to: ...`, so the agent can say "$30, rising to $36 on 15 March". Read with `as_of` set to the decision time (now, or a past instant for a backtest). `scan` returns everything visible as Arrow tables when you want to build your own.
+**Recall as context.** `recall` ranks the visible blocks about a query and `context` turns them into prompt lines. Matching is by keyword over the statement and the payload's text (speaker, quote, imported columns): a shared four-letter stem counts, so `cost` finds "costs" but `price` does not; an empty query lists everything, newest first. `verdict="did_not"` (or `"broken"` for a commitment, `"open"`, `"resolved"`, `"overdue"`) narrows to settled, unsettled or past-due blocks, `kinds=` to kinds of your own such as `commitment`. A change that was announced but is not in force yet is shown as `changes <date> to: ...`, so the agent can say "$30, rising to $36 on 15 March". Read with `as_of` set to the decision time (now, or a past instant for a backtest). `scan` returns everything visible as Arrow tables when you want to build your own.
 
 **Analytics.** `to-parquet` writes the Parquet profile. DuckDB reads it with no Python through [`duckdb/factblock.sql`](https://github.com/factagora/factblock/blob/main/duckdb/factblock.sql): `factblock_nodes(bundle, as_of)`, `factblock_edges`, `factblock_certificate`. Spark and Databricks read the same files.
 
@@ -125,7 +125,7 @@ factblock import news.jsonl -o news/
 factblock leak news/ questions.jsonl      # {"id": "q2", "asked_at": "2025-03-21T00:00:00Z", "evidence": ["n2"]} per line
 ```
 
-`leak` checks knowledge time and validity. Evidence that was knowable but already replaced when the question was asked is not a leak; `recall` marks it `superseded_by` if you need to catch that too.
+A date-only `as_of` means the end of that day for reads and the start of that day for `leak`, so build each question's context with its full timestamp and give `leak` the same one. `leak` checks knowledge time and validity. Evidence that was knowable but already replaced when the question was asked is not a leak; `recall` marks it `superseded_by` if you need to catch that too.
 
 ## For coding agents
 
@@ -201,7 +201,7 @@ Format, not platform. Apache-2.0. tckg is one writer of this format; nothing her
 
 ## Status
 
-`1.0-draft.1`. Works today: `import` (CSV or JSONL rows, no model), `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](https://github.com/factagora/factblock/tree/main/factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. On PyPI as `1.0.0a2` (`pip install --pre factblock`). The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `import` (CSV or JSONL rows, no model), `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](https://github.com/factagora/factblock/tree/main/factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. On PyPI as `1.0.0a3` (`pip install --pre factblock`). The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
 
 ```bash
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
