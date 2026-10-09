@@ -97,6 +97,26 @@ Edges are the speaker's reasoning, not co-occurrence: `CAUSES`, `CONTRIBUTING_FA
 
 Declared facts make conflicts explicit. Declare `belief:fed:direction` with a policy (`latest_valid`, `latest_observed`, `source_priority`, `strict`) and `resolve` returns one value or the reason there is none: `no_data`, `not_yet`, `no_value_at`, `unresolved_conflict`. It never guesses.
 
+## Timelines
+
+Once your data is a bundle, one call draws what happened to each statement over time, as known on a day you pick: when it was said, took effect, was learned, was replaced, and each verdict. Add a numeric series (prices, rates, any CSV with a date and a value) and each statement sits on it, a call with a horizon drawn as an arrow to that horizon in the colour of its verdict.
+
+```python
+t = factblock.timeline("brain/", as_of="2025-01-01", query="interest rates")
+t                                                  # in Jupyter, the chart; hover for the block id, click for the source
+t = t.with_series("samples/fed-funds-rate.csv", "Fed funds rate (%)")
+t.save("rates.html")                               # .html needs nothing; .png and .svg need factblock[viz]
+t.claims, t.events                                 # the rows behind the chart, for your own renderer
+```
+
+```bash
+factblock timeline brain/ --as-of 2025-01-01 -q "interest rates" --series samples/fed-funds-rate.csv -o rates.html
+```
+
+![Three statements about interest rates over the fed funds rate, as known on 1 January 2025](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline-rates.png)
+
+The rate never went up, yet "The Fed raises interest rates" was judged right in May and only re-judged wrong in December. Both verdicts are rows with their own dates, so the chart shows the correction instead of overwriting it. Read as of an earlier day and the second verdict, the cut and the later rates are simply not drawn. The spec is Vega-Lite (`t.spec()`), so the same chart renders in a notebook, a web page, or as an image in a chat answer; `t.to_dict()` is the data for any other renderer. `samples/fed-funds-rate.csv` is FRED's DFF series, public domain.
+
 ## Claims it is good at
 
 | Kind | Example | What you can ask that other memories cannot |

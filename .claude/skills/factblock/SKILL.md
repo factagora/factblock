@@ -39,6 +39,14 @@ s = factblock.scan("brain/", as_of="2026-04-10")                         # every
 
 `as_of` accepts `'2026-04-10'` (the end of that day, UTC), an ISO timestamp, a `date` or a `datetime`. Every result carries a `certificate`: what the read hid because it was learned later (`masked`) or not in force (`not_in_force`).
 
+## Show it over time
+
+```python
+t = factblock.timeline("brain/", as_of="2026-04-10", query="refund policy")   # one lane per statement: said, in force, replaced, verdicts
+t.with_series("prices.csv", "Price")                                          # over a numeric series (date, value CSV); values after as_of are dropped
+t.save("out.html")                                                             # or .png/.svg with factblock[viz]; t.spec() is Vega-Lite, t.to_dict() the rows
+```
+
 ## Rules
 
 1. Every read takes `as_of`. There is no default; pass the moment the question was asked.

@@ -17,18 +17,11 @@ AS_OF = "2026-09-10"
 con, pq = views.connect(ROOT / "samples" / "cramer")
 b = factblock.Bundle(ROOT / "samples" / "cramer")
 
-# stance: every SPY up/down call known by AS_OF, verdicts as the library sees them
-s = views.stance(con, pq, "SPY", AS_OF)
-want = [n for n in b.nodes if n["kind"] == "prediction" and (n.get("payload") or {}).get("asset") == "SPY"
-        and n["payload"].get("direction") in ("up", "down")]
-assert sorted(r["id"] for r in s["rows"]) == sorted(n["id"] for n in want)
-lib = {i["id"]: i.get("verdict", {}).get("outcome") for i in factblock.recall(b, "", AS_OF, kinds=("prediction",), limit=5000)["items"]}
-for r in s["rows"]:
-    assert r["url"].startswith("https://www.youtube.com/") and r["id"]
-    if r["id"] in lib and lib[r["id"]]:
-        assert r["outcome"] == lib[r["id"]], r
-assert {r["status"] for r in s["rows"]} == {"came true", "did not", "no verdict", "replaced"}
-assert s["spec"]["encoding"]["href"] == {"field": "url"}
+# the market drill-down is the library's timeline: every SPY call known by AS_OF, verdicts as recall sees them
+s = factblock.timeline(b, AS_OF, "SPY", limit=100)
+assert len(s.claims) == 50 and all(c["source"].startswith("https://www.youtube.com/") for c in s.claims)
+lib = {i["id"]: i.get("verdict", {}).get("outcome") for i in factblock.recall(b, "SPY", AS_OF, limit=100)["items"]}
+assert all(c["verdict"] == lib[c["id"]] for c in s.claims)
 
 # evidence: one statement, its recorded links, nothing learned later
 e = views.evidence(con, pq, "fdc79a63b9b44a7f", AS_OF)
@@ -65,13 +58,13 @@ rs = views.reasons(con, pq, AS_OF)
 settled = {r["target_id"] for r in b.resolutions} & {n["id"] for n in b.nodes if n["kind"] == "prediction"}
 assert sum(r["settled"] for r in rs["rows"]) == len(settled) and set().union(*(set(r["ids"]) for r in rs["rows"])) == settled
 
-assert [views.pick(q) for q in ("Why is he bullish?", "When did his view change?", "How accurate is he overall?")] == ["evidence", "stance", "track_record"]
+assert [views.pick(q) for q in ("Why is he bullish?", "When did his view change?", "How accurate is he overall?")] == ["evidence", "timeline", "track_record"]
 assert views.pick("What if I had followed his calls?") == "backtest"
 
 # your own data: the template CSV through import and the same views
 with tempfile.TemporaryDirectory() as d:
     subprocess.run([sys.executable, "-m", "factblock", "import", str(ROOT / "examples" / "analysis" / "template.csv"), "--backfill", "-o", d + "/b"], check=True, capture_output=True)
     c2, p2 = views.connect(d + "/b")
-    assert [(r["id"], r["status"]) for r in views.stance(c2, p2, "ACME", "2026-06-01")["rows"]] == [("c1", "replaced"), ("c2", "came true")]
+    assert {c["id"]: c["status"] for c in factblock.timeline(d + "/b", "2026-06-01", "ACME").claims} == {"c1": "replaced", "c2": "right"}
     assert views.reversals(c2, p2, "2026-06-01")["total"] == 1
-print("PASS analysis example: backtest (as of vs hindsight), track record (as known vs hindsight), reversals, reasons, stance and evidence match the reader; ids and sources on every mark; links marked recorded; template CSV runs")
+print("PASS analysis example: backtest (as of vs hindsight), track record (as known vs hindsight), reversals, reasons, the SPY timeline and evidence match the reader; ids and sources on every mark; links marked recorded; template CSV runs")

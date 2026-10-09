@@ -43,9 +43,15 @@ The reasons are the links he drew himself (`CAUSES`, `SUPPORTS`, ...), stored ne
 
 ## Drill down to the statements
 
-Every number above is made of blocks with ids and sources. Two drill-downs in the notebook show them: every call on the market (SPY) at the day it was said, up or down, coloured by what became of it; and one call ("The stock market is positioned to move higher", 21 March 2025) with the reasons he gave and the follow-up that did not come true.
+Every number above is made of blocks with ids and sources. Two drill-downs in the notebook show them.
 
-<p><img src="img/stance.png" width="49%" alt="Every call on SPY, up or down, by outcome"> <img src="img/evidence.png" width="49%" alt="One call, its recorded reasons and the follow-up"></p>
+**Every call on the market, over the market**, with [`factblock.timeline`](../../README.md#timelines), the library's reusable view: one lane per statement (said, replaced, judged) and, over the S&P 500, each call as an arrow from the day it was said to its horizon, coloured by its verdict. Read as of 30 June 2025, so nothing later is drawn. The index comes from FRED at run time; it is licensed, so it is not in the repository.
+
+![His calls on the market over the S&P 500, as known on 30 June 2025](img/timeline.png)
+
+**What one call rested on**: "The stock market is positioned to move higher" (21 March 2025), the reasons he gave and the follow-up that did not come true.
+
+![One call, its recorded reasons and the follow-up](img/evidence.png)
 
 ## Then ask a model
 
@@ -57,8 +63,8 @@ The same call reads differently two weeks later. On 26 March, "the bulls hold th
 
 | Piece | What it does |
 |---|---|
-| [`views.py`](views.py) | The analysis. `backtest()`, `track_record()`, `reversals()` and `reasons()` (the findings) and `stance()`, `evidence()` (the drill-downs) run SQL in DuckDB over the Parquet profile and the macro pack ([`duckdb/factblock.sql`](../../duckdb/factblock.sql)). Each returns `{"view", "title", "as_of", "rows", "spec"}`: the title is the finding, the rows carry the FactBlock ids behind each mark, and the spec is Vega-Lite over those rows. Nothing renders here. |
-| Rendering | The caller's choice. Jupyter renders the spec as is. A web page passes it to vega-embed. A chat answer turns it into a PNG with `vl_convert.vegalite_to_png(spec)`. `views.pick(question)` chooses the view a question needs: why → evidence, follow or backtest → backtest, change → stance, overall → track record. |
+| [`views.py`](views.py) | The analysis. `backtest()`, `track_record()`, `reversals()` and `reasons()` (the findings) and `evidence()` (a drill-down; the other one is `factblock.timeline`) run SQL in DuckDB over the Parquet profile and the macro pack ([`duckdb/factblock.sql`](../../duckdb/factblock.sql)). Each returns `{"view", "title", "as_of", "rows", "spec"}`: the title is the finding, the rows carry the FactBlock ids behind each mark, and the spec is Vega-Lite over those rows. Nothing renders here. |
+| Rendering | The caller's choice. Jupyter renders the spec as is. A web page passes it to vega-embed. A chat answer turns it into a PNG with `vl_convert.vegalite_to_png(spec)`. `views.pick(question)` chooses the view a question needs: why → evidence, follow or backtest → backtest, change → timeline, overall → track record. |
 | `factblock.context(ids=True)` | The model's context, from the same bundle and the same as-of rule. |
 
 The as-of rule is the same in both readers: `tests/test_duckdb.py` checks that the SQL macros and the Python library return the same rows, replacements, certificates and verdicts, and `tests/test_analysis_example.py` checks these views against the library.
@@ -67,7 +73,7 @@ The as-of rule is the same in both readers: `tests/test_duckdb.py` checks that t
 
 ## Use your own data
 
-Each view needs one thing from your data: the backtest needs verdict rows whose `value` holds the call's `return` (as `samples/cramer` has), the track record needs verdict rows, reversals need `replaces`, reasons need links, and the market drill-down needs a subject (`asset`) and a direction (`up` or `down`). Start from [`template.csv`](template.csv):
+Each view needs one thing from your data: the backtest needs verdict rows whose `value` holds the call's `return` (as `samples/cramer` has), the track record needs verdict rows, reversals need `replaces`, reasons need links, and the timeline needs only statements (a `direction` column draws calls as up or down triangles over a series). Start from [`template.csv`](template.csv):
 
 ```
 id,kind,said_at,due,text,asset,direction,speaker,source,replaces,target,outcome,decided_at
@@ -80,4 +86,4 @@ c2,prediction,2026-02-10,2026-04-30,Acme shares fall after the guidance cut.,ACM
 factblock import my-calls.csv --backfill -o my-brain/
 ```
 
-Set `BRAIN = "my-brain"` in the notebook and run it again. With the template you get the track record, one reversal and the stance chart for ACME. Reasons and the evidence view need links: they come from `factblock extract` on the transcripts, or from `edges.jsonl` rows you write yourself.
+Set `BRAIN = "my-brain"` in the notebook and run it again. With the template you get the track record, one reversal and the timeline for ACME. Reasons and the evidence view need links: they come from `factblock extract` on the transcripts, or from `edges.jsonl` rows you write yourself.

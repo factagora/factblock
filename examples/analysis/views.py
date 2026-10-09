@@ -10,7 +10,7 @@ Findings, each one a thing a table of statements cannot answer on its own:
 
 and two drill-downs to the statements behind them:
 
-    stance(con, pq, "SPY", as_of)            # every call on one subject, up or down, and what became of it
+    factblock.timeline(bundle, as_of, "SPY") # every call on one subject over time (the library's timeline, not here)
     evidence(con, pq, block_id, as_of)       # what one statement rests on, and what it led to
     pick("Why was he bullish in March?")     # -> "evidence": which view a question needs
 
@@ -64,43 +64,6 @@ def _rows(con, sql, params):
 
 def _day(d):
     return f"factblock_day('{d}')" if len(str(d)) == 10 else f"TIMESTAMPTZ '{d}'"
-
-
-def stance(con, pq, about, as_of):
-    """Every call about `about` (payload.asset) said and known by as_of: up or down, and what became of it."""
-    t = _day(as_of)
-    rows = _rows(con, f"""
-        WITH n AS (SELECT * FROM read_parquet(? || '/nodes.parquet')
-                    WHERE known_at <= {t} AND kind = 'prediction' AND json_extract_string(payload, '$.asset') = ?
-                      AND json_extract_string(payload, '$.direction') IN ('up', 'down')),
-             s AS (SELECT target_id, min(valid_from) AS replaced_at FROM read_parquet(? || '/edges.parquet')
-                    WHERE edge_type = 'SUPERSEDES' AND known_at <= {t} GROUP BY 1)
-        SELECT n.id, n.asserted_at::DATE AS said, json_extract_string(n.payload, '$.direction') AS direction, n.statement,
-               json_extract_string(n.payload, '$.source.url') AS url, v.outcome, v.decided_at::DATE AS decided, s.replaced_at::DATE AS replaced
-          FROM n LEFT JOIN factblock_verdicts(?, {t}) v ON v.target_id = n.id LEFT JOIN s ON s.target_id = n.id
-         ORDER BY n.asserted_at""", [pq, about, pq, pq])
-    for r in rows:
-        r["status"] = {"came_true": "came true", "did_not": "did not"}.get(r["outcome"]) or ("replaced" if r["replaced"] else "no verdict")
-        r["said"], r["decided"], r["replaced"] = (str(x) if x else None for x in (r["said"], r["decided"], r["replaced"]))
-    spec = {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": CONFIG, "width": 760, "height": 170,
-        "title": {"text": f"Calls on {about}, as known on {str(as_of)[:10]}",
-                  "subtitle": "Each mark is one statement: up or down when it was said, coloured by what became of it. Click a mark for the recording."},
-        "data": {"values": rows},
-        "mark": {"type": "point", "filled": True, "size": 110, "opacity": 1, "stroke": "#fcfcfb", "strokeWidth": 2, "cursor": "pointer"},
-        "encoding": {
-            "x": {"field": "said", "type": "temporal", "title": None, "axis": {"format": "%b %Y", "tickCount": 8}},
-            "y": {"field": "direction", "type": "nominal", "title": None, "sort": ["up", "down"], "axis": {"labelFontSize": 13}},
-            "yOffset": {"field": "status", "type": "nominal", "sort": list(STATUS)},
-            "color": {"field": "status", "type": "nominal", "title": "What became of it",
-                      "scale": {"domain": list(STATUS), "range": list(STATUS.values())}},
-            "shape": {"field": "status", "type": "nominal", "title": "What became of it", "scale": {"domain": list(STATUS), "range": ["triangle-up", "cross", "circle", "square"]}},
-            "href": {"field": "url"},
-            "tooltip": [{"field": "said", "type": "temporal", "title": "said"}, {"field": "statement"}, {"field": "status"},
-                        {"field": "decided", "title": "verdict on"}, {"field": "replaced", "title": "replaced on"}, {"field": "id", "title": "FactBlock id"}, {"field": "url", "title": "source"}],
-        },
-    }
-    return {"view": "stance", "title": spec["title"]["text"], "as_of": str(as_of), "rows": rows, "spec": spec}
 
 
 def evidence(con, pq, block_id, as_of):
@@ -358,12 +321,12 @@ def reasons(con, pq, as_of):
 
 
 def pick(question):
-    """Which view a question needs: why -> evidence; backtest/follow/return -> backtest; change/when -> stance; else track_record."""
+    """Which view a question needs: why -> evidence; backtest/follow/return -> backtest; change/when -> timeline; else track_record."""
     q = question.lower()
     if any(w in q for w in ("why", "because", "evidence", "based on", "reason", "근거", "이유", "왜")):
         return "evidence"
     if any(w in q for w in ("backtest", "follow", "strategy", "rule", "return", "백테스트", "따라", "수익")):
         return "backtest"
     if any(w in q for w in ("change", "changed", "when", "over time", "flip", "turn", "변화", "바뀌", "언제")):
-        return "stance"
+        return "timeline"
     return "track_record"
