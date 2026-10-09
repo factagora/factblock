@@ -8,7 +8,7 @@ import pathlib
 import shutil
 import sys
 
-from . import Bundle, TckgStore, extract, from_records, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
+from . import __version__, Bundle, TckgStore, extract, from_records, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
 from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
 
 # the wheel carries samples/rates at factblock/samples/rates (pyproject force-include); a checkout has it at the repo root
@@ -70,6 +70,7 @@ def _print_resolve(k, r):
 
 def main():
     p = argparse.ArgumentParser(prog="factblock", description="Agent memory for decisions: dated claims and their causal links, in a folder, read as of any instant.")
+    p.add_argument("--version", action="version", version=f"factblock {__version__}")
     sub = p.add_subparsers(dest="cmd", metavar="command")
 
     def cmd(name, help_, as_of=True, valid_at=True, json_=True):

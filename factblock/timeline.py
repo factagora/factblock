@@ -87,7 +87,7 @@ function draw(result) {{
     (function walk(o) {{ if (o && typeof o === "object") {{ if (o.color === "#0b0b0b") o.color = "#f0efec"; if (o.color === "#52514e") o.color = "#c3c2b7"; Object.values(o).forEach(walk); }} }})(spec);
   }}
   (function strip(o) {{ if (o && typeof o === "object") {{ delete o.href; Object.values(o).forEach(strip); }} }})(spec);   // links go through the host
-  const w = Math.max(320, document.body.clientWidth - (spec.facet ? 260 : 190));   // fit the chat column, leaving room for labels and the legend
+  const w = Math.max(320, document.body.clientWidth - (spec.facet ? 110 : 30));   // fit the chat column; the legend sits below
   if (spec.facet) spec.spec.width = w; else spec.width = w;
   vegaEmbed("#v", spec, {{actions: false}}).then(r => {{
     r.view.addEventListener("click", (e, item) => {{ const u = item && item.datum && item.datum.source; if (u) ask("ui/open-link", {{url: u}}); }});
@@ -339,6 +339,9 @@ def _when(day):
     return {"year": d.year, "month": d.month, "date": d.day}
 
 
+LEGEND_BELOW = {**CONFIG, "legend": {**CONFIG["legend"], "orient": "bottom", "direction": "horizontal"}}   # the chart keeps the width of a narrow chat column
+
+
 def _as_of_rule(tl):
     return {"mark": {"type": "rule", "strokeDash": [4, 4], "color": "#52514e"}, "encoding": {"x": {"datum": _when(tl.as_of[:10]), "type": "temporal"}}}
 
@@ -354,25 +357,26 @@ def _bars_spec(tl, width):
     lo, hi = parse_instant(min(c["said"] for c in tl.claims)), parse_instant(tl.as_of)
     span = max((hi - lo).days, 1)
     rows = []
-    for c in tl.claims:   # a bar at least visible; a label that would run off the right edge ends at the bar instead
+    for c in tl.claims:   # a bar at least visible; its label goes on the side with more room, and stops at the edge
         end = max(c["end"], _day(parse_instant(c["said"]) + timedelta(days=max(2, span // 150))))
-        rows.append({**c, "end": end, "right": (parse_instant(c["said"]) - lo).days > 0.6 * span})
+        rows.append({**c, "end": end, "right": (parse_instant(end) - lo) > (hi - parse_instant(c["said"]))})
     y = {"field": "lane", "type": "nominal", "sort": [c["lane"] for c in tl.claims], "axis": None}
     x = {"field": "said", "type": "temporal", "title": None, "axis": {"format": "%b %Y", "tickCount": 8, "orient": "top"}}
-    text = {"type": "text", "baseline": "bottom", "dy": -7, "fontSize": 11.5, "color": "#0b0b0b", "limit": 380}   # px; longer text ends in an ellipsis
+    text = {"type": "text", "baseline": "bottom", "dy": -7, "fontSize": 11.5, "color": "#0b0b0b"}   # longer text ends in an ellipsis
     layer = [
         _as_of_rule(tl),
         {"mark": {"type": "bar", "height": 9, "cornerRadius": 4.5, "cursor": "pointer"},
          "encoding": {"x": x, "x2": {"field": "end"}, "y": y, "color": _status(), "href": {"field": "source"}, "tooltip": TIP}},
-        {"transform": [{"filter": "!datum.right"}], "mark": {**text, "align": "left"}, "encoding": {"x": {"field": "said", "type": "temporal"}, "y": y, "text": {"field": "label"}}},
-        {"transform": [{"filter": "datum.right"}], "mark": {**text, "align": "right"}, "encoding": {"x": {"field": "end", "type": "temporal"}, "y": y, "text": {"field": "label"}}},
+        {"transform": [{"filter": "!datum.right"}], "mark": {**text, "align": "left", "limit": {"expr": "range('x')[1] - scale('x', datum.said) - 4"}}, "encoding": {"x": {"field": "said", "type": "temporal"}, "y": y, "text": {"field": "label"}}},
+        {"transform": [{"filter": "datum.right"}], "mark": {**text, "align": "right", "limit": {"expr": "scale('x', datum.end)"}}, "encoding": {"x": {"field": "end", "type": "temporal"}, "y": y, "text": {"field": "label"}}},
     ]
-    title = {"text": tl.title, "subtitle": ["Each bar runs from the day a statement was said to the day it was replaced, judged or due,",
-                                            f"coloured by what became of it as known on {tl.as_of[:10]}. Hover for its history."]}
+    title = {"text": tl.title, "subtitle": ["Each bar runs from the day a statement was said",   # short lines: titles do not wrap
+                                            "to the day it was replaced, judged or due, coloured by",
+                                            f"what became of it as known on {tl.as_of[:10]}. Hover for its history."]}
     if any(c["group"] for c in tl.claims):
         return {"title": title, "data": {"values": rows}, "facet": {"row": {"field": "group", "title": None, "header": {"labelAngle": 0, "labelAlign": "left", "labelFontSize": 13, "labelFontWeight": 600}}},
-                "spec": {"width": width, "height": {"step": 34}, "layer": layer}, "resolve": {"scale": {"y": "independent"}}}
-    return {"title": title, "data": {"values": rows}, "width": width, "height": {"step": 34}, "layer": layer}
+                "spec": {"width": width, "height": {"step": 34}, "layer": layer}, "resolve": {"scale": {"y": "independent"}}, "config": LEGEND_BELOW}
+    return {"title": title, "data": {"values": rows}, "width": width, "height": {"step": 34}, "layer": layer, "config": LEGEND_BELOW}
 
 
 def _series_spec(tl, width):
@@ -392,9 +396,10 @@ def _series_spec(tl, width):
     y = {"field": "v", "type": "quantitative", "title": tl.series_name, "scale": {"zero": False}}
     label = {"type": "text", "fontSize": 11, "color": "#0b0b0b"}
     return {
-        "title": {"text": tl.title, "subtitle": [f"{tl.series_name}, with each statement where it was said, coloured by what became of it as known on {tl.as_of[:10]}.",
+        "title": {"text": tl.title, "subtitle": [f"{tl.series_name}, with each statement where it was said,",
+                                                 f"coloured by what became of it as known on {tl.as_of[:10]}.",
                                                  "Settled ones are labelled; hover any point for its history."]},
-        "config": {**CONFIG, "legend": {**CONFIG["legend"], "orient": "bottom", "direction": "horizontal"}},
+        "config": LEGEND_BELOW,
         "width": width, "height": 320,
         "layer": [
             {"data": {"values": [{"t": _day(d), "v": v} for d, v in tl.series]}, "mark": {"type": "line", "color": "#52514e", "strokeWidth": 1.5},

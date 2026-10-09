@@ -78,4 +78,8 @@ with tempfile.TemporaryDirectory() as d:
     p = subprocess.run([sys.executable, "-m", "factblock", "timeline", str(RATES), "--as-of", "2025-01-01", "-q", "interest rates",
                         "--series", str(FFR), "-o", str(d / "c.html")], capture_output=True, text=True)
     assert p.returncode == 0 and (d / "c.html").exists() and "3 statements" in p.stdout, p.stdout + p.stderr
-print("PASS timeline: events as known on as_of (re-resolution, replacement), series cut at as_of, bars end at the first replacement, verdict or deadline, rows grouped, settled points labelled, ids, HTML/JSON/markdown from library and CLI, the v1 data contract, an MCP Apps tool result and view")
+# labels stop at the chart edge whatever width the host gives it, and the legend sits below
+texts = [l["mark"] for l in factblock.timeline(RATES, "2025-01-01").spec()["layer"] if l["mark"]["type"] == "text"]
+assert texts and all("expr" in m["limit"] for m in texts), texts
+assert factblock.timeline(RATES, "2025-01-01").spec()["config"]["legend"]["orient"] == "bottom"
+print("PASS timeline: events as known on as_of (re-resolution, replacement), series cut at as_of, bars end at the first replacement, verdict or deadline, rows grouped, settled points labelled, ids, HTML/JSON/markdown from library and CLI, the v1 data contract, an MCP Apps tool result and view, labels fit any width")
