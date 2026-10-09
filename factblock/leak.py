@@ -2,10 +2,11 @@
 answer rests on; a block the system learned after that instant is a leak. Same visibility rule
 as scan (SPEC 4.1), so a leak-free question set is one every answer could have been given then."""
 import json
+from datetime import date, datetime
 from pathlib import Path
 
 from .bundle import Bundle, parse_instant
-from .scan import _as_of, _visible
+from .scan import _visible
 
 
 def _questions(q):
@@ -14,8 +15,18 @@ def _questions(q):
     return list(q)
 
 
+def _asked(v):
+    """A question asked on a date could have been asked at its first moment, so a date-only asked_at is the
+    start of that day in UTC: a block learned later that day is a leak. Reads (scan, recall) take the end of
+    the day instead; for an eval gate the strict end is the safe one. Give a full timestamp to be exact."""
+    if isinstance(v, date) and not isinstance(v, datetime):
+        v = v.isoformat()
+    return parse_instant(v)
+
+
 def leak(bundle, questions) -> dict:
-    """questions: a JSONL path or dicts of {id?, asked_at, evidence: [block id, ...]}. A question without
+    """questions: a JSONL path or dicts of {id?, asked_at, evidence: [block id, ...]}. A date-only asked_at
+    means the start of that day (UTC), so a block learned later that day counts as a leak. A question without
     asked_at or an evidence list raises ValueError; ids the bundle lacks are listed under `missing`."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     rows = {r["id"]: r for r in b.nodes}
@@ -24,7 +35,7 @@ def leak(bundle, questions) -> dict:
         # a question without these would pass as leak-free, which is the wrong answer for an eval gate
         if "asked_at" not in q or not isinstance(q.get("evidence"), list):
             raise ValueError(f"question {q.get('id', i)} needs asked_at and evidence: [block id, ...]; got keys {sorted(q)}")
-        t = _as_of(q["asked_at"])
+        t = _asked(q["asked_at"])
         v = parse_instant(q["valid_at"]) if q.get("valid_at") else t
         leaked, missing = [], []
         for nid in q["evidence"]:

@@ -17,7 +17,7 @@ import re
 from .bundle import Bundle, BundleLike, Instant, parse_instant
 from .scan import visible
 
-DEFAULT_KINDS = ("claim", "prediction")
+THINGS = ("entity", "factor", "timeseries", "episode")   # core kinds that are not statements someone made
 
 
 def _terms(q):
@@ -40,9 +40,12 @@ def _hits(terms, n):
 
 
 def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10,
-           kinds: tuple[str, ...] = DEFAULT_KINDS) -> dict:
+           kinds: tuple[str, ...] | None = None) -> dict:
     """Use before an agent answers: the blocks matching `query` as known at `as_of`, ranked, each with what
-    replaced it, its verdict, source and known_at. Returns {"items", "matched", "certificate", ...}."""
+    replaced it, its verdict, source and known_at. Returns {"items", "matched", "excluded", "certificate", ...}.
+    `kinds` None means every kind of statement (claims, predictions, commitments, any kind you use) but not
+    the things they are about (entity, factor, timeseries, episode); () means every kind; a tuple means
+    exactly those. Matches dropped by `kinds` are counted per kind in `excluded`."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     nodes, _, res, cert = visible(b, as_of, valid_at)
     terms = _terms(query)
@@ -56,12 +59,13 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
     ended = [n for n in b.nodes if n["id"] in verdicts and n["id"] not in by_id and n["known_at"] <= t
              and n.get("valid_to") is not None and n["valid_to"] <= v and n["asserted_at"] <= v]
     nodes = nodes + [{**n, "superseded_by": None, "_ended": True} for n in ended]
-    items = []
+    items, excluded = [], {}
     for n in nodes:
-        if kinds and n["kind"] not in kinds:
-            continue
         payload = n.get("payload") or {}
         score = _hits(terms, n)
+        if score and (n["kind"] in THINGS if kinds is None else kinds and n["kind"] not in kinds):
+            excluded[n["kind"]] = excluded.get(n["kind"], 0) + 1
+            continue
         if score:
             item = {"id": n["id"], "kind": n["kind"], "statement": n.get("statement"), "asserted_at": n["asserted_at"],
                     "known_at": n["known_at"], "speaker": payload.get("speaker"), "source": payload.get("source"), "score": score}
@@ -72,13 +76,14 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
                 if succ is None:   # the replacing edge is visible; its block may not be in force at valid_at
                     raw = raw or {x["id"]: x for x in b.nodes}
                     succ = raw.get(n["superseded_by"], {"id": n["superseded_by"]})
-                item["superseded_by"] = {"id": succ["id"], "statement": succ.get("statement"), "asserted_at": succ.get("asserted_at")}
+                item["superseded_by"] = {"id": succ["id"], "statement": succ.get("statement"), "asserted_at": succ.get("asserted_at"),
+                                         "since": n["_replaced_at"]}
             v = verdicts.get(n["id"])
             if v:
                 item["verdict"] = {"outcome": v.get("outcome") or v.get("value"), "decided_at": v["decided_at"], "resolver": v.get("resolver")}
             items.append(item)
     items.sort(key=lambda x: (-x["score"], -x["asserted_at"].timestamp()))
-    return {"query": query, "as_of": cert["as_of"], "items": items[:limit], "matched": len(items), "certificate": cert}
+    return {"query": query, "as_of": cert["as_of"], "items": items[:limit], "matched": len(items), "excluded": excluded, "certificate": cert}
 
 
 def _source(s):
@@ -87,11 +92,13 @@ def _source(s):
     return s
 
 
-def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10) -> str:
+def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10,
+            kinds: tuple[str, ...] | None = None) -> str:
     """Use to put memory into a prompt. The recall as lines: one dated statement per line, indented lines for what happened
-    to it since (replaced, verdict), then what was hidden. Learned-later and source go on the first line."""
-    r = recall(bundle, query, as_of, valid_at, limit)
-    lines = []
+    to it since (replaced, verdict), then what was hidden. Learned-later and source go on the first line. Never empty:
+    when nothing matches it says so, so the model is told it has no memory of this rather than nothing at all."""
+    r = recall(bundle, query, as_of, valid_at, limit, kinds)
+    lines = [] if r["items"] else [f"(nothing about {query!r} known as of {r['as_of'][:10]})"]
     for i in r["items"]:
         head = f"- {i['asserted_at'].date().isoformat()}" + (f" {i['speaker']}:" if i.get("speaker") else ":") + f" {i['statement']}"
         notes = []
@@ -104,8 +111,9 @@ def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | 
             lines.append(f"  ended {i['ended'].date().isoformat()}")
         if i.get("superseded_by"):
             s = i["superseded_by"]
-            when = s["asserted_at"].date().isoformat() if s.get("asserted_at") else "later"
-            lines.append(f"  replaced {when} by: {s.get('statement') or s['id']}")
+            said = s["asserted_at"].date().isoformat() if s.get("asserted_at") else None
+            when = s["since"].date().isoformat()
+            lines.append(f"  replaced {when} by: {s.get('statement') or s['id']}" + (f" (announced {said})" if said and said != when else ""))
         if i.get("verdict"):
             v = i["verdict"]
             lines.append(f"  verdict: {v['outcome']} (decided {v['decided_at'].date().isoformat()}" + (f" by {v['resolver']})" if v.get("resolver") else ")"))

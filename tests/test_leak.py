@@ -39,9 +39,20 @@ try:
     assert p.returncode != 0 and "needs asked_at and evidence" in p.stderr and "Traceback" not in p.stderr, p.stderr
 finally:
     bad.unlink()
+# a date-only asked_at is the start of that day: news ingested at 02:00 leaks into a question dated that day
+import tempfile  # noqa: E402
+with tempfile.TemporaryDirectory() as d:
+    factblock.write_bundle({"nodes": [{"id": "n2", "kind": "claim", "statement": "guidance cut", "asserted_at": "2025-03-20T21:00:00Z",
+                                       "known_at": "2025-03-21T02:00:00Z"}]}, d)
+    assert factblock.leak(d, [{"asked_at": "2025-03-21", "evidence": ["n2"]}])["leaked_questions"] == 1
+    assert factblock.leak(d, [{"asked_at": "2025-03-21T03:00:00Z", "evidence": ["n2"]}])["leaked_questions"] == 0
+    qf = pathlib.Path(d) / "q.jsonl"
+    qf.write_text('{"id": "q2", "asked_at": "2025-03-21T00:00:00Z", "evidence": ["n2"]}\n')
+    out = subprocess.run([sys.executable, "-m", "factblock", "leak", d, str(qf)], capture_output=True, text=True).stdout
+    assert "q2: asked 2025-03-21 00:00, n2 known 2025-03-21 02:00" in out, out   # same day: the minute is shown
 p = subprocess.run([sys.executable, "-m", "factblock", "leak", str(RATES), str(QS), "--json"], capture_output=True, text=True)
 assert p.returncode == 1 and '"leaked_questions": 1' in p.stdout, p.stdout
 
 p = subprocess.run([sys.executable, "-m", "factblock", "leak", str(RATES), str(QS)], capture_output=True, text=True)
 assert p.returncode == 1 and "1/3 questions leak" in p.stdout and "c3 known 2024-07-01" in p.stdout, p.stdout
-print("PASS leak: 1 of 3 questions, block and known_at named, missing id, not_in_force via valid_at, malformed questions refused, CLI exit 1 on leak or unknown id, --json")
+print("PASS leak: 1 of 3 questions, block and known_at named, missing id, not_in_force via valid_at, date-only asked_at = start of day, same-day minutes shown, malformed questions refused, CLI exit 1 on leak or unknown id, --json")

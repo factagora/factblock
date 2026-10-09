@@ -110,7 +110,7 @@ def main():
     rc = cmd("recall", "the blocks about something as of an instant, ranked; the read an agent makes before it answers")
     rc.add_argument("query", help="words to look for in statements, quotes and speakers")
     rc.add_argument("--limit", type=int, default=10)
-    rc.add_argument("--all-kinds", action="store_true", help="include entities and episodes, not only claims and predictions")
+    rc.add_argument("--all-kinds", action="store_true", help="also the things statements are about (entity, factor, timeseries, episode); every kind of statement is in by default")
     w = cmd("why", "the chain behind one block as of an instant: causes, effects, successors, contradictions")
     w.add_argument("node_id", help="the block id (see scan)")
     w.add_argument("--depth", type=int, default=3, help="hops to walk; default 3")
@@ -118,7 +118,7 @@ def main():
     r.add_argument("fact_key", help="the declared fact, e.g. belief:fed:direction")
     r.add_argument("--rules-as-of", help="apply the declaration in force at this instant instead of as-of")
     k = cmd("leak", "which answers in a dated question set rest on blocks learned after the question was asked", as_of=False, valid_at=False)
-    k.add_argument("questions", help="JSONL: {id?, asked_at, evidence: [block id, ...]} per line")
+    k.add_argument("questions", help="JSONL: {id?, asked_at, evidence: [block id, ...]} per line. A date-only asked_at is the start of that day (UTC)")
     cmd("validate", "the conformance checks of SPEC.md section 2; exit 1 if any fails", as_of=False, valid_at=False, json_=False)
     y = sub.add_parser("sync", help="folder <-> a hosted ledger, both ways, by identity; known_at travels as batches", description="folder <-> a hosted ledger (tckg), both ways")
     y.add_argument("bundle")
@@ -193,17 +193,19 @@ def main():
         else:
             _print_scan(r)
     elif a.cmd == "recall":
-        r = recall(a.bundle, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else ("claim", "prediction"))
+        r = recall(a.bundle, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else None)
         if a.json:
             out_json(r)
         else:
             for i in r["items"]:
                 print(f"{i['id']:<12} {i['kind']:<11} {_day(i['asserted_at'])}  {i['statement']}" + (f"   ({i['speaker']})" if i.get("speaker") else ""))
                 if i.get("superseded_by"):
-                    print(f"{'':<25}  replaced by {i['superseded_by']['id']}: {i['superseded_by'].get('statement')}")
+                    print(f"{'':<25}  replaced {_day(i['superseded_by']['since'])} by {i['superseded_by']['id']}: {i['superseded_by'].get('statement')}")
                 if i.get("verdict"):
                     print(f"{'':<25}  verdict: {i['verdict']['outcome']} ({_day(i['verdict']['decided_at'])})")
             print(f"{len(r['items'])} of {r['matched']} matching   {_cert(r['certificate'])}")
+            if r["excluded"]:
+                print("left out by kind: " + ", ".join(f"{n} {k}" for k, n in r["excluded"].items()) + " (--all-kinds to include)")
     elif a.cmd == "why":
         r = why(a.bundle, a.node_id, a.as_of, a.valid_at, a.depth)
         out_json(r) if a.json else _print_why(r)
@@ -217,7 +219,9 @@ def main():
             sys.exit(1 if r["leaked_questions"] or r["missing_blocks"] else 0)
         for q in r["per_question"]:
             if q["leaked"] or q["missing"]:
-                print(f"{q['id']}: asked {q['asked_at'][:10]}, " + ", ".join(f"{l['id']} known {l['known_at'][:10]} ({l['reason']})" for l in q["leaked"])
+                # same day: show the minute, or "asked 03-21, known 03-21" reads as no leak at all
+                at = lambda s: s[:16].replace("T", " ") if any(l["known_at"][:10] == q["asked_at"][:10] for l in q["leaked"]) else s[:10]  # noqa: E731
+                print(f"{q['id']}: asked {at(q['asked_at'])}, " + ", ".join(f"{l['id']} known {at(l['known_at'])} ({l['reason']})" for l in q["leaked"])
                       + (f", missing {q['missing']}" if q["missing"] else ""))
         print(f"{r['leaked_questions']}/{r['questions']} questions leak ({r['leak_rate']:.0%}), {r['leaked_blocks']} blocks learned after the question"
               + (f", {r['missing_blocks']} evidence ids not in the bundle" if r["missing_blocks"] else ""))

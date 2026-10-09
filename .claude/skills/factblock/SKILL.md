@@ -35,6 +35,8 @@ w = factblock.why("brain/", r["items"][0]["id"], as_of="2026-04-10")     # cause
 s = factblock.scan("brain/", as_of="2026-04-10")                         # everything visible, as Arrow tables (.nodes, .edges, .resolutions)
 ```
 
+`recall` and `context` return every kind of statement (claims, predictions, your own kinds such as `commitment`) and leave out entities, factors, timeseries and episodes; `kinds=(...)` narrows it and `result["excluded"]` counts what was left out. Matching is keyword-based (a shared 4-letter stem counts), so query with the words the statements use.
+
 `as_of` accepts `'2026-04-10'` (the end of that day, UTC), an ISO timestamp, a `date` or a `datetime`. Every result carries a `certificate`: what the read hid because it was learned later (`masked`) or not in force (`not_in_force`).
 
 ## Rules
@@ -47,7 +49,7 @@ s = factblock.scan("brain/", as_of="2026-04-10")                         # every
 
 ```bash
 factblock validate brain/                    # 11 checks, all ok
-factblock leak brain/ questions.jsonl        # answers that used blocks learned after the question
+factblock leak brain/ questions.jsonl        # answers that used blocks learned after the question (date-only asked_at = start of that day)
 factblock to-parquet brain/ brain-pq/        # DuckDB, Spark
 factblock sync brain/ https://tckg.factagora.com --space user:me   # hosted ledger, both ways ($TCKG_TOKEN)
 ```

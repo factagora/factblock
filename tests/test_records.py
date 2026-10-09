@@ -40,6 +40,19 @@ with tempfile.TemporaryDirectory() as d:
     sso = factblock.recall(d / "brain", "SSO", "2026-04-05")["items"][0]
     assert sso["verdict"]["outcome"] == "did_not", sso
 
+    # the replaced line gives the day the replacement took effect, and the announcement when it differs
+    ctx = factblock.context(d / "brain", "costs", "2026-03-20")
+    assert "replaced 2026-03-15 by: The Team plan costs $36 per user per month. (announced 2026-02-20)" in ctx, ctx
+    # a kind of your own is a statement too: recall and context show it; things are left out and counted
+    factblock.write_bundle(factblock.from_records([{"id": "c1", "kind": "commitment", "text": "Globex gets audit export by April",
+                                                    "said_at": "2026-02-01"}, {"id": "e1", "kind": "entity", "text": "Globex",
+                                                    "said_at": "2026-02-01"}], backfill=True), d / "brain", append=True)
+    r = factblock.recall(d / "brain", "Globex", "2026-03-01")
+    assert [i["id"] for i in r["items"]] == ["c1"] and r["excluded"] == {"entity": 1}, r
+    assert "Globex gets audit export" in factblock.context(d / "brain", "Globex", "2026-03-01")
+    assert factblock.recall(d / "brain", "Globex", "2026-03-01", kinds=("claim",))["excluded"] == {"commitment": 1, "entity": 1}
+    assert factblock.context(d / "brain", "zebra", "2026-03-01").startswith("(nothing about 'zebra' known as of 2026-03-01)")
+
     # re-importing the same rows would duplicate them: refused, folder untouched
     before = (d / "brain" / "nodes.jsonl").read_text()
     p = subprocess.run([sys.executable, "-m", "factblock", "import", str(d / "kb.csv"), "-o", str(d / "brain"), "--backfill"], capture_output=True, text=True)
@@ -63,4 +76,4 @@ with tempfile.TemporaryDirectory() as d:
         factblock.from_records([{"text": "no date"}]); raise AssertionError
     except ValueError as e:
         assert "needs asserted_at" in str(e)
-print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; batches declared; duplicate import and invalid rows refused before writing; input not mutated")
+print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; any statement kind recalled, things counted as excluded, empty context says so; batches declared; duplicate import and invalid rows refused before writing; input not mutated")

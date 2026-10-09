@@ -11,7 +11,12 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 
 - Docs say one rule for `known_at` everywhere: it is when you learned a row; give it honestly and let `import`, `extract` or `write_bundle` declare the batch (README, SKILL, AGENTS, SPEC glossary). Earlier text said "never set `known_at` yourself", which contradicted SPEC 6. README gains "Write rows you already have" and a table of the words for verdicts (verdict = resolution row, `outcome` its value, `resolve` is about declared facts).
 
+- `recall` and `context` return every kind of statement by default, including kinds of your own (`commitment`, `promise`), and leave out only the things statements are about (`entity`, `factor`, `timeseries`, `episode`). Matches left out by kind are counted in `excluded`, and the CLI says so. `context` takes `kinds` too.
+- `leak` reads a date-only `asked_at` as the start of that day (UTC), so a block learned later that day is a leak; reads still take the end of the day. Its text output shows the minute when a question and a block fall on the same day.
+
 ### Fixed
+- `context` said "replaced <date>" with the day the successor was said; it now gives the day the replacement took effect (the SUPERSEDES edge's `valid_from`) and adds "(announced <date>)" when they differ. `recall` items carry it as `superseded_by.since`.
+- `context` never returns an empty string: with nothing matching it says `(nothing about '<query>' known as of <date>)`.
 - `validate` accepted only `attestation.ledger`; SPEC I2 and 6 also allow a declared batch alone, which is what a non-ledger writer (an export script) produces. Both now pass, neither fails.
 - `sync` compared edge and resolution instants as strings, so a ledger spelling `...57.89332+00:00` for a folder's `...57.893320+00:00` made a second run re-push 1,297 edges and pull them back into the folder as duplicates. Identity keys now compare instants, not spellings.
 - Certificate (SPEC 4.2): `masked` counts only blocks learned after `as_of`; blocks known but not in force at `valid_at` move to a new `not_in_force` key. The Python reader counted both as masked and the DuckDB macro only the first, so the same read gave two certificates (samples/rates with `valid_at`: 4 vs 0). `factblock_certificate` gains `not_in_force_nodes`/`not_in_force_edges`; the DuckDB test now compares under `valid_at` too.
