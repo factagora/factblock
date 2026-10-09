@@ -131,14 +131,15 @@ def _source(s):
 
 
 def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10,
-            kinds: tuple[str, ...] | None = None, verdict: str | None = None) -> str:
+            kinds: tuple[str, ...] | None = None, verdict: str | None = None, ids: bool = False) -> str:
     """Use to put memory into a prompt. The recall as lines: one dated statement per line, indented lines for what happened
     to it since (replaced, about to change, verdict), announced changes not in force yet, then the as-of date. Learned-later and source go on the first line. Never empty:
-    when nothing matches it says so, so the model is told it has no memory of this rather than nothing at all."""
+    when nothing matches it says so, so the model is told it has no memory of this rather than nothing at all.
+    ids=True starts each line with its block id in brackets, so a model can cite [id] and you can check the source."""
     r = recall(bundle, query, as_of, valid_at, limit, kinds, verdict)
     lines = [] if r["items"] or r["upcoming"] else [f"(nothing about {query!r} known as of {r['as_of'][:10]})"]
     for i in r["items"]:
-        head = f"- {i['asserted_at'].date().isoformat()}" + (f" {i['speaker']}:" if i.get("speaker") else ":") + f" {i['statement']}"
+        head = (f"- [{i['id']}] " if ids else "- ") + i["asserted_at"].date().isoformat() + (f" {i['speaker']}:" if i.get("speaker") else ":") + f" {i['statement']}"
         notes = []
         if i.get("in_force_from") and i["in_force_from"].date() != i["asserted_at"].date():
             notes.append(f"in force from {i['in_force_from'].date().isoformat()}")

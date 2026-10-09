@@ -45,6 +45,10 @@ That string goes into your agent's prompt. The old claim is still there, marked 
 
 `brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
 
+**Analyse it, then hand it to a model.** The same files are a table. [`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis) charts two years of one commentator's market calls in DuckDB: how his view changed, what one call rested on, where each call stands. Then it gives a model the same data as of a date and traces every line the model cites back to the recording. Every mark carries its FactBlock id and source.
+
+![Calls on SPY over two years, coloured by what became of each: came true, did not, no verdict yet, replaced](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/stance.png)
+
 ## What comes out
 
 Two years of one public figure's statements, as files. [`samples/cramer`](https://github.com/factagora/factblock/tree/main/samples/cramer) is Jim Cramer on CNBC, 2024-09 to 2026-09: 2,091 blocks, 1,169 links he drew between them, 779 priced calls scored at their horizon. Every block links to the recording and the timestamp.

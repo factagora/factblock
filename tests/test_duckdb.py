@@ -35,4 +35,16 @@ with tempfile.TemporaryDirectory() as d:
     # plain SQL on top of the macro, the thing the pack exists for
     n = con.execute("SELECT count(*) FROM factblock_nodes(?, factblock_day('2024-10-01')) WHERE kind = 'claim' AND superseded_by IS NOT NULL", [pq]).fetchone()[0]
     assert n == 1
-print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants and under valid_at; SQL on top")
+# verdicts: the latest visible one per block, as recall() picks it, on rates (a re-resolution) and cramer (779 settled calls)
+for name, days in (("rates", ("2024-06-01", "2024-12-31", "2025-06-01")), ("cramer", ("2024-12-01", "2025-06-01", "2026-09-10"))):
+    with tempfile.TemporaryDirectory() as d:
+        pq = str(factblock.write_parquet(ROOT / "samples" / name, d))
+        con = duckdb.connect()
+        con.execute((ROOT / "duckdb" / "factblock.sql").read_text())
+        for day in days:
+            want = {}
+            for r in sorted(factblock.scan(pq, day).to_dicts("resolutions"), key=lambda r: (r["decided_at"], r["known_at"])):
+                want[r["target_id"]] = r["outcome"]
+            got = dict(con.execute("SELECT target_id, outcome FROM factblock_verdicts(?, factblock_day(?))", [pq, day]).fetchall())
+            assert got == want, (name, day, len(got), len(want))
+print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants and under valid_at; verdicts match the library's latest visible verdict; SQL on top")

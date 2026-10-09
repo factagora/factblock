@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `examples/analysis`: DuckDB + Jupyter over `samples/cramer`. Three views (how a view changed over time, what one statement rests on, calls per subject by outcome) computed in SQL over the Parquet profile; each returns rows with the FactBlock id and source URL behind every mark plus a Vega-Lite spec, so a notebook, a web page and a chat answer render the same view. The notebook then asks a model the same data as of a date and traces each cited id to its recording. `template.csv` shows the input for your own calls.
+- DuckDB macro `factblock_verdicts(bundle, as_of)`: the latest verdict per block among those known by `as_of`; `tests/test_duckdb.py` checks it against the Python reader on two samples.
+- `context(..., ids=True)` starts each line with its block id, so a model can cite `[id]` and the caller can check the source.
+
 ## 1.0.0a3 (2026-10-09)
 
 A write path for data you already have, and fixes from three first-use tests (a support bot over a CSV, a backtest with ingest lag, sales promises): every one of them had hit a silent wrong answer or had to copy the sample files to get data in. Format version unchanged: 1.0-draft.1, with `commitment` added as a core kind.

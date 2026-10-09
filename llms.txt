@@ -13,6 +13,7 @@ Use it when an agent answers from information that changes: prices and policies 
 ## Examples
 
 - [Support agent](https://raw.githubusercontent.com/factagora/factblock/main/examples/support-agent/README.md): five dated support questions, a date filter vs FactBlock (0/5 vs 5/5)
+- [Analysis](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/README.md): DuckDB + Jupyter over a real bundle; three views with an id and source on every mark, then the same data as a model's context with cited ids traced to the recording
 - [Promises](https://raw.githubusercontent.com/factagora/factblock/main/examples/promises/README.md): promises and verdicts from one CSV; open, past due, broken, kept as of any date
 - [Real sample](https://raw.githubusercontent.com/factagora/factblock/main/samples/cramer/README.md): two years of one public figure's statements, links and settled calls
 - [StreamingQA bench](https://raw.githubusercontent.com/factagora/factblock/main/bench/streamingqa/README.md): how often a time-ignorant recall leaks the future (79.7% of questions)

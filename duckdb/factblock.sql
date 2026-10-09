@@ -3,6 +3,7 @@
 --   duckdb -init duckdb/factblock.sql
 --   SELECT id, statement, superseded_by FROM factblock_nodes('path/to/bundle', TIMESTAMPTZ '2024-08-01');
 --   SELECT * FROM factblock_certificate('path/to/bundle', TIMESTAMPTZ '2024-08-01');
+--   SELECT target_id, outcome, decided_at FROM factblock_verdicts('path/to/bundle', TIMESTAMPTZ '2024-08-01');
 --
 -- Same rules as factblock.scan(): known_at <= as_of masks, valid_at (default as_of)
 -- selects, SUPERSEDES edges known by as_of flag the row they replace. The bundle
@@ -33,6 +34,14 @@ CREATE OR REPLACE MACRO factblock_edges(bundle, as_of, valid_at := NULL) AS TABL
      AND e.asserted_at <= t.v
      AND e.valid_from <= t.v
      AND (e.valid_to IS NULL OR t.v < e.valid_to);
+
+-- The latest verdict on each block, among those known by as_of (SPEC 3.6: a re-resolution is a later row,
+-- and a reader that needs one verdict takes the latest visible one). One row per target_id.
+CREATE OR REPLACE MACRO factblock_verdicts(bundle, as_of) AS TABLE
+  SELECT r.*
+    FROM read_parquet(bundle || '/resolutions.parquet') r
+   WHERE r.known_at <= CAST(as_of AS TIMESTAMPTZ)
+ QUALIFY row_number() OVER (PARTITION BY r.target_id ORDER BY r.decided_at DESC, r.known_at DESC) = 1;
 
 -- What the read hid and what it rests on (SPEC 4.2). One row.
 CREATE OR REPLACE MACRO factblock_certificate(bundle, as_of, valid_at := NULL) AS TABLE

@@ -1,0 +1,5 @@
+id,kind,said_at,due,text,asset,direction,speaker,source,replaces,target,outcome,decided_at
+c1,prediction,2026-01-05,2026-03-31,Acme shares rise through Q1.,ACME,up,Ana,https://example.com/notes/1,,,,
+c2,prediction,2026-02-10,2026-04-30,Acme shares fall after the guidance cut.,ACME,down,Ana,https://example.com/notes/2,c1,,,
+c3,prediction,2026-02-12,2026-06-30,Globex beats on revenue this year.,GLBX,up,Ben,https://example.com/notes/3,,,,
+,,,,,,,,,,c2,came_true,2026-05-01
