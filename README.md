@@ -119,7 +119,7 @@ t = factblock.timeline("samples/cramer", as_of="2025-06-30", query="SPY").with_s
 
 ![His calls on the market over the S&P 500 as known on 30 June 2025; the two settled calls are labelled, both wrong](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline.png)
 
-Values after the as-of day are dropped too. On the command line: `factblock timeline brain/ --as-of 2025-06-30 -q SPY --series sp500.csv -o spy.html`. The chart is a Vega-Lite spec (`t.spec()`), so it renders the same in a notebook, a web page, or as an image in a chat answer; `t.to_dict()` is the data for any other renderer. `samples/fed-funds-rate.csv` (FRED DFF, public domain) goes with `samples/rates`; the S&P 500 is licensed, so download it from FRED (`SP500`) yourself.
+Values after the as-of day are dropped too. On the command line: `factblock timeline brain/ --as-of 2025-06-30 -q SPY --series sp500.csv -o spy.html`. The chart is a Vega-Lite spec (`t.spec()`), so it renders the same in a notebook, a web page (`react-vega`, `vega-embed`), or as an image in a chat answer. `t.to_html(inline=True)` is one self-contained page that renders with no network, the shape an MCP Apps tool result needs in Claude or ChatGPT; `t.to_markdown()` is the same timeline as text for clients that cannot draw; `t.to_dict()` is the data for any other renderer, versioned as [`schemas/timeline.v1.schema.json`](https://github.com/factagora/factblock/blob/main/schemas/timeline.v1.schema.json). `samples/fed-funds-rate.csv` (FRED DFF, public domain) goes with `samples/rates`; the S&P 500 is licensed, so download it from FRED (`SP500`) yourself.
 
 ## Claims it is good at
 

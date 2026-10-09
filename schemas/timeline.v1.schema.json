@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/factagora/factblock/blob/main/schemas/timeline.v1.schema.json",
+  "title": "factblock.timeline/v1",
+  "description": "What Timeline.to_dict() returns: the statements on a timeline and what happened to them, as known on as_of. Dates are YYYY-MM-DD. A renderer needs only claims (one bar or point each); events and history are the detail.",
+  "type": "object",
+  "required": ["schema", "as_of", "title", "claims", "events", "certificate"],
+  "properties": {
+    "schema": {"const": "factblock.timeline/v1"},
+    "as_of": {"type": "string", "description": "the instant the timeline is read as of (ISO 8601)"},
+    "title": {"type": "string"},
+    "claims": {"type": "array", "items": {
+      "type": "object",
+      "required": ["id", "statement", "said", "end", "status"],
+      "properties": {
+        "id": {"type": "string", "description": "the FactBlock id"},
+        "kind": {"type": "string"},
+        "statement": {"type": "string"},
+        "label": {"type": "string", "description": "the statement shortened for display"},
+        "said": {"type": "string", "description": "asserted_at"},
+        "end": {"type": "string", "description": "the first of: replaced, judged, due; else as_of"},
+        "due": {"type": ["string", "null"], "description": "valid_to of a prediction or commitment"},
+        "status": {"enum": ["right", "wrong", "mixed", "open", "replaced"], "description": "what became of it, as known on as_of"},
+        "verdict": {"description": "the latest verdict known on as_of (its outcome), or null"},
+        "direction": {"type": ["string", "null"]},
+        "speaker": {"type": ["string", "null"]},
+        "group": {"type": ["string", "null"], "description": "the group_by value, when grouped"},
+        "source": {"type": ["string", "null"], "description": "a URL to the original"},
+        "reasons": {"type": "integer", "description": "recorded links that give a reason for it"},
+        "history": {"type": "string", "description": "every event, one line, for a tooltip"}
+      }
+    }},
+    "events": {"type": "array", "items": {
+      "type": "object",
+      "required": ["id", "t", "event"],
+      "properties": {
+        "id": {"type": "string"},
+        "t": {"type": "string"},
+        "event": {"enum": ["said", "in force", "learned later", "replaced", "verdict: right", "verdict: wrong", "verdict: mixed"]},
+        "detail": {"type": ["string", "null"]},
+        "other_id": {"type": ["string", "null"], "description": "for replaced: the id of the statement that replaced it"},
+        "source": {"type": ["string", "null"]}
+      }
+    }},
+    "series": {"type": ["array", "null"], "items": {"type": "object", "required": ["t", "value"], "properties": {"t": {"type": "string"}, "value": {"type": "number"}}}},
+    "series_name": {"type": ["string", "null"]},
+    "certificate": {"type": "object", "description": "what the read hid (SPEC 4.2)"}
+  }
+}

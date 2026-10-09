@@ -49,6 +49,16 @@ try:
 except ValueError as e:
     assert "c4" in str(e)
 
+# the data contract: to_dict() names its schema and carries the fields the schema requires
+sch = json.loads((ROOT / "schemas" / "timeline.v1.schema.json").read_text())
+dd = json.loads(json.dumps(s.to_dict(), default=str))
+assert dd["schema"] == sch["properties"]["schema"]["const"] and set(sch["required"]) <= set(dd)
+assert all(set(sch["properties"]["claims"]["items"]["required"]) <= set(c) for c in dd["claims"])
+assert all(e["event"] in sch["properties"]["events"]["items"]["properties"]["event"]["enum"] for e in dd["events"])
+md = t.to_markdown()
+assert "The Fed raises interest rates **wrong** (verdict false)" in md and md.rstrip().endswith("nothing learned later is shown._")
+assert 'src="https://cdn.jsdelivr.net/npm/vega@5.30.0"' in t.to_html() and "prefers-color-scheme" in t.to_html()
+
 m = t._repr_mimebundle_()
 assert "application/vnd.vegalite.v5+json" in m and m["application/vnd.vegalite.v5+json"]["layer"][1]["encoding"]["href"] == {"field": "source"}
 assert "2024-12-01 verdict: wrong" in {c["id"]: c["history"] for c in t.claims}["c1"]
@@ -59,4 +69,4 @@ with tempfile.TemporaryDirectory() as d:
     p = subprocess.run([sys.executable, "-m", "factblock", "timeline", str(RATES), "--as-of", "2025-01-01", "-q", "interest rates",
                         "--series", str(FFR), "-o", str(d / "c.html")], capture_output=True, text=True)
     assert p.returncode == 0 and (d / "c.html").exists() and "3 statements" in p.stdout, p.stdout + p.stderr
-print("PASS timeline: events as known on as_of (re-resolution, replacement), series cut at as_of, bars end at the first replacement, verdict or deadline, rows grouped, settled points labelled, ids, HTML/JSON from library and CLI")
+print("PASS timeline: events as known on as_of (re-resolution, replacement), series cut at as_of, bars end at the first replacement, verdict or deadline, rows grouped, settled points labelled, ids, HTML/JSON/markdown from library and CLI, the v1 data contract")

@@ -36,13 +36,43 @@ CONFIG = {"background": "#fcfcfb", "font": "Inter, system-ui, sans-serif",
           "legend": {"labelColor": "#52514e", "titleColor": "#52514e"},
           "title": {"color": "#0b0b0b", "subtitleColor": "#52514e", "anchor": "start", "fontSize": 15, "subtitleFontSize": 12},
           "view": {"stroke": None}}
-HTML = """<!doctype html><html><head><meta charset="utf-8"><title>{title}</title>
-<script src="https://cdn.jsdelivr.net/npm/vega@5.30.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/vega-lite@5.21.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/vega-embed@6.26.0"></script>
-<style>body{{margin:24px;background:#fcfcfb;font-family:system-ui,sans-serif}}</style></head>
-<body><div id="v"></div><script>vegaEmbed("#v", {spec}, {{actions: false}});</script></body></html>
+SCHEMA = "factblock.timeline/v1"   # the shape of to_dict(); schemas/timeline.v1.schema.json
+LIBS = ("vega@5.30.0", "vega-lite@5.21.0", "vega-embed@6.26.0")
+DARK = {"background": "#1a1a19", "axis": {"labelColor": "#c3c2b7", "titleColor": "#c3c2b7", "gridColor": "#2e2e2b", "domainColor": "#52514e", "tickColor": "#52514e"},
+        "legend": {"labelColor": "#c3c2b7", "titleColor": "#c3c2b7"}, "title": {"color": "#f0efec", "subtitleColor": "#c3c2b7"},
+        "text": {"color": "#f0efec"}, "header": {"labelColor": "#f0efec"}}
+# the page follows the reader's light or dark setting; text marks inherit the config colour in dark mode
+HTML = """<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title>
+{scripts}
+<style>:root{{color-scheme:light dark}}body{{margin:16px;background:#fcfcfb;font-family:system-ui,sans-serif;overflow-x:auto}}
+@media (prefers-color-scheme: dark){{body{{background:#1a1a19}}}}</style></head>
+<body><div id="v"></div><script>
+const spec = {spec};
+if (matchMedia("(prefers-color-scheme: dark)").matches) {{
+  const d = {dark};
+  for (const k of Object.keys(d)) spec.config[k] = typeof d[k] === "object" ? Object.assign({{}}, spec.config[k], d[k]) : d[k];
+  (function walk(o) {{ if (o && typeof o === "object") {{ if (o.color === "#0b0b0b") o.color = "#f0efec"; if (o.color === "#52514e") o.color = "#c3c2b7"; Object.values(o).forEach(walk); }} }})(spec);
+}}
+vegaEmbed("#v", spec, {{actions: false}});
+</script></body></html>
 """
+
+
+def _scripts(inline):
+    """Script tags for vega, vega-lite and vega-embed: from the CDN, or the code itself (for sandboxes that block
+    the network, such as MCP Apps iframes). Inline copies are fetched once and kept in ~/.cache/factblock."""
+    if not inline:
+        return "\n".join(f'<script src="https://cdn.jsdelivr.net/npm/{lib}"></script>' for lib in LIBS)
+    import urllib.request
+    cache = Path.home() / ".cache" / "factblock"
+    cache.mkdir(parents=True, exist_ok=True)
+    out = []
+    for lib in LIBS:
+        f = cache / f"{lib}.js"
+        if not f.exists():
+            urllib.request.urlretrieve(f"https://cdn.jsdelivr.net/npm/{lib}", f)
+        out.append("<script>" + f.read_text().replace("</script", "<\\/script") + "</script>")
+    return "\n".join(out)
 
 
 def _outcome(o):
@@ -101,7 +131,7 @@ class Timeline:
 
     def to_dict(self) -> dict:
         """Everything behind the chart, JSON-ready: as_of, claims, events, series, certificate."""
-        return {"as_of": self.as_of, "title": self.title, "claims": self.claims, "events": self.events,
+        return {"schema": SCHEMA, "as_of": self.as_of, "title": self.title, "claims": self.claims, "events": self.events,
                 "series": [{"t": _day(d), "value": v} for d, v in self.series] if self.series else None,
                 "series_name": self.series_name, "certificate": self.certificate}
 
@@ -110,9 +140,26 @@ class Timeline:
         body = _series_spec(self, width) if self.series else _bars_spec(self, width)
         return {"$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": CONFIG, **body}
 
-    def save(self, path) -> Path:
-        """Write the chart: .html (no dependencies, opens in a browser), .json (the data), .vl.json (the spec),
-        .png or .svg (need `pip install vl-convert-python`)."""
+    def to_html(self, inline: bool = False) -> str:
+        """The chart as one HTML page that follows the reader's light or dark setting. inline=True puts the
+        Vega code in the page (about 800 KB) so it renders with no network, as in an MCP Apps iframe."""
+        return HTML.format(title=self.title, scripts=_scripts(inline), spec=json.dumps(self.spec(), default=str), dark=json.dumps(DARK))
+
+    def to_markdown(self) -> str:
+        """The chart as text, for a chat answer or any place that cannot draw: one line per statement with what
+        became of it and a link to its source."""
+        lines = [f"**{self.title}**", ""]
+        for c in self.claims:
+            what = {"right": "right", "wrong": "wrong", "mixed": "mixed", "open": "open", "replaced": "replaced"}[c["status"]]
+            tail = f" (verdict {c['verdict']})" if c["verdict"] else (f", due {c['due']}" if c["due"] else "")
+            src = f" [source]({c['source']})" if c["source"] else ""
+            lines.append(f"- {c['said']} · {c['statement']} **{what}**{tail}{src} `{c['id']}`")
+        lines += ["", f"_As known on {self.as_of[:10]}: nothing learned later is shown._"]
+        return "\n".join(lines)
+
+    def save(self, path, inline: bool = False) -> Path:
+        """Write the chart: .html (opens in a browser; inline=True for no network), .md (text), .json (the data,
+        schema factblock.timeline/v1), .vl.json (the spec), .png or .svg (need `pip install vl-convert-python`)."""
         path = Path(path)
         name = path.name.lower()
         if name.endswith(".vl.json"):
@@ -120,7 +167,9 @@ class Timeline:
         elif name.endswith(".json"):
             path.write_text(json.dumps(self.to_dict(), indent=1, default=str))
         elif name.endswith(".html"):
-            path.write_text(HTML.format(title=self.title, spec=json.dumps(self.spec(), default=str)))
+            path.write_text(self.to_html(inline))
+        elif name.endswith(".md"):
+            path.write_text(self.to_markdown() + "\n")
         elif name.endswith((".png", ".svg")):
             try:
                 import vl_convert as vlc
@@ -130,7 +179,7 @@ class Timeline:
             data = vlc.vegalite_to_png(spec, scale=2) if name.endswith(".png") else vlc.vegalite_to_svg(spec).encode()
             path.write_bytes(data)
         else:
-            raise ValueError(f"unknown format for {path}: use .html, .png, .svg, .json or .vl.json")
+            raise ValueError(f"unknown format for {path}: use .html, .md, .png, .svg, .json or .vl.json")
         return path
 
     def _repr_mimebundle_(self, include=None, exclude=None):
