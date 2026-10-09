@@ -1,16 +1,24 @@
 # Changelog
 
-## 1.0.0a2 (2026-10-08)
+## 1.0.0a3 (2026-10-09)
 
-Correctness fixes found by moving a real 46,000-row graph through the library and by a review against table formats, recall that carries corrections and verdicts into the prompt, and a first pass at making the library easy for coding agents to use correctly. Format version unchanged: 1.0-draft.1.
+A write path for data you already have, and fixes from three first-use tests (a support bot over a CSV, a backtest with ingest lag, sales promises): every one of them had hit a silent wrong answer or had to copy the sample files to get data in. Format version unchanged: 1.0-draft.1, with `commitment` added as a core kind.
 
-**Upgrading from 1.0.0a1.** The certificate's `masked` now counts only blocks learned after `as_of`; blocks known but not in force at `valid_at` are under `not_in_force`. `why()`'s certificate covers the walk, not the bundle. Code that read `masked` as "everything hidden" should add the two. `recall()` items gain keys; none were removed.
+**Upgrading from 1.0.0a2.** `recall` and `context` now return every kind of statement by default, not only claims and predictions; pass `kinds=("claim", "prediction")` for the old behaviour. `leak` reads a date-only `asked_at` as the start of that day, so it can report more leaks than before. `write_bundle` validates before writing and raises instead of writing an invalid bundle. A row already in the folder is skipped on append instead of duplicated.
+
+### Added
+- `factblock demo <scene>`: an animated walkthrough of a bundle in the terminal (Rich, optional extra `factblock[demo]`). Scenes: `timeline` (scan at several dates), `why` (a chain growing, coloured by edge family), `replaced` (SUPERSEDES, then an earlier date), `verdict` (a block before it was said, open, settled; dates picked from the data), `leak` (a bench results file), `title`, `end`. Every number comes from the same reads as the plain commands; each panel names the command that gives it.
+- `samples/demo.tape` records it with vhs into `samples/demo.gif` (README), `samples/demo.mp4` and `samples/demo-keyframe.png` (for slides). The plain-CLI recording is kept as `samples/demo-cli.gif` / `demo-cli.tape`.
+- `bench/streamingqa/run.py` writes `results.json` next to itself; the committed one holds the published run (797 of 1,000).
+- `factblock leak --json`.
+- `factblock import <file.csv|.jsonl> -o <bundle>` and `factblock.from_records()`: rows you already have, no model. One row is a statement (`statement`/`text`, `asserted_at`/`said_at`, `valid_from`/`effective_from`, `valid_to`, `known_at`, `kind`, `replaces`) or a verdict (`target`, `outcome`, `decided_at`, `resolver`, `evidence`); other columns go to payload. `replaces` writes the SUPERSEDES edge. `known_at` comes from the row, else `--known-at`, else the day it was said with `--backfill`, else now.
+- `examples/promises`: promises and verdicts from one CSV, read as of four dates (open, past due, broken, kept).
+- `Scan.to_dicts("nodes"|"edges"|"resolutions")`: rows as dicts with the JSON columns parsed; `factblock scan --json` uses it, so a verdict's `value` is no longer double-encoded. `factblock.__version__`.
+- README: a backtest recipe for data with ingest lag (publication is `said_at`, ingestion is `known_at`, no `--backfill`).
 
 ### Changed
 - `write_bundle` takes plain rows: the manifest is optional, instants may be strings, dates or datetimes, `valid_from` defaults to `asserted_at`, and a row without `attestation` goes under a backfill batch the writer declares at its `known_at` (a row with no `known_at` is an error). The whole bundle is validated before anything is written, so a failing check raises `ValueError` and leaves the folder as it was. The input dicts are no longer modified.
-
 - Docs say one rule for `known_at` everywhere: it is when you learned a row; give it honestly and let `import`, `extract` or `write_bundle` declare the batch (README, SKILL, AGENTS, SPEC glossary). Earlier text said "never set `known_at` yourself", which contradicted SPEC 6. README gains "Write rows you already have" and a table of the words for verdicts (verdict = resolution row, `outcome` its value, `resolve` is about declared facts).
-
 - `recall` and `context` return every kind of statement by default, including kinds of your own (`commitment`, `promise`), and leave out only the things statements are about (`entity`, `factor`, `timeseries`, `episode`). Matches left out by kind are counted in `excluded`, and the CLI says so. `context` takes `kinds` too.
 - `leak` reads a date-only `asked_at` as the start of that day (UTC), so a block learned later that day is a leak; reads still take the end of the day. Its text output shows the minute when a question and a block fall on the same day.
 - Re-running `import` (or any `write_bundle(..., append=True)`) is a no-op for rows the folder already has, matched by identity (SPEC 6.1); the CLI reports how many were already there. The same id with different content is refused: blocks are never edited.
@@ -18,13 +26,20 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 - Announced changes that are not in force yet are shown: `recall` items carry `upcoming` (the block that will replace them and from when) and `result["upcoming"]` lists other matching announcements; `context` writes `changes <date> to: ... (announced <date>)` and `(takes effect <date>)`.
 - SPEC: `commitment` is a core kind (a promise to do something; `valid_to` is its deadline, as it is a `prediction`'s horizon), with the recommended verdicts `kept`, `partly_kept`, `broken`, `withdrawn`, rated in the ClaimReview projection. `import` takes a `due` column (a date means through the end of that day).
 - `recall` keeps a prediction or commitment past its window, marked `ended`, with or without a verdict: the past-due, unresolved list. `context` shows `(due <date>)` before the deadline and `ended <date>, no verdict yet` after it.
-- `examples/promises`: promises and verdicts from one CSV, read as of four dates (open, past due, broken, kept).
-- `Scan.to_dicts("nodes"|"edges"|"resolutions")`: rows as dicts with the JSON columns parsed; `factblock scan --json` uses it, so a verdict's `value` is no longer double-encoded. `factblock.__version__`.
-- README: a backtest recipe for data with ingest lag (publication is `said_at`, ingestion is `known_at`, no `--backfill`).
 
 ### Fixed
 - `context` said "replaced <date>" with the day the successor was said; it now gives the day the replacement took effect (the SUPERSEDES edge's `valid_from`) and adds "(announced <date>)" when they differ. `recall` items carry it as `superseded_by.since`.
 - `context` never returns an empty string: with nothing matching it says `(nothing about '<query>' known as of <date>)`.
+- `leak` no longer passes a question set it cannot read. A question without `asked_at` or an `evidence` list raises `ValueError` (it used to count as leak-free), and the CLI exits 1 when an evidence id is not in the bundle, as it does on a leak. Bad input prints one `factblock: error:` line instead of a traceback.
+- `samples/rates`: c4, t1, t2 and the c4→c1 SUPERSEDES edge were learned (2024-09-15) before they were said (2024-09-18); batch b3 is now declared at 2024-09-20.
+
+## 1.0.0a2 (2026-10-08)
+
+Correctness fixes found by moving a real 46,000-row graph through the library and by a review against table formats, recall that carries corrections and verdicts into the prompt, and a first pass at making the library easy for coding agents to use correctly. Format version unchanged: 1.0-draft.1.
+
+**Upgrading from 1.0.0a1.** The certificate's `masked` now counts only blocks learned after `as_of`; blocks known but not in force at `valid_at` are under `not_in_force`. `why()`'s certificate covers the walk, not the bundle. Code that read `masked` as "everything hidden" should add the two. `recall()` items gain keys; none were removed.
+
+### Fixed
 - `validate` accepted only `attestation.ledger`; SPEC I2 and 6 also allow a declared batch alone, which is what a non-ledger writer (an export script) produces. Both now pass, neither fails.
 - `sync` compared edge and resolution instants as strings, so a ledger spelling `...57.89332+00:00` for a folder's `...57.893320+00:00` made a second run re-push 1,297 edges and pull them back into the folder as duplicates. Identity keys now compare instants, not spellings.
 - Certificate (SPEC 4.2): `masked` counts only blocks learned after `as_of`; blocks known but not in force at `valid_at` move to a new `not_in_force` key. The Python reader counted both as masked and the DuckDB macro only the first, so the same read gave two certificates (samples/rates with `valid_at`: 4 vs 0). `factblock_certificate` gains `not_in_force_nodes`/`not_in_force_edges`; the DuckDB test now compares under `valid_at` too.
@@ -47,19 +62,6 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 - Error messages say what to do: a folder without `factblock.json` names the commands that make one; an unparseable instant shows the formats that work; an unknown `provider` lists the valid ones; a missing model SDK names the extra to install.
 - `as_of` and `valid_at` accept `date` and `datetime` objects (a naive datetime is UTC, a date as `as_of` is the end of that day), not only strings.
 - README: the logo in the title, `pip install --pre factblock` (the package is an alpha), and absolute links and images so the PyPI page renders them.
-
-## Unreleased
-
-### Added
-- `factblock demo <scene>`: an animated walkthrough of a bundle in the terminal (Rich, optional extra `factblock[demo]`). Scenes: `timeline` (scan at several dates), `why` (a chain growing, coloured by edge family), `replaced` (SUPERSEDES, then an earlier date), `verdict` (a block before it was said, open, settled; dates picked from the data), `leak` (a bench results file), `title`, `end`. Every number comes from the same reads as the plain commands; each panel names the command that gives it.
-- `samples/demo.tape` records it with vhs into `samples/demo.gif` (README), `samples/demo.mp4` and `samples/demo-keyframe.png` (for slides). The plain-CLI recording is kept as `samples/demo-cli.gif` / `demo-cli.tape`.
-- `bench/streamingqa/run.py` writes `results.json` next to itself; the committed one holds the published run (797 of 1,000).
-- `factblock leak --json`.
-- `factblock import <file.csv|.jsonl> -o <bundle>` and `factblock.from_records()`: rows you already have, no model. One row is a statement (`statement`/`text`, `asserted_at`/`said_at`, `valid_from`/`effective_from`, `valid_to`, `known_at`, `kind`, `replaces`) or a verdict (`target`, `outcome`, `decided_at`, `resolver`, `evidence`); other columns go to payload. `replaces` writes the SUPERSEDES edge. `known_at` comes from the row, else `--known-at`, else the day it was said with `--backfill`, else now.
-
-### Fixed
-- `leak` no longer passes a question set it cannot read. A question without `asked_at` or an `evidence` list raises `ValueError` (it used to count as leak-free), and the CLI exits 1 when an evidence id is not in the bundle, as it does on a leak. Bad input prints one `factblock: error:` line instead of a traceback.
-- `samples/rates`: c4, t1, t2 and the c4→c1 SUPERSEDES edge were learned (2024-09-15) before they were said (2024-09-18); batch b3 is now declared at 2024-09-20.
 
 ## 1.0.0a1 (2026-10-05)
 
