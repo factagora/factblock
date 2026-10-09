@@ -20,3 +20,5 @@ jobs:
       - run: uv run python tests/test_factcheck.py
       - run: uv run python tests/test_support_example.py
       - run: uv run python tests/test_demo.py
+      - run: uv run python tests/test_readme_agents.py
+      - run: for t in tests/test_*.py; do uv run python "$t" || exit 1; done
