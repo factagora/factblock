@@ -42,6 +42,11 @@ class Scan:
     resolutions: pa.Table
     certificate: dict
 
+    def to_dicts(self, table: str = "nodes") -> list[dict]:
+        """Use when you want rows, not Arrow: one table as dicts, with the JSON columns (payload, value, ...) parsed back."""
+        return [{k: json.loads(v) if k in JSON_COLS and isinstance(v, str) else v for k, v in r.items()}
+                for r in getattr(self, table).to_pylist()]
+
 
 def visible(bundle: BundleLike, as_of: Instant, valid_at: Instant | None = None) -> tuple[list[dict], list[dict], list[dict], dict]:
     """The rows an as-of read shows, as plain dicts, plus the certificate: what scan() does before it

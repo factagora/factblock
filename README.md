@@ -100,7 +100,7 @@ Declared facts make conflicts explicit. Declare `belief:fed:direction` with a po
 | **Prediction** | "Yields keep climbing this year" (podcast, 2024-03-20) | What did this person believe on 2024-03-20? Did it come true? When did they say the opposite? |
 | **Stance** | CEO: "No price increase this year" (Jan), "An increase is unavoidable" (Jul) | How did the company's position move? What did we know in May? |
 | **Fact that gets corrected** | "Q2 revenue was $4.1B", restated to $3.9B six weeks later | `resolve` as of August gives $4.1B, as of October $3.9B, as of July `no_data` |
-| **Commitment** | Sales: "We ship SSO by end of Q3" (to customer A) | Which promises to A are past due and unresolved? Recall them before the support agent answers |
+| **Commitment** | Sales: "We ship SSO by end of Q3" (to customer A) | Which promises to A are past due and unresolved? Recall them before the support agent answers ([`examples/promises`](https://github.com/factagora/factblock/tree/main/examples/promises)) |
 | **Your AI's own assertions** | Assistant: "Your plan includes 10 seats" (to user B) | Which of last month's assertions are now false? Where did each one come from? |
 
 The common thread: a claim has a speaker, a time, a reason, and a later verdict. RAG keeps chunks, entity graphs keep triples, chat memories keep summaries. None of them keep that.
@@ -116,6 +116,16 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 **Speak the standards.** `to-claimreview` writes the verdicts visible as of an instant as schema.org ClaimReview JSON-LD; `to-okf` writes the blocks as an Open Knowledge Format bundle (markdown with frontmatter) that catalogs and agents read; `from-factcheck` brings published fact-checks in (Google's Fact Check Tools API shape) as dated claims with dated verdicts, every row under a batch declared at its review date. None of them is the storage format; they are doors.
 
 **Check your evals.** `leak` takes a question set with dates (`{asked_at, evidence: [block ids]}` per line) and reports how many answers depend on blocks learned after the question's date, naming each block and when it became known. A date-only `asked_at` means the start of that day, so news ingested later that day counts as a leak; give a timestamp to be exact. It exits non-zero on a leak, so it fits in CI. On [StreamingQA](https://github.com/factagora/factblock/tree/main/bench/streamingqa) (36,378 dated questions about dated news), a recall that ignores time rests on a block learned after the question for **80% of questions**; the same recall as of the question date leaks nothing and says how much it hid. If your memory benchmark never reports this number, it is measuring hindsight.
+
+**Backtests with ingest lag.** When each item has a publication time and the time your system ingested it, publication is `said_at` and ingestion is `known_at`. Do not pass `--backfill`: it would date every item to its publication and erase exactly the lag you are testing.
+
+```bash
+# news.jsonl: {"id": "n2", "text": "Acme cuts Q1 guidance to $1.0B.", "said_at": "2025-03-20T21:00:00Z", "known_at": "2025-03-21T02:00:00Z", "replaces": "n1"}
+factblock import news.jsonl -o news/
+factblock leak news/ questions.jsonl      # {"id": "q2", "asked_at": "2025-03-21T00:00:00Z", "evidence": ["n2"]} per line
+```
+
+`leak` checks knowledge time and validity. Evidence that was knowable but already replaced when the question was asked is not a leak; `recall` marks it `superseded_by` if you need to catch that too.
 
 ## For coding agents
 

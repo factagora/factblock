@@ -98,7 +98,7 @@ def main():
     e.add_argument("--namespace", default="local")
     im = sub.add_parser("import", help="rows you already have (CSV or JSONL) in, dated blocks and verdicts appended to a bundle; no model",
                         description="rows you already have (CSV or JSONL) in, dated blocks and verdicts appended to a bundle. "
-                                    "Statement columns: id, statement|text, asserted_at|said_at, valid_from|effective_from, valid_to|effective_to, "
+                                    "Statement columns: id, statement|text, asserted_at|said_at, valid_from|effective_from, valid_to|effective_to|due, "
                                     "known_at, kind, replaces (id;id), anything else goes to payload. "
                                     "Verdict columns: target, outcome, decided_at, known_at, resolver, method, evidence (url;url).")
     im.add_argument("source", help="a .csv with a header row, or a .jsonl")
@@ -193,7 +193,7 @@ def main():
             out_json({"certificate": r.certificate,
                       "nodes": r.nodes.select([c for c in ("id", "kind", "statement", "asserted_at", "superseded_by") if c in r.nodes.column_names]).to_pylist(),
                       "edges": r.edges.select(["source_id", "target_id", "edge_type", "asserted_at"]).to_pylist() if r.edges.num_rows else [],
-                      "resolutions": r.resolutions.to_pylist()})
+                      "resolutions": r.to_dicts("resolutions")})
         else:
             _print_scan(r)
     elif a.cmd == "recall":

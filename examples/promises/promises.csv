@@ -1,0 +1,6 @@
+id,kind,said_at,due,text,speaker,customer,target,outcome,decided_at,resolver
+p1,commitment,2026-02-01,2026-04-30,Audit log export for Globex by April 30.,Sam,Globex,,,,
+p2,commitment,2026-02-15,2026-03-31,SAML SSO for Initech by March 31.,Sam,Initech,,,,
+p3,commitment,2026-03-05,2026-06-30,EU data residency for Globex by June 30.,Priya,Globex,,,,
+,,,,,,,p2,broken,2026-04-02,human:lee
+,,,,,,,p1,kept,2026-05-03,human:lee

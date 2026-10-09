@@ -100,4 +100,7 @@ with tempfile.TemporaryDirectory() as d:
         factblock.from_records([{"text": "no date"}]); raise AssertionError
     except ValueError as e:
         assert "needs asserted_at" in str(e)
-print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, an edited row and invalid rows refused before writing; input not mutated")
+s = factblock.scan(pathlib.Path(__file__).resolve().parents[1] / "samples" / "rates", "2025-01-01")
+assert {r["target_id"]: r["value"] for r in s.to_dicts("resolutions")}["c1"] in ("true", "false") and isinstance(s.to_dicts()[0].get("payload", {}), dict)
+assert factblock.__version__ and factblock.__version__[0].isdigit()
+print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__")

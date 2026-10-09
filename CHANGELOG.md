@@ -16,6 +16,11 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 - Re-running `import` (or any `write_bundle(..., append=True)`) is a no-op for rows the folder already has, matched by identity (SPEC 6.1); the CLI reports how many were already there. The same id with different content is refused: blocks are never edited.
 - `recall(query="")` lists every block, newest first; `recall(..., verdict="did_not"|"open"|"resolved")` and `factblock recall --verdict` filter by the latest visible verdict. Matching also searches the payload's text fields, so columns from `import` (customer, product) are found.
 - Announced changes that are not in force yet are shown: `recall` items carry `upcoming` (the block that will replace them and from when) and `result["upcoming"]` lists other matching announcements; `context` writes `changes <date> to: ... (announced <date>)` and `(takes effect <date>)`.
+- SPEC: `commitment` is a core kind (a promise to do something; `valid_to` is its deadline, as it is a `prediction`'s horizon), with the recommended verdicts `kept`, `partly_kept`, `broken`, `withdrawn`, rated in the ClaimReview projection. `import` takes a `due` column (a date means through the end of that day).
+- `recall` keeps a prediction or commitment past its window, marked `ended`, with or without a verdict: the past-due, unresolved list. `context` shows `(due <date>)` before the deadline and `ended <date>, no verdict yet` after it.
+- `examples/promises`: promises and verdicts from one CSV, read as of four dates (open, past due, broken, kept).
+- `Scan.to_dicts("nodes"|"edges"|"resolutions")`: rows as dicts with the JSON columns parsed; `factblock scan --json` uses it, so a verdict's `value` is no longer double-encoded. `factblock.__version__`.
+- README: a backtest recipe for data with ingest lag (publication is `said_at`, ingestion is `known_at`, no `--backfill`).
 
 ### Fixed
 - `context` said "replaced <date>" with the day the successor was said; it now gives the day the replacement took effect (the SUPERSEDES edge's `valid_from`) and adds "(announced <date>)" when they differ. `recall` items carry it as `superseded_by.since`.

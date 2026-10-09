@@ -13,7 +13,7 @@ It sits above Parquet and JSONL (how bytes are stored) and beside OKF (how peopl
 |---|---|
 | **block** | One row of the ledger: a node or an edge. Immutable once written |
 | **bundle** | A directory holding one ledger: a manifest, node and edge tables, resolutions, declarations |
-| **node** | A statement or thing. `kind` says which: `claim`, `prediction`, `entity`, `factor`, `timeseries`, `episode`, or a producer-defined kind |
+| **node** | A statement or thing. `kind` says which: `claim`, `prediction`, `commitment`, `entity`, `factor`, `timeseries`, `episode`, or a producer-defined kind |
 | **edge** | A typed relation between two nodes. An edge is itself a block with its own clocks |
 | **asserted_at** | When the statement was made (content time) |
 | **valid** | The interval `[valid_from, valid_to)` during which the content holds. `valid_to` null means open |
@@ -43,13 +43,13 @@ A bundle is a FactBlock bundle only if all five hold. The validator (section 8) 
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `id` | string | yes | Stable within the bundle's namespace. Reused only with a non-overlapping `valid` |
-| `kind` | string | yes | Core: `claim` `prediction` `entity` `factor` `timeseries` `episode`. Others preserved (section 7) |
-| `statement` | string | no | The text. Required for `claim` and `prediction` |
+| `kind` | string | yes | Core: `claim` `prediction` `commitment` `entity` `factor` `timeseries` `episode`. Others preserved (section 7) |
+| `statement` | string | no | The text. Required for `claim`, `prediction` and `commitment` |
 | `category` | string | no | |
 | `payload` | object | no | Free form. Conventions: `about` (the period the content refers to), `speaker` (who said it, as written), `quote` (the words), `source` (`{url, title, published_at}`, where it appeared), `factblock_id` |
 | `asserted_at` | instant | yes | I1 |
 | `valid_from` | instant | yes | I1 |
-| `valid_to` | instant or null | no | I1 |
+| `valid_to` | instant or null | no | I1. For a `prediction` its horizon, for a `commitment` its deadline: the instant by which it should have happened |
 | `known_at` | instant | yes | I1, I2 |
 | `attestation` | Attestation | yes | I2 |
 | `fact_key` | string | no | I5 |
@@ -112,7 +112,7 @@ Resolutions are append-only records about a node, never fields on it.
 | `outcome` | string | no | Recommended vocabulary below; other values preserved (section 7) |
 | `evidence` | array | no | Elements `{type, url, title, publisher, published_at}`; `type` free (`OFFICIAL_DOCUMENT`, `STATISTICS`, `NEWS_ARTICLE`, ...) |
 
-Recommended `outcome` vocabulary, so that verdicts from different resolvers compare and project (section 9): for a `prediction`, `came_true`, `did_not`, `partial`, `undecidable`; for a `claim`, `true`, `mostly_true`, `mostly_false`, `false`, `misleading`, `unverifiable`. A verdict is a row, so a re-resolution is a second row with a later `decided_at`; readers that need one verdict take the latest visible one and say so.
+Recommended `outcome` vocabulary, so that verdicts from different resolvers compare and project (section 9): for a `prediction`, `came_true`, `did_not`, `partial`, `undecidable`; for a `claim`, `true`, `mostly_true`, `mostly_false`, `false`, `misleading`, `unverifiable`; for a `commitment` (a promise to do something), `kept`, `partly_kept`, `broken`, `withdrawn`. A verdict is a row, so a re-resolution is a second row with a later `decided_at`; readers that need one verdict take the latest visible one and say so.
 
 ### 3.7 Declarations
 
@@ -201,7 +201,7 @@ A verdict visible as of an instant maps to one schema.org `ClaimReview`. The pro
 | `itemReviewed` (`Claim`) `.author` | `payload.speaker`, else node `author` |
 | `itemReviewed.datePublished` | node `asserted_at` (date) |
 | `itemReviewed.appearance.url` | `payload.source.url` |
-| `reviewRating.alternateName`, `.ratingValue` (1..5) | resolution `outcome` through the recommended vocabulary (3.6): `true`/`came_true` 5, `mostly_true` 4, `partial` 3, `mostly_false`/`misleading` 2, `false`/`did_not` 1, `unverifiable`/`undecidable` no `ratingValue` |
+| `reviewRating.alternateName`, `.ratingValue` (1..5) | resolution `outcome` through the recommended vocabulary (3.6): `true`/`came_true`/`kept` 5, `mostly_true` 4, `partial`/`partly_kept` 3, `mostly_false`/`misleading` 2, `false`/`did_not`/`broken` 1, `unverifiable`/`undecidable`/`withdrawn` no `ratingValue` |
 | `author` | resolution `resolver` (`human:` becomes `Person`, else `Organization`) |
 | `datePublished` | resolution `decided_at` (date) |
 | `url` | caller's base URL plus the node id |

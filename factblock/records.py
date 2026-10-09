@@ -7,9 +7,10 @@ from your columns, so the dates are exactly the ones you gave.
 A row is a statement or a verdict.
 
   statement  id?, statement (or text), asserted_at (or said_at), valid_from (or effective_from)?,
-             valid_to (or effective_to)?, known_at?, kind?, replaces?, speaker?, source?, author?
+             valid_to (or effective_to, or due)?, known_at?, kind?, replaces?, speaker?, source?, author?
   verdict    target, outcome, decided_at, known_at?, value?, resolver?, method?, evidence?
 
+`due` is a deadline (kind commitment) or horizon (prediction); a date means through the end of that day.
 `replaces` names the id (or ids, separated by ";") this statement replaces: a SUPERSEDES edge, said and
 in force when the new statement is. Any other column goes into payload. Empty cells count as absent.
 known_at is when you learned the row: its own column, else `known_at=`, else the day it was said or
@@ -18,14 +19,15 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
 from .bundle import Instant, _iso, parse_instant
 
-ALIASES = {"text": "statement", "said_at": "asserted_at", "effective_from": "valid_from", "effective_to": "valid_to"}
+ALIASES = {"text": "statement", "said_at": "asserted_at", "effective_from": "valid_from", "effective_to": "valid_to", "due": "valid_to"}
 NODE_KEYS = {"id", "kind", "statement", "asserted_at", "valid_from", "valid_to", "known_at", "author", "category", "fact_key", "fact_value"}
 VERDICT_KEYS = {"target", "outcome", "decided_at", "known_at", "value", "resolver", "method", "criteria", "evidence"}
 
@@ -53,6 +55,8 @@ def from_records(rows: Iterable[dict], *, known_at: Instant | None = None, backf
 
     for i, raw in enumerate(rows):
         r = {ALIASES.get(k, k): v for k, v in raw.items() if v not in (None, "")}
+        if "due" in raw and re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(raw["due"] or "")):   # "by 2026-04-30" holds through that day
+            r["valid_to"] = _iso(parse_instant(raw["due"]) + timedelta(days=1, seconds=-1))
         if "target" in r:
             missing = [k for k in ("outcome", "decided_at") if k not in r]
             if missing:

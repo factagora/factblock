@@ -10,6 +10,7 @@ RATINGS = {
     "true": ("True", 5), "mostly_true": ("Mostly true", 4), "mostly_false": ("Mostly false", 2), "false": ("False", 1),
     "misleading": ("Misleading", 2), "unverifiable": ("Unverifiable", None),
     "came_true": ("Came true", 5), "partial": ("Partially came true", 3), "did_not": ("Did not come true", 1), "undecidable": ("Undecidable", None),
+    "kept": ("Kept", 5), "partly_kept": ("Partly kept", 3), "broken": ("Broken", 1), "withdrawn": ("Withdrawn", None),
 }
 
 

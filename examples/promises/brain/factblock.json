@@ -1,0 +1,52 @@
+{
+ "factblock_version": "1.0-draft.1",
+ "namespace": "local",
+ "exported_as_of": "2026-10-09T17:12:08.016457Z",
+ "declarations": {
+  "facts": [],
+  "backfills": [
+   {
+    "batch": "known-20260201T000000Z",
+    "declared_known_at": "2026-02-01T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-09T17:12:08.016814Z"
+   },
+   {
+    "batch": "known-20260215T000000Z",
+    "declared_known_at": "2026-02-15T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-09T17:12:08.016814Z"
+   },
+   {
+    "batch": "known-20260305T000000Z",
+    "declared_known_at": "2026-03-05T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-09T17:12:08.016814Z"
+   },
+   {
+    "batch": "known-20260402T000000Z",
+    "declared_known_at": "2026-04-02T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-09T17:12:08.016814Z"
+   },
+   {
+    "batch": "known-20260503T000000Z",
+    "declared_known_at": "2026-05-03T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-09T17:12:08.016814Z"
+   }
+  ],
+  "edge_types": [],
+  "embedding": null
+ },
+ "tables": {
+  "nodes": "nodes.jsonl",
+  "edges": "edges.jsonl",
+  "resolutions": "resolutions.jsonl"
+ }
+}
