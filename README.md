@@ -107,7 +107,7 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 
 ## Use it with your AI
 
-**Recall as context.** `recall` ranks the visible blocks about a query (keywords over statement, quote and speaker) and `context` turns them into prompt lines, with `as_of` set to the decision time (now, or a past instant for a backtest). `scan` returns everything visible as Arrow tables when you want to build your own.
+**Recall as context.** `recall` ranks the visible blocks about a query and `context` turns them into prompt lines. Matching is by keyword over the statement and the payload's text (speaker, quote, imported columns): a shared four-letter stem counts, so `cost` finds "costs" but `price` does not; an empty query lists everything, newest first. `verdict="did_not"` (or `"open"`, `"resolved"`) narrows to settled or unsettled blocks, `kinds=` to kinds of your own such as `commitment`. A change that was announced but is not in force yet is shown as `changes <date> to: ...`, so the agent can say "$30, rising to $36 on 15 March". Read with `as_of` set to the decision time (now, or a past instant for a backtest). `scan` returns everything visible as Arrow tables when you want to build your own.
 
 **Analytics.** `to-parquet` writes the Parquet profile. DuckDB reads it with no Python through [`duckdb/factblock.sql`](https://github.com/factagora/factblock/blob/main/duckdb/factblock.sql): `factblock_nodes(bundle, as_of)`, `factblock_edges`, `factblock_certificate`. Spark and Databricks read the same files.
 

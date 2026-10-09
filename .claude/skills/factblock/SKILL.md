@@ -35,7 +35,7 @@ w = factblock.why("brain/", r["items"][0]["id"], as_of="2026-04-10")     # cause
 s = factblock.scan("brain/", as_of="2026-04-10")                         # everything visible, as Arrow tables (.nodes, .edges, .resolutions)
 ```
 
-`recall` and `context` return every kind of statement (claims, predictions, your own kinds such as `commitment`) and leave out entities, factors, timeseries and episodes; `kinds=(...)` narrows it and `result["excluded"]` counts what was left out. Matching is keyword-based (a shared 4-letter stem counts), so query with the words the statements use.
+`recall` and `context` return every kind of statement (claims, predictions, your own kinds such as `commitment`) and leave out entities, factors, timeseries and episodes; `kinds=(...)` narrows it and `result["excluded"]` counts what was left out. Matching is keyword-based over the statement and payload text (a shared 4-letter stem counts), so query with the words the statements use; `""` lists everything. `verdict="did_not"|"open"|"resolved"` filters by verdict. Announced changes not in force yet come back as `item["upcoming"]` (on the block they will replace) or in `result["upcoming"]`.
 
 `as_of` accepts `'2026-04-10'` (the end of that day, UTC), an ISO timestamp, a `date` or a `datetime`. Every result carries a `certificate`: what the read hid because it was learned later (`masked`) or not in force (`not_in_force`).
 

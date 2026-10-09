@@ -108,7 +108,8 @@ def main():
     im.add_argument("--namespace", default="local")
     cmd("scan", "what the folder knew as of an instant: blocks, edges, verdicts, and what was hidden")
     rc = cmd("recall", "the blocks about something as of an instant, ranked; the read an agent makes before it answers")
-    rc.add_argument("query", help="words to look for in statements, quotes and speakers")
+    rc.add_argument("query", help="words to look for in statements, quotes and speakers; \"\" for every block, newest first")
+    rc.add_argument("--verdict", help="only blocks whose latest verdict is this outcome (e.g. did_not), or open (none yet), or resolved")
     rc.add_argument("--limit", type=int, default=10)
     rc.add_argument("--all-kinds", action="store_true", help="also the things statements are about (entity, factor, timeseries, episode); every kind of statement is in by default")
     w = cmd("why", "the chain behind one block as of an instant: causes, effects, successors, contradictions")
@@ -180,9 +181,12 @@ def main():
                   + (f" ({s_['links_dropped']} dropped)" if s_['links_dropped'] else "") + f", batch {s_['batch']}")
     elif a.cmd == "import":
         r = from_records(read_records(a.source), known_at=a.known_at, backfill=a.backfill, namespace=a.namespace)
+        count = lambda: (lambda b: (len(b.nodes), len(b.edges), len(b.resolutions)))(Bundle(a.out)) if (pathlib.Path(a.out) / "factblock.json").exists() else (0, 0, 0)  # noqa: E731
+        before = count()
         write_bundle(r, a.out, append=True)
-        s_ = r["summary"]
-        print(f"{a.out}: +{s_['blocks']} blocks, +{s_['replaced']} replaced, +{s_['verdicts']} verdicts")
+        added = [x - y for x, y in zip(count(), before)]
+        same = len(r["nodes"]) + len(r["edges"]) + len(r["resolutions"]) - sum(added)
+        print(f"{a.out}: +{added[0]} blocks, +{added[1]} replaced, +{added[2]} verdicts" + (f", {same} already there" if same else ""))
     elif a.cmd == "scan":
         r = scan(a.bundle, a.as_of, a.valid_at)
         if a.json:
@@ -193,7 +197,7 @@ def main():
         else:
             _print_scan(r)
     elif a.cmd == "recall":
-        r = recall(a.bundle, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else None)
+        r = recall(a.bundle, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else None, verdict=a.verdict)
         if a.json:
             out_json(r)
         else:
@@ -203,6 +207,10 @@ def main():
                     print(f"{'':<25}  replaced {_day(i['superseded_by']['since'])} by {i['superseded_by']['id']}: {i['superseded_by'].get('statement')}")
                 if i.get("verdict"):
                     print(f"{'':<25}  verdict: {i['verdict']['outcome']} ({_day(i['verdict']['decided_at'])})")
+                if i.get("upcoming"):
+                    print(f"{'':<25}  changes {_day(i['upcoming']['from'])} to {i['upcoming']['id']}: {i['upcoming'].get('statement')}")
+            for u in r["upcoming"]:
+                print(f"{u['id']:<12} {u['kind']:<11} {_day(u['asserted_at'])}  {u['statement']}   (takes effect {_day(u['from'])})")
             print(f"{len(r['items'])} of {r['matched']} matching   {_cert(r['certificate'])}")
             if r["excluded"]:
                 print("left out by kind: " + ", ".join(f"{n} {k}" for k, n in r["excluded"].items()) + " (--all-kinds to include)")

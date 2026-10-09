@@ -41,6 +41,12 @@ with tempfile.TemporaryDirectory() as d:
     assert sso["verdict"]["outcome"] == "did_not", sso
 
     # the replaced line gives the day the replacement took effect, and the announcement when it differs
+    ctx = factblock.context(d / "brain", "costs", "2026-03-01")   # $36 announced 02-20, in force 03-15
+    assert "  changes 2026-03-15 to: The Team plan costs $36 per user per month. (announced 2026-02-20)" in ctx, ctx
+    assert factblock.recall(d / "brain", "costs", "2026-02-10")["items"][0].get("upcoming") is None   # not announced yet
+    factblock.write_bundle({"nodes": [{"id": "a1", "kind": "claim", "statement": "The Team plan adds audit logs.", "asserted_at": "2026-02-25",
+                                       "valid_from": "2026-04-01", "known_at": "2026-02-25"}]}, d / "brain", append=True)
+    assert "- 2026-02-25: The Team plan adds audit logs. (takes effect 2026-04-01)" in factblock.context(d / "brain", "audit", "2026-03-01")
     ctx = factblock.context(d / "brain", "costs", "2026-03-20")
     assert "replaced 2026-03-15 by: The Team plan costs $36 per user per month. (announced 2026-02-20)" in ctx, ctx
     # a kind of your own is a statement too: recall and context show it; things are left out and counted
@@ -52,11 +58,29 @@ with tempfile.TemporaryDirectory() as d:
     assert "Globex gets audit export" in factblock.context(d / "brain", "Globex", "2026-03-01")
     assert factblock.recall(d / "brain", "Globex", "2026-03-01", kinds=("claim",))["excluded"] == {"commitment": 1, "entity": 1}
     assert factblock.context(d / "brain", "zebra", "2026-03-01").startswith("(nothing about 'zebra' known as of 2026-03-01)")
+    # filters: an empty query lists everything newest first; verdict narrows to an outcome, open or resolved;
+    # imported columns (payload text) are searched
+    assert [i["id"] for i in factblock.recall(d / "brain", "", "2026-04-05", verdict="did_not")["items"]] == ["k1"]
+    assert "k1" not in [i["id"] for i in factblock.recall(d / "brain", "", "2026-04-05", verdict="open", limit=50)["items"]]
+    assert [i["id"] for i in factblock.recall(d / "brain", "", "2026-03-30", verdict="resolved")["items"]] == []   # verdict learned 04-02
+    assert factblock.recall(d / "brain", "", "2026-03-01", limit=50)["matched"] == 4   # p1 s1 k1 c1; p2 announced, not in force yet
+    factblock.write_bundle(factblock.from_records([{"id": "c2", "kind": "commitment", "text": "SAML SSO by March", "customer": "Umbrella",
+                                                    "said_at": "2026-02-02"}], backfill=True), d / "brain", append=True)
+    assert [i["id"] for i in factblock.recall(d / "brain", "Umbrella", "2026-03-01")["items"]] == ["c2"]
 
-    # re-importing the same rows would duplicate them: refused, folder untouched
+    # re-importing is a no-op (rows the folder has are skipped by identity); a grown CSV adds only the new row;
+    # the same id with a different statement is an edit: refused, folder untouched
     before = (d / "brain" / "nodes.jsonl").read_text()
     p = subprocess.run([sys.executable, "-m", "factblock", "import", str(d / "kb.csv"), "-o", str(d / "brain"), "--backfill"], capture_output=True, text=True)
-    assert p.returncode != 0 and "I3.node_unique" in p.stderr and "Traceback" not in p.stderr, p.stderr
+    assert p.returncode == 0 and "+0 blocks, +0 replaced, +0 verdicts, 8 already there" in p.stdout, p.stdout + p.stderr
+    assert (d / "brain" / "nodes.jsonl").read_text() == before
+    (d / "kb.csv").write_text(CSV + "r1b,2026-05-01,,,Annual plans can be refunded within 14 days.,r1,,,,\n")
+    p = subprocess.run([sys.executable, "-m", "factblock", "import", str(d / "kb.csv"), "-o", str(d / "brain"), "--backfill"], capture_output=True, text=True)
+    assert "+1 blocks, +1 replaced, +0 verdicts, 8 already there" in p.stdout, p.stdout + p.stderr
+    before = (d / "brain" / "nodes.jsonl").read_text()
+    (d / "kb.csv").write_text(CSV.replace("$30 per user", "$29 per user"))
+    p = subprocess.run([sys.executable, "-m", "factblock", "import", str(d / "kb.csv"), "-o", str(d / "brain"), "--backfill"], capture_output=True, text=True)
+    assert p.returncode != 0 and "p1 is already in the bundle with different content" in p.stderr and "Traceback" not in p.stderr, p.stderr
     assert (d / "brain" / "nodes.jsonl").read_text() == before
 
     # write_bundle: plain rows, no manifest, no attestation; input left alone
@@ -76,4 +100,4 @@ with tempfile.TemporaryDirectory() as d:
         factblock.from_records([{"text": "no date"}]); raise AssertionError
     except ValueError as e:
         assert "needs asserted_at" in str(e)
-print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; any statement kind recalled, things counted as excluded, empty context says so; batches declared; duplicate import and invalid rows refused before writing; input not mutated")
+print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, an edited row and invalid rows refused before writing; input not mutated")

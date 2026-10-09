@@ -13,6 +13,9 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 
 - `recall` and `context` return every kind of statement by default, including kinds of your own (`commitment`, `promise`), and leave out only the things statements are about (`entity`, `factor`, `timeseries`, `episode`). Matches left out by kind are counted in `excluded`, and the CLI says so. `context` takes `kinds` too.
 - `leak` reads a date-only `asked_at` as the start of that day (UTC), so a block learned later that day is a leak; reads still take the end of the day. Its text output shows the minute when a question and a block fall on the same day.
+- Re-running `import` (or any `write_bundle(..., append=True)`) is a no-op for rows the folder already has, matched by identity (SPEC 6.1); the CLI reports how many were already there. The same id with different content is refused: blocks are never edited.
+- `recall(query="")` lists every block, newest first; `recall(..., verdict="did_not"|"open"|"resolved")` and `factblock recall --verdict` filter by the latest visible verdict. Matching also searches the payload's text fields, so columns from `import` (customer, product) are found.
+- Announced changes that are not in force yet are shown: `recall` items carry `upcoming` (the block that will replace them and from when) and `result["upcoming"]` lists other matching announcements; `context` writes `changes <date> to: ... (announced <date>)` and `(takes effect <date>)`.
 
 ### Fixed
 - `context` said "replaced <date>" with the day the successor was said; it now gives the day the replacement took effect (the SUPERSEDES edge's `valid_from`) and adds "(announced <date>)" when they differ. `recall` items carry it as `superseded_by.since`.
