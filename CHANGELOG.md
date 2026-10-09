@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.0.0a5 (2026-10-09)
+
+### Changed
+- `factblock.timeline` reads tckg's verdict words `hit` and `miss` as right and wrong, so a bundle exported from tckg draws its verdicts in colour.
+
 ## 1.0.0a4 (2026-10-09)
 
 Charts from a bundle, the same in a notebook, a web page and a chat answer: `factblock.timeline` draws what happened to each statement as known on a day, and its MCP Apps view puts that chart inline in Claude or ChatGPT. Nothing that 1.0.0a3 reads or writes changed.

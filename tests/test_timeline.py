@@ -12,6 +12,8 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import factblock  # noqa: E402
+import factblock.timeline  # noqa: E402
+timeline_mod = sys.modules["factblock.timeline"]
 
 RATES, FFR = ROOT / "samples" / "rates", ROOT / "samples" / "fed-funds-rate.csv"
 
@@ -79,6 +81,9 @@ with tempfile.TemporaryDirectory() as d:
     p = subprocess.run([sys.executable, "-m", "factblock", "timeline", str(RATES), "--as-of", "2025-01-01", "-q", "interest rates",
                         "--series", str(FFR), "-o", str(d / "c.html")], capture_output=True, text=True)
     assert p.returncode == 0 and (d / "c.html").exists() and "3 statements" in p.stdout, p.stdout + p.stderr
+# a ledger's own words for a verdict read the same: tckg writes hit and miss
+assert [timeline_mod._outcome(o) for o in ("hit", "miss", "partial")] == ["right", "wrong", "mixed"]
+
 # labels stop at the chart edge whatever width the host gives it, and the legend sits below
 texts = [l["mark"] for l in factblock.timeline(RATES, "2025-01-01").spec()["layer"] if l["mark"]["type"] == "text"]
 assert texts and all("expr" in m["limit"] for m in texts), texts

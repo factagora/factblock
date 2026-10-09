@@ -27,8 +27,8 @@ from .bundle import Bundle, BundleLike, Instant, parse_instant
 from .recall import recall
 from .scan import _as_of
 
-RIGHT = {"true", "came_true", "kept", "mostly_true"}
-WRONG = {"false", "did_not", "broken", "mostly_false", "misleading"}
+RIGHT = {"true", "came_true", "kept", "mostly_true", "hit"}   # hit and miss: tckg's verdict vocabulary
+WRONG = {"false", "did_not", "broken", "mostly_false", "misleading", "miss"}
 STATUS = {"right": "#0ca30c", "wrong": "#d03b3b", "mixed": "#fab219", "open": "#8c8b85", "replaced": "#b8b7af"}
 REASONS = {"CAUSES", "CONTRIBUTING_FACTOR", "TRIGGERS", "PREVENTS", "SUPPORTS"}
 CONFIG = {"background": "#fcfcfb", "font": "Inter, system-ui, sans-serif",
