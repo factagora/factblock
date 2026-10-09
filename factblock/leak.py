@@ -15,22 +15,26 @@ def _questions(q):
 
 
 def leak(bundle, questions) -> dict:
-    """questions: a JSONL path or dicts of {id?, asked_at, evidence: [block id, ...]}."""
+    """questions: a JSONL path or dicts of {id?, asked_at, evidence: [block id, ...]}. A question without
+    asked_at or an evidence list raises ValueError; ids the bundle lacks are listed under `missing`."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     rows = {r["id"]: r for r in b.nodes}
     out = []
     for i, q in enumerate(_questions(questions)):
+        # a question without these would pass as leak-free, which is the wrong answer for an eval gate
+        if "asked_at" not in q or not isinstance(q.get("evidence"), list):
+            raise ValueError(f"question {q.get('id', i)} needs asked_at and evidence: [block id, ...]; got keys {sorted(q)}")
         t = _as_of(q["asked_at"])
         v = parse_instant(q["valid_at"]) if q.get("valid_at") else t
         leaked, missing = [], []
-        for nid in q.get("evidence", []):
+        for nid in q["evidence"]:
             r = rows.get(nid)
             if r is None:
                 missing.append(nid)
             elif not _visible(r, t, v):
                 leaked.append({"id": nid, "known_at": r["known_at"].isoformat(), "asserted_at": r["asserted_at"].isoformat(),
                                "reason": "known_later" if r["known_at"] > t else "not_in_force"})
-        out.append({"id": q.get("id", i), "asked_at": t.isoformat(), "evidence": len(q.get("evidence", [])), "leaked": leaked, "missing": missing})
+        out.append({"id": q.get("id", i), "asked_at": t.isoformat(), "evidence": len(q["evidence"]), "leaked": leaked, "missing": missing})
     n = len(out)
     bad = sum(1 for q in out if q["leaked"])
     return {"questions": n, "leaked_questions": bad, "leak_rate": round(bad / n, 4) if n else 0.0,

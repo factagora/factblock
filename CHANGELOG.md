@@ -36,6 +36,11 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 - `factblock demo <scene>`: an animated walkthrough of a bundle in the terminal (Rich, optional extra `factblock[demo]`). Scenes: `timeline` (scan at several dates), `why` (a chain growing, coloured by edge family), `replaced` (SUPERSEDES, then an earlier date), `verdict` (a block before it was said, open, settled; dates picked from the data), `leak` (a bench results file), `title`, `end`. Every number comes from the same reads as the plain commands; each panel names the command that gives it.
 - `samples/demo.tape` records it with vhs into `samples/demo.gif` (README), `samples/demo.mp4` and `samples/demo-keyframe.png` (for slides). The plain-CLI recording is kept as `samples/demo-cli.gif` / `demo-cli.tape`.
 - `bench/streamingqa/run.py` writes `results.json` next to itself; the committed one holds the published run (797 of 1,000).
+- `factblock leak --json`.
+
+### Fixed
+- `leak` no longer passes a question set it cannot read. A question without `asked_at` or an `evidence` list raises `ValueError` (it used to count as leak-free), and the CLI exits 1 when an evidence id is not in the bundle, as it does on a leak. Bad input prints one `factblock: error:` line instead of a traceback.
+- `samples/rates`: c4, t1, t2 and the c4→c1 SUPERSEDES edge were learned (2024-09-15) before they were said (2024-09-18); batch b3 is now declared at 2024-09-20.
 
 ## 1.0.0a1 (2026-10-05)
 

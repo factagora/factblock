@@ -53,7 +53,7 @@
       },
       {
         "batch": "b3",
-        "declared_known_at": "2024-09-15T00:00:00Z",
+        "declared_known_at": "2024-09-20T00:00:00Z",
         "reason": "sample batch 3",
         "declared_by": "human:randy",
         "captured_at": "2026-10-04T00:00:00Z"

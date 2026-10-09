@@ -107,7 +107,7 @@ def main():
     r = cmd("resolve", "one value for a declared fact, by its declared policy, or the reason there is none")
     r.add_argument("fact_key", help="the declared fact, e.g. belief:fed:direction")
     r.add_argument("--rules-as-of", help="apply the declaration in force at this instant instead of as-of")
-    k = cmd("leak", "which answers in a dated question set rest on blocks learned after the question was asked", as_of=False, valid_at=False, json_=False)
+    k = cmd("leak", "which answers in a dated question set rest on blocks learned after the question was asked", as_of=False, valid_at=False)
     k.add_argument("questions", help="JSONL: {id?, asked_at, evidence: [block id, ...]} per line")
     cmd("validate", "the conformance checks of SPEC.md section 2; exit 1 if any fails", as_of=False, valid_at=False, json_=False)
     y = sub.add_parser("sync", help="folder <-> a hosted ledger, both ways, by identity; known_at travels as batches", description="folder <-> a hosted ledger (tckg), both ways")
@@ -197,13 +197,16 @@ def main():
         out_json(r) if a.json else _print_resolve(a.fact_key, r)
     elif a.cmd == "leak":
         r = leak(a.bundle, a.questions)
+        if a.json:
+            out_json(r)
+            sys.exit(1 if r["leaked_questions"] or r["missing_blocks"] else 0)
         for q in r["per_question"]:
             if q["leaked"] or q["missing"]:
                 print(f"{q['id']}: asked {q['asked_at'][:10]}, " + ", ".join(f"{l['id']} known {l['known_at'][:10]} ({l['reason']})" for l in q["leaked"])
                       + (f", missing {q['missing']}" if q["missing"] else ""))
         print(f"{r['leaked_questions']}/{r['questions']} questions leak ({r['leak_rate']:.0%}), {r['leaked_blocks']} blocks learned after the question"
               + (f", {r['missing_blocks']} evidence ids not in the bundle" if r["missing_blocks"] else ""))
-        sys.exit(1 if r["leaked_questions"] else 0)
+        sys.exit(1 if r["leaked_questions"] or r["missing_blocks"] else 0)   # an id the bundle lacks cannot be checked
     elif a.cmd == "validate":
         checks = validate(a.bundle)
         for c in checks:
@@ -252,6 +255,8 @@ def run():
         main()
     except BrokenPipeError:        # `factblock scan ... | head`
         sys.stderr.close()
+    except (ValueError, FileNotFoundError) as e:   # bad input: the message says what to fix, a traceback adds nothing
+        sys.exit(f"factblock: error: {e}")
 
 
 if __name__ == "__main__":
