@@ -14,7 +14,7 @@ No test framework: each `tests/test_*.py` asserts and prints one PASS line. A ne
 ## Rules
 
 - Every MUST in `SPEC.md` has a check id in `factblock/validate.py`. Add both or neither.
-- Reads never default `as_of`. Writers never invent `known_at`: they declare a backfill batch (SPEC 6).
+- Reads never default `as_of`. A writer that is not a ledger declares `known_at` as a backfill batch (SPEC 6); `write_bundle` does it for rows without `attestation`.
 - Blocks are append-only. Corrections are new rows (`SUPERSEDES`, resolutions), never edits.
 - The Python reader and the DuckDB macros (`duckdb/factblock.sql`) must give the same answer; `tests/test_duckdb.py` compares them.
 - No new runtime dependency beyond `pyarrow`. Model SDKs are optional extras.
@@ -30,6 +30,7 @@ No test framework: each `tests/test_*.py` asserts and prints one PASS line. A ne
 | `factblock/recall.py` | recall and context: what an agent puts in its prompt |
 | `factblock/why.py`, `resolve.py`, `leak.py` | SPEC 4.5, 4.4, and the hindsight check |
 | `factblock/extract.py`, `profiles/claims/` | text to blocks through a model; the profile is three language-neutral files |
+| `factblock/records.py` | rows (CSV/JSONL) to blocks and verdicts, no model; `write_bundle` in `bundle.py` declares batches and validates before writing |
 | `factblock/sync.py` | folder to store, both ways (SPEC 6.1) |
 | `factblock/adapters/` | Graphiti, Fact Check Tools |
 | `samples/`, `examples/` | data the tests read; regenerate rather than hand-edit `samples/cramer` |

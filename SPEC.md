@@ -17,7 +17,7 @@ It sits above Parquet and JSONL (how bytes are stored) and beside OKF (how peopl
 | **edge** | A typed relation between two nodes. An edge is itself a block with its own clocks |
 | **asserted_at** | When the statement was made (content time) |
 | **valid** | The interval `[valid_from, valid_to)` during which the content holds. `valid_to` null means open |
-| **known_at** | When the ledger learned the block (knowledge time). Never set by the author of the statement |
+| **known_at** | When the system keeping the block learned it (knowledge time): stamped by a ledger, or declared by a writer as a backfill batch (section 6). Never set by the author of the statement |
 | **attestation** | Who vouches for `known_at`: the ledger that stamped it, or a declared backfill |
 | **as-of read** | A read that shows only blocks with `known_at <= as_of`, and reports what it hid |
 | **supersession** | A later block replacing an earlier one through a `SUPERSEDES` edge. The earlier block stays |

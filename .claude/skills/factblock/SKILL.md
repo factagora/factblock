@@ -13,12 +13,17 @@ A **bundle** is a folder: `factblock.json` plus `nodes.jsonl`, `edges.jsonl`, `r
 ## Write
 
 ```bash
+factblock import kb.csv -o brain/ --backfill                                        # rows in (CSV/JSONL), no model
 factblock extract notes.txt --observed-at 2026-03-14 -o brain/ --provider gemini   # text in, dated blocks out
 factblock extract items.jsonl -o brain/ --provider gemini --backfill                # one {text, observed_at, speaker?, source?} per line
 factblock sample brain/                                                             # a small bundle to try reads on
 ```
 
 `--provider fake` needs no model (one block per sentence). `--backfill` means "known when it was said", for past material; without it the blocks are known now.
+
+`import` columns: `id`, `statement` (or `text`), `asserted_at` (or `said_at`), `valid_from` (or `effective_from`, default `asserted_at`), `valid_to`, `known_at`, `kind`, `replaces` (`id;id`, writes `SUPERSEDES`); a row with `target`, `outcome`, `decided_at` is a verdict; other columns go to `payload`. From Python: `factblock.write_bundle(factblock.from_records(rows), "brain/", append=True)`, or pass `{"nodes": [...], "edges": [...], "resolutions": [...]}` with the format's own field names. `write_bundle` declares batches and validates before writing; an invalid bundle raises `ValueError` and nothing is written.
+
+Verdict, resolution: the same thing, a row in `resolutions.jsonl` (`outcome` is its value). `resolve` is different: one value for a declared `fact_key`.
 
 ## Read
 
@@ -36,7 +41,7 @@ s = factblock.scan("brain/", as_of="2026-04-10")                         # every
 
 1. Every read takes `as_of`. There is no default; pass the moment the question was asked.
 2. Never edit or delete a block. A change is a new block plus a `SUPERSEDES` edge from new to old; a verdict is a row in `resolutions.jsonl`. Old blocks come back marked `superseded_by`.
-3. Never set `known_at` yourself. `extract` and `write_bundle` declare a backfill batch; a ledger stamps its own.
+3. `known_at` is when you learned a row. Give it honestly (default now; `--backfill` = when it was said) and let `import`, `extract` or `write_bundle` declare the batch that attests it. Never write `attestation.ledger` yourself; only a ledger stamps its own.
 
 ## Check, convert, share
 

@@ -9,6 +9,8 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 ### Changed
 - `write_bundle` takes plain rows: the manifest is optional, instants may be strings, dates or datetimes, `valid_from` defaults to `asserted_at`, and a row without `attestation` goes under a backfill batch the writer declares at its `known_at` (a row with no `known_at` is an error). The whole bundle is validated before anything is written, so a failing check raises `ValueError` and leaves the folder as it was. The input dicts are no longer modified.
 
+- Docs say one rule for `known_at` everywhere: it is when you learned a row; give it honestly and let `import`, `extract` or `write_bundle` declare the batch (README, SKILL, AGENTS, SPEC glossary). Earlier text said "never set `known_at` yourself", which contradicted SPEC 6. README gains "Write rows you already have" and a table of the words for verdicts (verdict = resolution row, `outcome` its value, `resolve` is about declared facts).
+
 ### Fixed
 - `validate` accepted only `attestation.ledger`; SPEC I2 and 6 also allow a declared batch alone, which is what a non-ledger writer (an export script) produces. Both now pass, neither fails.
 - `sync` compared edge and resolution instants as strings, so a ledger spelling `...57.89332+00:00` for a folder's `...57.893320+00:00` made a second run re-push 1,297 edges and pull them back into the folder as duplicates. Identity keys now compare instants, not spellings.

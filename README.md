@@ -15,7 +15,8 @@ factblock scan brain/ --as-of 2024-05-01              # what was known that day,
 factblock recall brain/ "interest rates" --as-of 2024-05-01   # the blocks about something, as of that day
 factblock why brain/ c3 --as-of 2024-10-01            # the causal chain behind a block
 factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
-factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # your model key, or --provider fake
+factblock import kb.csv --backfill -o brain/          # rows you already have: id, text, said_at, effective_from, known_at, replaces
+factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # prose, through your model key
 ```
 
 ```
@@ -133,15 +134,42 @@ c1 = next(i for i in r["items"] if i["id"] == "c1")
 print(c1["superseded_by"]["statement"], c1["verdict"]["outcome"])          # what replaced it, how it was settled
 ```
 
-Three rules: every read takes `as_of` (no default); a change is a new block plus `SUPERSEDES`, never an edit; never set `known_at` yourself (`extract` and `write_bundle` declare a batch). Claude Code users can copy [`.claude/skills/factblock`](https://github.com/factagora/factblock/tree/main/.claude/skills/factblock) into their project; other agents read [`llms.txt`](https://github.com/factagora/factblock/blob/main/llms.txt).
+Three rules: every read takes `as_of` (no default); a change is a new block plus `SUPERSEDES`, never an edit; `known_at` is when you learned a row: give it honestly (default now; `--backfill` means when it was said) and let `import`, `extract` or `write_bundle` declare the batch that attests it. Never claim a ledger stamp you did not get. Claude Code users can copy [`.claude/skills/factblock`](https://github.com/factagora/factblock/tree/main/.claude/skills/factblock) into their project; other agents read [`llms.txt`](https://github.com/factagora/factblock/blob/main/llms.txt).
 
 | If you know | In FactBlock |
 |---|---|
-| Mem0 `m.add(messages, user_id=...)` | `factblock extract` or `extract(text, observed_at=...)` + `write_bundle(..., append=True)`; the user is a `space` |
+| Mem0 `m.add(messages, user_id=...)` | `factblock import` for rows, `factblock extract` for prose; in Python `from_records(rows)` or `extract(text, observed_at=...)`, then `write_bundle(..., append=True)`; the user is a `space` |
 | Mem0 `m.search(query, user_id=...)` | `recall(bundle, query, as_of=...)` or `context(...)` for the prompt |
 | Graphiti edge `valid_at` / `invalid_at` | `valid_from` / `valid_to` on the block, plus `known_at`: when you learned it |
 | Graphiti `expired_at` (an edge closed later) | the old block stays; a new block `SUPERSEDES` it, known from that moment |
 | A vector store with a date filter | `recall(as_of=...)` also hides what was learned later, keeps what was replaced (marked), and attaches verdicts |
+
+### Write rows you already have
+
+Most memory starts as rows, not prose: a pricing table, a policy log, a CRM export. `import` takes them as they are, no model, and every date comes from your columns.
+
+```
+id,said_at,effective_from,known_at,text,replaces
+p1,2026-01-10,,,The Team plan costs $30 per user per month.,
+p2,2026-02-20,2026-03-15,,The Team plan costs $36 per user per month.,p1
+```
+
+`said_at` (or `asserted_at`) is when it was said, `effective_from` (or `valid_from`, default `said_at`) when it takes effect, `known_at` when you learned it, `replaces` the id it supersedes. A row with `target`, `outcome` and `decided_at` is a verdict. Any other column goes into the payload. In Python, any dicts with the format's own names will do:
+
+```python
+factblock.write_bundle({"nodes": [{"id": "r1", "kind": "claim", "statement": "Annual plans refund within 30 days.",
+                                   "asserted_at": "2026-01-10", "known_at": "2026-01-10"}]}, "brain/", append=True)
+```
+
+`write_bundle` fills the manifest, declares one batch per `known_at`, and validates the whole folder before it writes; a bundle that would fail `validate` raises and is not written.
+
+### Words for verdicts
+
+| You may say | In the files | Read with |
+|---|---|---|
+| verdict, resolution | a row in `resolutions.jsonl`: `target_id`, `outcome`, `decided_at`, `known_at` | `recall` (`item["verdict"]`), `scan(...).resolutions`, `to-claimreview` |
+| outcome | the verdict's value: `true`, `false`, `came_true`, `did_not`, ... (SPEC 3.6) | |
+| `resolve` | not about verdicts: one value for a declared fact (`fact_key`) by its policy | `factblock resolve` |
 
 ## Same files, hosted
 
@@ -163,7 +191,7 @@ Format, not platform. Apache-2.0. tckg is one writer of this format; nothing her
 
 ## Status
 
-`1.0-draft.1`. Works today: `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](https://github.com/factagora/factblock/tree/main/factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. Next: a PyPI release. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `import` (CSV or JSONL rows, no model), `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](https://github.com/factagora/factblock/tree/main/factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. On PyPI as `1.0.0a2` (`pip install --pre factblock`). The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
 
 ```bash
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
