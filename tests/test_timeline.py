@@ -59,6 +59,15 @@ md = t.to_markdown()
 assert "The Fed raises interest rates **wrong** (verdict false)" in md and md.rstrip().endswith("nothing learned later is shown._")
 assert 'src="https://cdn.jsdelivr.net/npm/vega@5.30.0"' in t.to_html() and "prefers-color-scheme" in t.to_html()
 
+# MCP Apps: a tool result with text for the model, rows, and the spec where only the view reads it; the view speaks the protocol
+r = s.to_mcp()
+assert r["content"][0]["text"] == s.to_markdown() and r["structuredContent"]["schema"] == "factblock.timeline/v1"
+assert r["_meta"]["factblock/vega-lite"]["layer"][0]["mark"]["type"] == "line"
+from factblock.timeline import MCP_APP_MIME, MCP_APP_TOOL_META, MCP_APP_URI  # noqa: E402
+v = factblock.mcp_app_html()
+assert MCP_APP_MIME == "text/html;profile=mcp-app" and MCP_APP_TOOL_META["ui"]["resourceUri"] == MCP_APP_URI.startswith("ui://") * MCP_APP_URI
+assert all(x in v for x in ("ui/initialize", '"2026-01-26"', "ui/notifications/initialized", "ui/notifications/tool-result", "ui/notifications/size-changed", "ui/open-link"))
+
 m = t._repr_mimebundle_()
 assert "application/vnd.vegalite.v5+json" in m and m["application/vnd.vegalite.v5+json"]["layer"][1]["encoding"]["href"] == {"field": "source"}
 assert "2024-12-01 verdict: wrong" in {c["id"]: c["history"] for c in t.claims}["c1"]
@@ -69,4 +78,4 @@ with tempfile.TemporaryDirectory() as d:
     p = subprocess.run([sys.executable, "-m", "factblock", "timeline", str(RATES), "--as-of", "2025-01-01", "-q", "interest rates",
                         "--series", str(FFR), "-o", str(d / "c.html")], capture_output=True, text=True)
     assert p.returncode == 0 and (d / "c.html").exists() and "3 statements" in p.stdout, p.stdout + p.stderr
-print("PASS timeline: events as known on as_of (re-resolution, replacement), series cut at as_of, bars end at the first replacement, verdict or deadline, rows grouped, settled points labelled, ids, HTML/JSON/markdown from library and CLI, the v1 data contract")
+print("PASS timeline: events as known on as_of (re-resolution, replacement), series cut at as_of, bars end at the first replacement, verdict or deadline, rows grouped, settled points labelled, ids, HTML/JSON/markdown from library and CLI, the v1 data contract, an MCP Apps tool result and view")

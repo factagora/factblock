@@ -58,6 +58,65 @@ vegaEmbed("#v", spec, {{actions: false}});
 """
 
 
+# MCP Apps (the MCP UI extension, io.modelcontextprotocol/ui, protocol 2026-01-26): a tool that returns a timeline
+# points at this resource; the host (Claude, ChatGPT, ...) renders it inline in the chat and hands it the tool result.
+MCP_APP_URI = "ui://factblock/timeline"
+MCP_APP_MIME = "text/html;profile=mcp-app"
+MCP_APP_META = {"ui": {"csp": {"resourceDomains": ["https://cdn.jsdelivr.net"]}, "prefersBorder": True}}
+MCP_APP_TOOL_META = {"ui": {"resourceUri": MCP_APP_URI}}
+VL_META = "factblock/vega-lite"   # where the spec travels in the tool result: _meta, so it stays out of the model's context
+MCP_APP = """<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+{scripts}
+<style>:root{{color-scheme:light dark}}body{{margin:0;padding:12px;background:transparent;font-family:system-ui,sans-serif;overflow-x:auto}}
+#v{{min-height:40px}}#t{{white-space:pre-wrap;font-size:14px}}</style></head>
+<body><div id="v"></div><div id="t"></div><script>
+const DARK = {dark};
+let seq = 0, theme = "light", last = null;
+const waiting = {{}};
+const post = m => window.parent.postMessage(Object.assign({{jsonrpc: "2.0"}}, m), "*");
+const ask = (method, params) => new Promise(ok => {{ const id = ++seq; waiting[id] = ok; post({{id, method, params}}); }});
+const size = () => post({{method: "ui/notifications/size-changed", params: {{width: document.body.scrollWidth, height: document.body.scrollHeight}}}});
+function draw(result) {{
+  last = result;
+  const spec = JSON.parse(JSON.stringify((result._meta || {{}})["{vl_meta}"] || {{}}));
+  if (!spec.mark && !spec.layer && !spec.facet && !spec.vconcat) {{
+    document.getElementById("t").textContent = ((result.content || [])[0] || {{}}).text || ""; return size();
+  }}
+  if (theme === "dark") {{
+    for (const k of Object.keys(DARK)) spec.config[k] = typeof DARK[k] === "object" ? Object.assign({{}}, spec.config[k], DARK[k]) : DARK[k];
+    (function walk(o) {{ if (o && typeof o === "object") {{ if (o.color === "#0b0b0b") o.color = "#f0efec"; if (o.color === "#52514e") o.color = "#c3c2b7"; Object.values(o).forEach(walk); }} }})(spec);
+  }}
+  (function strip(o) {{ if (o && typeof o === "object") {{ delete o.href; Object.values(o).forEach(strip); }} }})(spec);   // links go through the host
+  const w = Math.max(320, document.body.clientWidth - (spec.facet ? 260 : 190));   // fit the chat column, leaving room for labels and the legend
+  if (spec.facet) spec.spec.width = w; else spec.width = w;
+  vegaEmbed("#v", spec, {{actions: false}}).then(r => {{
+    r.view.addEventListener("click", (e, item) => {{ const u = item && item.datum && item.datum.source; if (u) ask("ui/open-link", {{url: u}}); }});
+    size();
+  }});
+}}
+window.addEventListener("message", e => {{
+  const m = e.data;
+  if (!m || m.jsonrpc !== "2.0") return;
+  if (m.id !== undefined && waiting[m.id]) {{ waiting[m.id](m.result); delete waiting[m.id]; return; }}
+  if (m.method === "ui/notifications/tool-result") draw(m.params);
+  else if (m.method === "ui/notifications/host-context-changed" && m.params && m.params.theme) {{ theme = m.params.theme; if (last) draw(last); }}
+  else if (m.method === "ui/resource-teardown") post({{id: m.id, result: {{}}}});
+}});
+ask("ui/initialize", {{protocolVersion: "2026-01-26", appInfo: {{name: "factblock-timeline", version: "1"}}, appCapabilities: {{}}}}).then(r => {{
+  theme = (r && r.hostContext && r.hostContext.theme) || theme;
+  post({{method: "ui/notifications/initialized", params: {{}}}});
+}});
+</script></body></html>
+"""
+
+
+def mcp_app_html(inline: bool = False) -> str:
+    """The MCP Apps view for timelines: serve it as the resource MCP_APP_URI with MCP_APP_MIME and MCP_APP_META, and
+    give the tool _meta=MCP_APP_TOOL_META. It renders whatever Timeline.to_mcp() returns, follows the host's theme,
+    reports its height and opens sources through the host. inline=True needs no CDN (then drop the csp meta)."""
+    return MCP_APP.format(scripts=_scripts(inline), dark=json.dumps(DARK), vl_meta=VL_META)
+
+
 def _scripts(inline):
     """Script tags for vega, vega-lite and vega-embed: from the CDN, or the code itself (for sandboxes that block
     the network, such as MCP Apps iframes). Inline copies are fetched once and kept in ~/.cache/factblock."""
@@ -156,6 +215,14 @@ class Timeline:
             lines.append(f"- {c['said']} · {c['statement']} **{what}**{tail}{src} `{c['id']}`")
         lines += ["", f"_As known on {self.as_of[:10]}: nothing learned later is shown._"]
         return "\n".join(lines)
+
+    def to_mcp(self) -> dict:
+        """A tool result for any MCP server: the markdown for the model and for hosts that cannot draw, the rows as
+        structuredContent, and the Vega-Lite spec in _meta for the MCP Apps view (mcp_app_html). Return it as a
+        CallToolResult(content=..., structuredContent=..., _meta=...)."""
+        return {"content": [{"type": "text", "text": self.to_markdown()}],
+                "structuredContent": json.loads(json.dumps(self.to_dict(), default=str)),
+                "_meta": {VL_META: json.loads(json.dumps(self.spec(), default=str))}}
 
     def save(self, path, inline: bool = False) -> Path:
         """Write the chart: .html (opens in a browser; inline=True for no network), .md (text), .json (the data,
@@ -300,7 +367,8 @@ def _bars_spec(tl, width):
         {"transform": [{"filter": "!datum.right"}], "mark": {**text, "align": "left"}, "encoding": {"x": {"field": "said", "type": "temporal"}, "y": y, "text": {"field": "label"}}},
         {"transform": [{"filter": "datum.right"}], "mark": {**text, "align": "right"}, "encoding": {"x": {"field": "end", "type": "temporal"}, "y": y, "text": {"field": "label"}}},
     ]
-    title = {"text": tl.title, "subtitle": f"Each bar runs from the day a statement was said to the day it was replaced, judged or due, coloured by what became of it as known on {tl.as_of[:10]}. Hover for its history."}
+    title = {"text": tl.title, "subtitle": ["Each bar runs from the day a statement was said to the day it was replaced, judged or due,",
+                                            f"coloured by what became of it as known on {tl.as_of[:10]}. Hover for its history."]}
     if any(c["group"] for c in tl.claims):
         return {"title": title, "data": {"values": rows}, "facet": {"row": {"field": "group", "title": None, "header": {"labelAngle": 0, "labelAlign": "left", "labelFontSize": 13, "labelFontWeight": 600}}},
                 "spec": {"width": width, "height": {"step": 34}, "layer": layer}, "resolve": {"scale": {"y": "independent"}}}
@@ -324,7 +392,8 @@ def _series_spec(tl, width):
     y = {"field": "v", "type": "quantitative", "title": tl.series_name, "scale": {"zero": False}}
     label = {"type": "text", "fontSize": 11, "color": "#0b0b0b"}
     return {
-        "title": {"text": tl.title, "subtitle": f"{tl.series_name}, with each statement where it was said, coloured by what became of it as known on {tl.as_of[:10]}. Settled ones are labelled; hover any point for its history."},
+        "title": {"text": tl.title, "subtitle": [f"{tl.series_name}, with each statement where it was said, coloured by what became of it as known on {tl.as_of[:10]}.",
+                                                 "Settled ones are labelled; hover any point for its history."]},
         "config": {**CONFIG, "legend": {**CONFIG["legend"], "orient": "bottom", "direction": "horizontal"}},
         "width": width, "height": 320,
         "layer": [
