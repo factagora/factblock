@@ -1,5 +1,5 @@
 """The factblock command. `factblock --help` lists the subcommands in the order you meet them:
-sample, extract, scan, recall, why, resolve, leak, validate, sync, then the projections and adapters.
+sample, extract, import, scan, recall, why, resolve, leak, validate, sync, then the projections and adapters.
 Reads print for people; `--json` prints the same answer as JSON."""
 import argparse
 import json
@@ -8,7 +8,7 @@ import pathlib
 import shutil
 import sys
 
-from . import Bundle, TckgStore, extract, leak, recall, resolve, scan, sync, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
+from . import Bundle, TckgStore, extract, from_records, leak, read_records, recall, resolve, scan, sync, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
 from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
 
 # the wheel carries samples/rates at factblock/samples/rates (pyproject force-include); a checkout has it at the repo root
@@ -96,6 +96,16 @@ def main():
     e.add_argument("--known-at", help="when you learned it; default now")
     e.add_argument("--backfill", action="store_true", help="known_at = observed_at: material from the past, known when it was said")
     e.add_argument("--namespace", default="local")
+    im = sub.add_parser("import", help="rows you already have (CSV or JSONL) in, dated blocks and verdicts appended to a bundle; no model",
+                        description="rows you already have (CSV or JSONL) in, dated blocks and verdicts appended to a bundle. "
+                                    "Statement columns: id, statement|text, asserted_at|said_at, valid_from|effective_from, valid_to|effective_to, "
+                                    "known_at, kind, replaces (id;id), anything else goes to payload. "
+                                    "Verdict columns: target, outcome, decided_at, known_at, resolver, method, evidence (url;url).")
+    im.add_argument("source", help="a .csv with a header row, or a .jsonl")
+    im.add_argument("-o", "--out", required=True, help="bundle directory; created or appended to")
+    im.add_argument("--known-at", help="when you learned rows that have no known_at of their own; default now")
+    im.add_argument("--backfill", action="store_true", help="rows without known_at are known when said (or decided): material from the past")
+    im.add_argument("--namespace", default="local")
     cmd("scan", "what the folder knew as of an instant: blocks, edges, verdicts, and what was hidden")
     rc = cmd("recall", "the blocks about something as of an instant, ranked; the read an agent makes before it answers")
     rc.add_argument("query", help="words to look for in statements, quotes and speakers")
@@ -168,6 +178,11 @@ def main():
             s_ = r["summary"]
             print(f"{a.out}: +{s_['blocks']} blocks, +{s_['entities']} entities, +{s_['links']} links"
                   + (f" ({s_['links_dropped']} dropped)" if s_['links_dropped'] else "") + f", batch {s_['batch']}")
+    elif a.cmd == "import":
+        r = from_records(read_records(a.source), known_at=a.known_at, backfill=a.backfill, namespace=a.namespace)
+        write_bundle(r, a.out, append=True)
+        s_ = r["summary"]
+        print(f"{a.out}: +{s_['blocks']} blocks, +{s_['replaced']} replaced, +{s_['verdicts']} verdicts")
     elif a.cmd == "scan":
         r = scan(a.bundle, a.as_of, a.valid_at)
         if a.json:

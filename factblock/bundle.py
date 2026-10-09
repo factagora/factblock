@@ -1,4 +1,5 @@
 """Load a bundle (SPEC 5.1): manifest plus node, edge, resolution tables as lists of dicts."""
+import copy
 import json
 import os
 from datetime import date, datetime, timezone
@@ -53,11 +54,12 @@ class Bundle:
         if not mpath.exists():
             raise FileNotFoundError(f"no FactBlock bundle at {self.path}: factblock.json is missing. "
                                     f"Make one with `factblock sample {self.path}` or `factblock extract <text> --observed-at <date> -o {self.path}`")
-        self.manifest = json.loads(mpath.read_text())
-        tables = self.manifest.get("tables", {})
-        self.nodes = _read_table(self.path / tables.get("nodes", "nodes.jsonl"))
-        self.edges = _read_table(self.path / tables.get("edges", "edges.jsonl"))
-        self.resolutions = _read_table(self.path / tables.get("resolutions", "resolutions.jsonl"))
+        manifest = json.loads(mpath.read_text())
+        tables = manifest.get("tables", {})
+        self._load(manifest, *(_read_table(self.path / tables.get(t, f"{t}.jsonl")) for t in ("nodes", "edges", "resolutions")))
+
+    def _load(self, manifest, nodes, edges, resolutions):
+        self.manifest, self.nodes, self.edges, self.resolutions = manifest, nodes, edges, resolutions
         d = self.manifest.get("declarations", {})
         self.facts = {}
         for f in d.get("facts", []):
@@ -81,34 +83,87 @@ class Bundle:
 BundleLike = Union[str, "os.PathLike[str]", Bundle]   # a bundle folder path, or a Bundle already read
 
 
-def write_bundle(result: dict, out, append: bool = False) -> Path:
-    """Put {"manifest", "nodes", "edges", "resolutions"?} on disk as a JSONL bundle. With append=True and a bundle
+def _iso(d: datetime) -> str:
+    return d.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _label(name, r):
+    return r.get("id") or (f"resolution of {r.get('target_id')}" if name == "resolutions" else f"{r.get('source_id')}->{r.get('target_id')}")
+
+
+def write_bundle(result: dict, out, append: bool = False, *, declared_by: str = "process:factblock-write") -> Path:
+    """Put {"manifest"?, "nodes", "edges", "resolutions"?} on disk as a JSONL bundle. With append=True and a bundle
     already at `out`, rows are added and the manifest's declarations are merged, so a folder grows
-    one batch at a time and stays valid."""
-    out = Path(out); out.mkdir(parents=True, exist_ok=True)
+    one batch at a time and stays valid.
+
+    Rows may carry instants as strings, dates or datetimes. A node or edge without `valid_from` gets its
+    `asserted_at`. A row without `attestation` goes under a backfill batch declared at its `known_at`
+    (SPEC 6: the writer declares when it learned the row, it never claims to be a ledger); a row without
+    `known_at` is an error. The whole bundle is validated before anything is written: a failing check
+    raises ValueError and leaves the folder as it was. `result` is not modified."""
+    from .validate import validate   # validate imports this module
+    out = Path(out)
     mpath = out / "factblock.json"
-    manifest = result["manifest"]
-    if append and mpath.exists():
-        old = json.loads(mpath.read_text())
+    old = Bundle(out) if append and mpath.exists() else None
+    now = datetime.now(timezone.utc)
+    manifest = copy.deepcopy(result.get("manifest") or {})
+    manifest.setdefault("factblock_version", "1.0-draft.1"); manifest.setdefault("namespace", "local")
+    decl = manifest.setdefault("declarations", {})
+    for key in ("facts", "backfills", "edge_types"):
+        decl.setdefault(key, [])
+    decl.setdefault("embedding", None)
+    declared = {b["batch"] for b in decl["backfills"]} | set(old.backfills if old else ())
+
+    rows = {}
+    for name in ("nodes", "edges", "resolutions"):
+        rows[name] = []
+        for r in result.get(name) or []:
+            r = {k: v for k, v in r.items() if not k.startswith("_")}
+            for k in INSTANT_KEYS:
+                if r.get(k) is not None:
+                    r[k] = _iso(parse_instant(r[k]))
+            if name != "resolutions":
+                r.setdefault("valid_from", r.get("asserted_at")); r.setdefault("valid_to", None)
+            if not r.get("attestation"):
+                if not r.get("known_at"):
+                    raise ValueError(f"{name} row {_label(name, r)} has no known_at: set it to when you learned the row "
+                                     f"(the day it reached you), or to its asserted_at for material from the past")
+                batch = f"known-{parse_instant(r['known_at']).strftime('%Y%m%dT%H%M%SZ')}"
+                r["attestation"] = {"batch": batch}
+                if batch not in declared:
+                    declared.add(batch)
+                    decl["backfills"].append({"batch": batch, "declared_known_at": r["known_at"], "reason": "known_at given by the writer",
+                                              "declared_by": declared_by, "captured_at": _iso(now)})
+            rows[name].append(r)
+
+    if old:
+        merged = copy.deepcopy(old.manifest)
         for key in ("facts", "backfills", "edge_types"):
-            have = {json.dumps(x, sort_keys=True) for x in old["declarations"].get(key, [])}
-            old["declarations"][key] = old["declarations"].get(key, []) + [x for x in manifest["declarations"].get(key, []) if json.dumps(x, sort_keys=True) not in have]
-        old["exported_as_of"] = manifest.get("exported_as_of", old.get("exported_as_of"))
-        manifest = old
-        mode = "a"
-    else:
-        mode = "w"
+            have = {json.dumps(x, sort_keys=True, default=_iso) for x in merged["declarations"].get(key, [])}
+            merged["declarations"][key] = merged["declarations"].get(key, []) + [x for x in decl[key] if json.dumps(x, sort_keys=True, default=_iso) not in have]
+        merged["exported_as_of"] = manifest.get("exported_as_of", merged.get("exported_as_of"))
+        manifest = json.loads(json.dumps(merged, default=_iso))
     tables = manifest.setdefault("tables", {})
     tables.setdefault("nodes", "nodes.jsonl"); tables.setdefault("edges", "edges.jsonl")
-    if result.get("resolutions"):
+    if rows["resolutions"]:
         tables.setdefault("resolutions", "resolutions.jsonl")
+
+    # check the bundle as it will be on disk, before touching the disk
+    probe = Bundle.__new__(Bundle); probe.path = out
+    parsed = {n: [{k: parse_instant(v) if k in INSTANT_KEYS else v for k, v in r.items()} for r in rows[n]] for n in rows}
+    probe._load(json.loads(json.dumps(manifest)), *((getattr(old, n) if old else []) + parsed[n] for n in ("nodes", "edges", "resolutions")))
+    failed = [c for c in validate(probe) if not c.ok]
+    if failed:
+        raise ValueError(f"not written to {out}, the bundle would be invalid: " + "; ".join(f"{c.check_id}: {c.detail}" for c in failed))
+
     # Rows first, manifest last and atomically (os.replace): a reader never sees a batch declared whose
     # rows are not there yet, and a crash mid-append leaves the old manifest in place.
+    out.mkdir(parents=True, exist_ok=True)
+    mode = "a" if old else "w"
     for name in ("nodes", "edges", "resolutions"):
-        rows = result.get(name, [])
-        if name in tables and (rows or (mode == "w" and name != "resolutions")):
+        if name in tables and (rows[name] or (mode == "w" and name != "resolutions")):
             with (out / tables[name]).open(mode) as f:
-                f.write("".join(json.dumps({k: v for k, v in r.items() if not k.startswith("_")}, default=lambda d: d.isoformat()) + "\n" for r in rows))
+                f.write("".join(json.dumps(r, default=_iso) + "\n" for r in rows[name]))
     tmp = mpath.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(manifest, indent=1) + "\n")
     os.replace(tmp, mpath)

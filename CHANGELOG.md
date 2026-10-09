@@ -6,6 +6,9 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 
 **Upgrading from 1.0.0a1.** The certificate's `masked` now counts only blocks learned after `as_of`; blocks known but not in force at `valid_at` are under `not_in_force`. `why()`'s certificate covers the walk, not the bundle. Code that read `masked` as "everything hidden" should add the two. `recall()` items gain keys; none were removed.
 
+### Changed
+- `write_bundle` takes plain rows: the manifest is optional, instants may be strings, dates or datetimes, `valid_from` defaults to `asserted_at`, and a row without `attestation` goes under a backfill batch the writer declares at its `known_at` (a row with no `known_at` is an error). The whole bundle is validated before anything is written, so a failing check raises `ValueError` and leaves the folder as it was. The input dicts are no longer modified.
+
 ### Fixed
 - `validate` accepted only `attestation.ledger`; SPEC I2 and 6 also allow a declared batch alone, which is what a non-ledger writer (an export script) produces. Both now pass, neither fails.
 - `sync` compared edge and resolution instants as strings, so a ledger spelling `...57.89332+00:00` for a folder's `...57.893320+00:00` made a second run re-push 1,297 edges and pull them back into the folder as duplicates. Identity keys now compare instants, not spellings.
@@ -37,6 +40,7 @@ Correctness fixes found by moving a real 46,000-row graph through the library an
 - `samples/demo.tape` records it with vhs into `samples/demo.gif` (README), `samples/demo.mp4` and `samples/demo-keyframe.png` (for slides). The plain-CLI recording is kept as `samples/demo-cli.gif` / `demo-cli.tape`.
 - `bench/streamingqa/run.py` writes `results.json` next to itself; the committed one holds the published run (797 of 1,000).
 - `factblock leak --json`.
+- `factblock import <file.csv|.jsonl> -o <bundle>` and `factblock.from_records()`: rows you already have, no model. One row is a statement (`statement`/`text`, `asserted_at`/`said_at`, `valid_from`/`effective_from`, `valid_to`, `known_at`, `kind`, `replaces`) or a verdict (`target`, `outcome`, `decided_at`, `resolver`, `evidence`); other columns go to payload. `replaces` writes the SUPERSEDES edge. `known_at` comes from the row, else `--known-at`, else the day it was said with `--backfill`, else now.
 
 ### Fixed
 - `leak` no longer passes a question set it cannot read. A question without `asked_at` or an `evidence` list raises `ValueError` (it used to count as leak-free), and the CLI exits 1 when an evidence id is not in the bundle, as it does on a leak. Bad input prints one `factblock: error:` line instead of a traceback.

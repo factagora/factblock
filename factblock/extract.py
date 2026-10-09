@@ -22,7 +22,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .bundle import Bundle, parse_instant
+from .bundle import Bundle, _iso, parse_instant
 
 LEDGER = "factblock-extract/0.1"
 PROFILE = Path(__file__).parent / "profiles" / "claims"
@@ -33,10 +33,6 @@ def load_profile(name: str = "claims") -> dict:
     return {"instructions": (d / "instructions.md").read_text(),
             "schema": json.loads((d / "output.schema.json").read_text()),
             "edge_types": json.loads((d / "edge-types.json").read_text())}
-
-
-def _iso(d: datetime) -> str:
-    return d.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _slug(s: str) -> str:
