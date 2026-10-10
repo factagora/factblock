@@ -1,7 +1,6 @@
 ---
 name: factblock
-description: Agent memory read as of a point in time with the factblock Python library. Use when an agent must answer from information that changes (prices, policies, corrected answers, promises, predictions), must not see the future in a backtest or replay, must say what was known when it answered, or must keep a track record of claims, predictions and commitments judged on outcomes.
-when_to_use: "remember what the price was when the customer asked", "read memory as of a date", "no hindsight in a backtest", "which of the assistant's answers are now wrong", "keep corrections as history", "temporal knowledge graph in files", "track record of predictions", "hit rate of promises"
+description: Agent memory read as of a point in time, with the factblock Python library (an open format for claims and their history). Use when an agent must answer from information that changes (prices, policies, corrected answers, promises, predictions), must not see the future in a backtest or replay, must say what was known when it answered, or must keep a track record of claims, predictions and commitments judged on outcomes. Typical requests include remember what the price was when the customer asked, read memory as of a date, no hindsight in a backtest, which of the assistant's answers are now wrong, keep corrections as history, temporal knowledge graph in files, track record of predictions, hit rate of promises.
 ---
 
 # factblock

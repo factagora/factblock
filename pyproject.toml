@@ -1,6 +1,6 @@
 [project]
 name = "factblock"
-version = "1.0.0a12"
+version = "1.0.0a13"
 description = "An open format for claims and their history: build agent memory that tracks claims, evidence and changes, and lets you query what was known at any point in time. Temporal causal knowledge graphs in portable files"
 readme = "README.md"
 license = "Apache-2.0"

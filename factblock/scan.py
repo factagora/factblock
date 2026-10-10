@@ -60,7 +60,8 @@ def visible(bundle: BundleLike, as_of: Instant, valid_at: Instant | None = None)
     edges = [r for r in b.edges if _visible(r, t, v)]
     res = [r for r in b.resolutions if _visible(r, t, v)]
 
-    superseded = {e["target_id"]: e for e in edges if e["edge_type"] == "SUPERSEDES"}
+    # SPEC 4.3: when several visible edges replace one block, the latest asserted wins (ties by source id)
+    superseded = {e["target_id"]: e for e in sorted(edges, key=lambda e: (e["asserted_at"], e["source_id"])) if e["edge_type"] == "SUPERSEDES"}
     # _replaced_at: when the replacement took effect (the edge's valid_from), not when the successor was said
     nodes = [{**r, "superseded_by": superseded[r["id"]]["source_id"], "_replaced_at": superseded[r["id"]]["valid_from"]}
              if r["id"] in superseded else {**r, "superseded_by": None} for r in nodes]

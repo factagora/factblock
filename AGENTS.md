@@ -16,7 +16,7 @@ No test framework: each `tests/test_*.py` asserts and prints one PASS line. A ne
 - Every MUST in `SPEC.md` has a check id in `factblock/validate.py`. Add both or neither.
 - Reads never default `as_of`. A writer that is not a ledger declares `known_at` as a backfill batch (SPEC 6); `write_bundle` does it for rows without `attestation`.
 - Blocks are append-only. Corrections are new rows (`SUPERSEDES`, resolutions), never edits.
-- The Python reader and the DuckDB macros (`duckdb/factblock.sql`) must give the same answer; `tests/test_duckdb.py` compares them.
+- The Python reader and the DuckDB macros (`duckdb/factblock.sql`) must give the same answer; `tests/test_duckdb.py` compares them, and both must pass `conformance/cases.jsonl`. A read rule you change gets a case there.
 - No new runtime dependency beyond `pyarrow`. Model SDKs are optional extras.
 - Add a line to `CHANGELOG.md` for anything a user would notice.
 - Prose: plain, second person, no em dashes. Say what the code does, not what it will do.
@@ -37,4 +37,5 @@ No test framework: each `tests/test_*.py` asserts and prints one PASS line. A ne
 | `factblock/embed.py` | meaning for recall: `embedder()` for the optional model extras, statement vectors cached beside the bundle (an index, not part of it) |
 | `factblock/sync.py` | folder to store, both ways (SPEC 6.1) |
 | `factblock/adapters/` | Graphiti, Fact Check Tools |
+| `conformance/` | the answers any reader must give (`cases.jsonl`); `tests/test_conformance.py` holds Python and DuckDB to them |
 | `samples/`, `examples/` | data the tests read; regenerate rather than hand-edit `samples/cramer` |

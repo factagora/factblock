@@ -136,7 +136,7 @@ A conforming reader implements these; an engine that embeds the reference librar
 
 **4.2 Certificate.** Every as-of read returns `{ as_of, read_at, masked: {node, edge, resolution}, backfill: {batches, rows} | null, rules_as_of? }`. `masked` counts blocks hidden because `known_at > as_of` (learned later: the hindsight the read blocked). Blocks known by `as_of` but not in force at `valid_at` are not masked; a reader MAY count them under `not_in_force: {node, edge, resolution}`. The split keeps `masked` the same across readers and countable from `known_at` alone (file or row-group statistics). Omit keys whose value is zero or null.
 
-**4.3 Supersession.** A block is `superseded_by` X as of T when an edge `X SUPERSEDES block` is visible as of T. Superseded blocks are returned and flagged, not dropped.
+**4.3 Supersession.** A block is `superseded_by` X as of T when an edge `X SUPERSEDES block` is visible as of T (4.1: known by T and in force at the valid instant, so a replacement announced before it takes effect does not flag the block yet). When several such edges are visible, X is the source of the one asserted last, ties broken by the larger source id. Superseded blocks are returned and flagged, not dropped.
 
 **4.4 Resolve.** `resolve(fact_key, as_of, valid_at?, rules_as_of?)`: candidates are visible nodes carrying `fact_key`; the declared policy picks one. Outcomes: `answered {value, candidates}`, or `no_answer {reason}` with reason in `undeclared_fact`, `no_data`, `not_yet`, `no_value_at`, `unresolved_conflict` (all candidates attached). A reader MUST NOT pick a value by any rule other than the declared policy.
 

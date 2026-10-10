@@ -1,0 +1,2 @@
+{"source_id": "b", "target_id": "a", "edge_type": "SUPERSEDES", "asserted_at": "2026-02-01T00:00:00Z", "valid_from": "2026-02-01T00:00:00Z", "valid_to": null, "known_at": "2026-02-01T00:00:00Z", "attestation": {"ledger": "conformance"}}
+{"source_id": "c", "target_id": "a", "edge_type": "SUPERSEDES", "asserted_at": "2026-02-01T00:00:00Z", "valid_from": "2026-03-01T00:00:00Z", "valid_to": null, "known_at": "2026-02-01T00:00:00Z", "attestation": {"ledger": "conformance"}}

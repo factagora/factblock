@@ -2,7 +2,20 @@
 
 ## Unreleased
 
+## 1.0.0a13 (2026-10-11)
+
+One meaning in every reader.
+
+### Fixed
+- DuckDB `factblock_nodes`: a block counted as replaced as soon as the replacement was known, even before it took effect. A price announced on Feb 15 for Mar 1 read as already replaced on Feb 20; the Python reader said, correctly, that it was not. The macro now applies the same visibility to the `SUPERSEDES` edge as to every other row (SPEC 4.1, 4.3).
+- The agent skill (`.claude/skills/factblock/SKILL.md`) had a `when_to_use` field, which claude.ai uploads and the Skills API refuse. Its text is in `description` now.
+- The README's StreamingQA sentence now gives its conditions (1,000 sampled questions, keyword recall, top 5, 79.7%) and says it measures leakage, not answer accuracy.
+
+### Added
+- `conformance/cases.jsonl`: the answers a reader must give (visible blocks, what replaced each, the latest verdict) for ten reads over three bundles, including a replacement announced before it takes effect, a statement learned late and a block replaced twice on one day. `tests/test_conformance.py` holds the Python reader and the DuckDB macros to them; a reader in another language can check itself the same way.
+
 ### Changed
+- SPEC 4.3: when several visible edges replace one block, `superseded_by` is the one asserted last, ties broken by the larger source id. The Python reader used the order of the file and DuckDB the latest assertion; both follow the rule now.
 - The README's first screen is shorter: two lines of what it is, four commands, and the two examples in a few lines each. The full command list opens "How it reads".
 
 ## 1.0.0a12 (2026-10-11)

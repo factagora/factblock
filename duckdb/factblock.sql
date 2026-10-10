@@ -6,7 +6,7 @@
 --   SELECT target_id, outcome, decided_at FROM factblock_verdicts('path/to/bundle', TIMESTAMPTZ '2024-08-01');
 --
 -- Same rules as factblock.scan(): known_at <= as_of masks, valid_at (default as_of)
--- selects, SUPERSEDES edges known by as_of flag the row they replace. The bundle
+-- selects, SUPERSEDES edges visible as of as_of (known, and in force at valid_at) flag the row they replace. The bundle
 -- must be the Parquet profile (factblock to-parquet). A date-only as_of means the
 -- end of that day: pass factblock_day(DATE '2024-08-01').
 -- Table macros, so this is one file to load, no build, no extension install.
@@ -19,7 +19,8 @@ CREATE OR REPLACE MACRO factblock_nodes(bundle, as_of, valid_at := NULL) AS TABL
          (SELECT e.source_id
             FROM read_parquet(bundle || '/edges.parquet') e, t
            WHERE e.target_id = n.id AND e.edge_type = 'SUPERSEDES' AND e.known_at <= t.a
-           ORDER BY e.asserted_at DESC LIMIT 1) AS superseded_by
+             AND e.asserted_at <= t.v AND e.valid_from <= t.v AND (e.valid_to IS NULL OR t.v < e.valid_to)
+           ORDER BY e.asserted_at DESC, e.source_id DESC LIMIT 1) AS superseded_by
     FROM read_parquet(bundle || '/nodes.parquet') n, t
    WHERE n.known_at <= t.a
      AND n.asserted_at <= t.v

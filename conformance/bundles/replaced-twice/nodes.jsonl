@@ -1,0 +1,3 @@
+{"id": "a", "kind": "claim", "statement": "statement a", "asserted_at": "2026-01-01T00:00:00Z", "valid_from": "2026-01-01T00:00:00Z", "valid_to": null, "known_at": "2026-01-01T00:00:00Z", "attestation": {"ledger": "conformance"}}
+{"id": "b", "kind": "claim", "statement": "statement b", "asserted_at": "2026-02-01T00:00:00Z", "valid_from": "2026-02-01T00:00:00Z", "valid_to": null, "known_at": "2026-02-01T00:00:00Z", "attestation": {"ledger": "conformance"}}
+{"id": "c", "kind": "claim", "statement": "statement c", "asserted_at": "2026-02-01T00:00:00Z", "valid_from": "2026-03-01T00:00:00Z", "valid_to": null, "known_at": "2026-02-01T00:00:00Z", "attestation": {"ledger": "conformance"}}
