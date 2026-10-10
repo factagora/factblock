@@ -263,7 +263,7 @@ class Timeline(Chart):
 
 def timeline(bundle: BundleLike, as_of: Instant, query: str = "", *, ids: list[str] | None = None,
              kinds: tuple[str, ...] | None = None, limit: int = 30, valid_at: Instant | None = None,
-             series=None, series_name: str | None = None, group_by: str | None = None) -> Timeline:
+             series=None, series_name: str | None = None, group_by: str | None = None, embed=None) -> Timeline:
     """Use to see what happened to statements over time, as known on as_of: one bar per statement from when it was
     said to when it was replaced, judged or due, coloured by the outcome. Pick statements by `query` (recall's
     keyword match; "" for all, newest first), by `ids`, and `kinds`; at most `limit`. `group_by` names a payload
@@ -279,7 +279,7 @@ def timeline(bundle: BundleLike, as_of: Instant, query: str = "", *, ids: list[s
             raise ValueError(f"not in the bundle as of {_day(t)}: {', '.join(sorted(missing))}")
         cert = recall(b, "", as_of, valid_at, limit=0)["certificate"]
     else:
-        r = recall(b, query, as_of, valid_at, limit=limit, kinds=kinds)
+        r = recall(b, query, as_of, valid_at, limit=limit, kinds=kinds, embed=embed)
         by = {n["id"]: n for n in b.nodes}
         picked, cert = [by[i["id"]] for i in r["items"]], r["certificate"]
     picked.sort(key=lambda n: (n["asserted_at"], n["id"]))

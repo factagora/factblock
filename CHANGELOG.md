@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- `recall(..., embed=fn)`, `context(..., embed=)`, `timeline(..., embed=)` and `factblock recall --embed gemini|openai`: match by meaning as well as by words, so "price" finds a block that says "costs" (first-use test U1). The word ranking and the meaning ranking are fused (reciprocal rank, as tckg's search does); a block with no word in common is kept only when it is close to the best match, so an unrelated question still gets "nothing about it". `factblock.embedder("gemini"|"openai")` makes `fn` from the optional extras; any `fn(list[str]) -> list[list[float]]` works. Statement vectors are a search index, not part of the bundle: they are cached in `<bundle>/.factblock-cache/` by statement text, and vectors the bundle carries are used when `declarations.embedding.model` names the same model. No new dependency.
 - `factblock import --map Claim=text,Date=said_at` and `from_records(..., columns={...})`: rows keep your column names; mapped columns are read as ours, the rest go to payload as before.
 - `factblock leak --asked-key --evidence-key` and `leak(..., asked_key=, evidence_key=)`: a question set with its own field names. A set whose fields are named otherwise is refused with a pointer to these options, not read as leak-free.
 

@@ -188,6 +188,8 @@ c1 = next(i for i in r["items"] if i["id"] == "c1")
 print(c1["superseded_by"]["statement"], c1["verdict"]["outcome"])          # what replaced it, how it was settled
 ```
 
+Words are matched as written. To match by meaning too, pass `embed=factblock.embedder("gemini")` (or `"openai"`, or your own function) to `recall`, `context` or `timeline`, or `--embed gemini` on the command line: "price" then finds a block that says "costs". The vectors are an index cached in `brain/.factblock-cache/`, not part of the bundle.
+
 Three rules: every read takes `as_of` (no default); a change is a new block plus `SUPERSEDES`, never an edit; `known_at` is when you learned a row: give it honestly (default now; `--backfill` means when it was said) and let `import`, `extract` or `write_bundle` declare the batch that attests it. Never claim a ledger stamp you did not get. Claude Code users can copy [`.claude/skills/factblock`](https://github.com/factagora/factblock/tree/main/.claude/skills/factblock) into their project; other agents read [`llms.txt`](https://github.com/factagora/factblock/blob/main/llms.txt).
 
 | If you know | In FactBlock |
@@ -196,7 +198,7 @@ Three rules: every read takes `as_of` (no default); a change is a new block plus
 | Mem0 `m.search(query, user_id=...)` | `recall(bundle, query, as_of=...)` or `context(...)` for the prompt |
 | Graphiti edge `valid_at` / `invalid_at` | `valid_from` / `valid_to` on the block, plus `known_at`: when you learned it |
 | Graphiti `expired_at` (an edge closed later) | the old block stays; a new block `SUPERSEDES` it, known from that moment |
-| A vector store with a date filter | `recall(as_of=...)` also hides what was learned later, keeps what was replaced (marked), and attaches verdicts |
+| A vector store with a date filter | `recall(as_of=..., embed=...)` matches by meaning too, and also hides what was learned later, keeps what was replaced (marked), and attaches verdicts. Vectors are an index cached beside the bundle (`.factblock-cache/`), not part of it |
 
 ### Write rows you already have
 

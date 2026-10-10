@@ -8,7 +8,7 @@ import pathlib
 import shutil
 import sys
 
-from . import __version__, Bundle, TckgStore, extract, from_records, graph, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
+from . import __version__, Bundle, embedder, TckgStore, extract, from_records, graph, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
 from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
 
 # the wheel carries samples/rates at factblock/samples/rates (pyproject force-include); a checkout has it at the repo root
@@ -113,6 +113,7 @@ def main():
     rc.add_argument("query", help="words to look for in statements, quotes and speakers; \"\" for every block, newest first")
     rc.add_argument("--verdict", help="only blocks whose latest verdict is this outcome (did_not for a prediction, broken for a commitment), or open (none yet), resolved (any), overdue (past due, no verdict)")
     rc.add_argument("--limit", type=int, default=10)
+    rc.add_argument("--embed", choices=["gemini", "openai"], help="also match by meaning, through this embedding model (factblock[gemini] or factblock[openai]); vectors are cached beside the bundle")
     rc.add_argument("--all-kinds", action="store_true", help="also the things statements are about (entity, factor, timeseries, episode); every kind of statement is in by default")
     w = cmd("why", "the chain behind one block as of an instant: causes, effects, successors, contradictions")
     w.add_argument("node_id", help="the block id (see scan)")
@@ -218,7 +219,8 @@ def main():
         else:
             _print_scan(r)
     elif a.cmd == "recall":
-        r = recall(a.bundle, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else None, verdict=a.verdict)
+        r = recall(a.bundle, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else None, verdict=a.verdict,
+                   embed=embedder(a.embed) if a.embed else None)
         if a.json:
             out_json(r)
         else:

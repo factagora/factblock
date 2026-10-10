@@ -31,6 +31,7 @@ Verdict, resolution: the same thing, a row in `resolutions.jsonl` (`outcome` is 
 import factblock
 ctx = factblock.context("brain/", "refund policy", as_of="2026-04-10")   # prompt lines, as known then
 r = factblock.recall("brain/", "refund policy", as_of="2026-04-10")      # same, as dicts: items[i]["superseded_by"], ["verdict"], ["known_at"]
+r = factblock.recall("brain/", "what does it cost", as_of="2026-04-10", embed=factblock.embedder("gemini"))   # by meaning too
 w = factblock.why("brain/", r["items"][0]["id"], as_of="2026-04-10")     # causes, effects, replacements of one block
 s = factblock.scan("brain/", as_of="2026-04-10")                         # everything visible, as Arrow tables (.nodes, .edges, .resolutions)
 ```

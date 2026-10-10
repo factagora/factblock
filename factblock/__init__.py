@@ -32,6 +32,7 @@ from .scan import Scan, scan
 from .sync import Store, TckgStore, sync
 from .timeline import Timeline, mcp_app_html, read_series, timeline
 from .graph import Graph, graph
+from .embed import embedder
 from .validate import Check, validate
 from .why import why
 
@@ -40,4 +41,4 @@ try:
 except PackageNotFoundError:   # a checkout on sys.path, not installed
     __version__ = "0+unknown"
 
-__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore", "to_claimreview", "to_okf", "recall", "context", "from_records", "read_records", "timeline", "Timeline", "read_series", "mcp_app_html", "graph", "Graph"]
+__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore", "to_claimreview", "to_okf", "recall", "context", "from_records", "read_records", "timeline", "Timeline", "read_series", "mcp_app_html", "graph", "Graph", "embedder"]

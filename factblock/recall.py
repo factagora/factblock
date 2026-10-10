@@ -44,7 +44,7 @@ def _hits(terms, n):
 
 
 def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10,
-           kinds: tuple[str, ...] | None = None, verdict: str | None = None) -> dict:
+           kinds: tuple[str, ...] | None = None, verdict: str | None = None, embed=None) -> dict:
     """Use before an agent answers: the blocks matching `query` as known at `as_of`, ranked, each with what
     replaced it, its verdict, source and known_at. Returns {"items", "matched", "excluded", "certificate", ...}.
     `kinds` None means every kind of statement (claims, predictions, commitments, any kind you use) but not
@@ -52,7 +52,9 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
     exactly those. Matches dropped by `kinds` are counted per kind in `excluded`. An empty query matches every
     block, newest first. `verdict` keeps only blocks whose latest visible verdict is that outcome ("did_not" for a
     prediction, "broken" for a commitment, SPEC 3.6), or "open" (none yet), "resolved" (any), "overdue" (past its
-    horizon or deadline with no verdict).
+    horizon or deadline with no verdict). `embed` (factblock.embedder(...), or any fn(list[str]) -> list[list[float]])
+    adds meaning to the words: blocks close to the query in meaning match too, and the two rankings are fused
+    (reciprocal rank), so "price" finds a block about costs. Vectors are cached beside the bundle (embed.py).
 
     Each item: id, kind, statement, asserted_at, known_at, in_force_from, speaker, source, score, and when they
     apply: superseded_by {id, statement, asserted_at, since}, upcoming {id, statement, asserted_at, from},
@@ -73,19 +75,31 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
     wanted = lambda n: n["kind"] not in THINGS if kinds is None else not kinds or n["kind"] in kinds   # noqa: E731
     nodes = nodes + [{**n, "superseded_by": None, "_ended": True} for n in ended]
     items, excluded = [], {}
+    near = {}   # id -> (rank, similarity) for the blocks closest in meaning, when embed is given
+    if embed is not None and terms:
+        from .embed import cosine, vectors
+        pool = [n for n in nodes if wanted(n)]
+        vecs, q = vectors(b, pool, embed), embed([query])[0]
+        sims = sorted(((cosine(q, v), i) for i, v in vecs.items()), reverse=True)[:max(3 * limit, 30)]
+        # nearest is not near: a block with no word in common has to be close to the best match too, or an
+        # unrelated question would still fill the prompt. ponytail: a relative floor (80% of the best), not a
+        # per-model threshold; calibrate per model if answers show noise or misses.
+        floor = 0.8 * sims[0][0] if sims else 0
+        near = {i: (r + 1, round(s, 4)) for r, (s, i) in enumerate(sims) if s >= floor or _hits(terms, by_id.get(i) or {})}
     for n in nodes:
         payload = n.get("payload") or {}
         score = _hits(terms, n) if terms else 1
+        keep = score or n["id"] in near
         v = verdicts.get(n["id"])
         if verdict == "overdue":
             if v is not None or not n.get("_ended"):
                 continue
         elif verdict and not (v is None if verdict == "open" else v is not None and verdict in ("resolved", v.get("outcome") or v.get("value"))):
             continue
-        if score and not wanted(n):
+        if keep and not wanted(n):
             excluded[n["kind"]] = excluded.get(n["kind"], 0) + 1
             continue
-        if score:
+        if keep:
             item = {"id": n["id"], "kind": n["kind"], "statement": n.get("statement"), "asserted_at": n["asserted_at"],
                     "known_at": n["known_at"], "in_force_from": n["valid_from"], "speaker": payload.get("speaker"),
                     "source": payload.get("source"), "score": score}
@@ -103,6 +117,12 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
             if v:
                 item["verdict"] = {"outcome": v.get("outcome") or v.get("value"), "decided_at": v["decided_at"], "resolver": v.get("resolver")}
             items.append(item)
+    if near:   # fuse the word ranking and the meaning ranking, as tckg's search does (k = 60)
+        by_words = sorted((x for x in items if x["score"]), key=lambda x: (-x["score"], -x["asserted_at"].timestamp()))
+        word_rank = {x["id"]: r + 1 for r, x in enumerate(by_words)}
+        for x in items:
+            rank, x["similarity"] = near.get(x["id"], (None, None))
+            x["score"] = round(sum(1 / (60 + r) for r in (word_rank.get(x["id"]), rank) if r), 6)
     items.sort(key=lambda x: (-x["score"], -x["asserted_at"].timestamp()))
     matched, items = len(items), items[:limit]
 
@@ -131,12 +151,12 @@ def _source(s):
 
 
 def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10,
-            kinds: tuple[str, ...] | None = None, verdict: str | None = None, ids: bool = False) -> str:
+            kinds: tuple[str, ...] | None = None, verdict: str | None = None, ids: bool = False, embed=None) -> str:
     """Use to put memory into a prompt. The recall as lines: one dated statement per line, indented lines for what happened
     to it since (replaced, about to change, verdict), announced changes not in force yet, then the as-of date. Learned-later and source go on the first line. Never empty:
     when nothing matches it says so, so the model is told it has no memory of this rather than nothing at all.
     ids=True starts each line with its block id in brackets, so a model can cite [id] and you can check the source."""
-    r = recall(bundle, query, as_of, valid_at, limit, kinds, verdict)
+    r = recall(bundle, query, as_of, valid_at, limit, kinds, verdict, embed)
     lines = [] if r["items"] or r["upcoming"] else [f"(nothing about {query!r} known as of {r['as_of'][:10]})"]
     for i in r["items"]:
         head = (f"- [{i['id']}] " if ids else "- ") + i["asserted_at"].date().isoformat() + (f" {i['speaker']}:" if i.get("speaker") else ":") + f" {i['statement']}"
