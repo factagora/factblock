@@ -7,7 +7,7 @@ Use it when an agent answers from information that changes: prices and policies 
 ## Docs
 
 - [README](https://raw.githubusercontent.com/factagora/factblock/main/README.md): install, the first five minutes, `context()` for prompts, `recall()`, `why()`, analytics, syncing with a hosted ledger
-- [SPEC](https://raw.githubusercontent.com/factagora/factblock/main/SPEC.md): the format. Three clocks, five invariants, read semantics, JSONL and Parquet profiles, writing and import rules
+- [SPEC](https://raw.githubusercontent.com/factagora/factblock/main/SPEC.md): the format. Three clocks, six invariants, read semantics, JSONL and Parquet profiles, writing and import rules
 - [Agent skill](https://raw.githubusercontent.com/factagora/factblock/main/.claude/skills/factblock/SKILL.md): the API in one page, for coding agents
 
 ## Examples

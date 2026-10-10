@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- SPEC invariant I6, checked by `validate` as `I6.target_exists` and `I6.after_statement`: every verdict names a node in the bundle and is not decided before that statement was made. A verdict on a missing block, or one dated before the promise it judges, used to pass; `write_bundle` and `factblock import` now refuse them with the check id. `validate` runs thirteen checks.
+
 ## 1.0.0a6 (2026-10-10)
 
 A second chart: what one statement rests on and what came of it, for a notebook, a web page or a chat answer.

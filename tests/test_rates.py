@@ -12,7 +12,7 @@ RATES = pathlib.Path(__file__).resolve().parents[1] / "samples" / "rates"
 
 checks = factblock.validate(RATES)
 assert all(c.ok for c in checks), [c for c in checks if not c.ok]
-assert len(checks) == 11
+assert len(checks) == 13
 
 ids = lambda s: sorted(s.nodes.column("id").to_pylist())  # noqa: E731
 may = factblock.scan(RATES, "2024-05-01")
@@ -63,7 +63,7 @@ for f in (lambda: factblock.scan(RATES, None), lambda: factblock.resolve(RATES, 
     except ValueError:
         pass
 assert factblock.scan(RATES, "2024-10-01").resolutions.num_rows == 2 and factblock.scan(RATES, "2025-01-01").resolutions.num_rows == 3
-print("PASS factblock: validate 11/11, scan at three instants, supersession, certificate, valid_at, resolve 10 cases, verdict rows masked by known_at")
+print("PASS factblock: validate 13/13, scan at three instants, supersession, certificate, valid_at, resolve 10 cases, verdict rows masked by known_at")
 
 # Parquet profile: the same bundle written as Parquet validates and answers identically (SPEC 5.3)
 import tempfile  # noqa: E402

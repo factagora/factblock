@@ -238,7 +238,7 @@ The same ledger runs closed for companies at [app.factagora.com](https://app.fac
 
 ## The format
 
-[`SPEC.md`](https://github.com/factagora/factblock/blob/main/SPEC.md) is short. Five invariants (present, attested, unique, typed, declared), a JSONL profile and a Parquet profile, read semantics, and the conformance checks `validate` runs (eleven of them). Projections to OKF and ClaimReview are described, and `to-claimreview` writes the verdicts visible as of an instant as schema.org JSON-LD, so a bundle can feed systems that speak those.
+[`SPEC.md`](https://github.com/factagora/factblock/blob/main/SPEC.md) is short. Six invariants (present, attested, unique, typed, declared, verdicts on statements that were made), a JSONL profile and a Parquet profile, read semantics, and the conformance checks `validate` runs (thirteen of them). Projections to OKF and ClaimReview are described, and `to-claimreview` writes the verdicts visible as of an instant as schema.org JSON-LD, so a bundle can feed systems that speak those.
 
 Format, not platform. Apache-2.0. tckg is one writer of this format; nothing here requires it. Contributions are welcome under the DCO: see [CONTRIBUTING.md](https://github.com/factagora/factblock/blob/main/CONTRIBUTING.md).
 

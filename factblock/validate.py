@@ -1,4 +1,4 @@
-"""SPEC section 2: the five invariants, one check id each. No engine, no network."""
+"""SPEC section 2: the six invariants, one check id each. No engine, no network."""
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -96,4 +96,16 @@ def validate(bundle: "BundleLike") -> list[Check]:
     badpol = [k for k, fs in b.facts.items() if any(f.get("policy", "latest_valid") not in POLICIES for f in fs)]
     check("I5.declared", undeclared, "fact_keys used but not declared")
     check("I5.policy_known", badpol, "facts with an unknown policy")
+
+    # I6 a verdict judges a statement that was made
+    said = {}
+    for r in b.nodes:
+        if isinstance(r.get("asserted_at"), datetime):
+            said[r["id"]] = min(said.get(r["id"], r["asserted_at"]), r["asserted_at"])
+    ids = {r.get("id") for r in b.nodes}
+    orphan = [_label("resolution", r) for r in b.resolutions if r.get("target_id") not in ids]
+    early = [f'{_label("resolution", r)} decided {r["decided_at"].date()}, said {said[r["target_id"]].date()}' for r in b.resolutions
+             if r.get("target_id") in said and isinstance(r.get("decided_at"), datetime) and r["decided_at"] < said[r["target_id"]]]
+    check("I6.target_exists", orphan, "verdicts on a block not in the bundle")
+    check("I6.after_statement", early, "verdicts decided before the statement was made")
     return out

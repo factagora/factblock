@@ -26,7 +26,7 @@ It sits above Parquet and JSONL (how bytes are stored) and beside OKF (how peopl
 
 ## 2. Invariants
 
-A bundle is a FactBlock bundle only if all five hold. The validator (section 8) checks each.
+A bundle is a FactBlock bundle only if all six hold. The validator (section 8) checks each.
 
 | # | Invariant | Validator check |
 |---|---|---|
@@ -35,6 +35,7 @@ A bundle is a FactBlock bundle only if all five hold. The validator (section 8) 
 | **I3** | **Append only.** Within a bundle no two nodes share `(id, overlapping valid)` and no two edges share `(source_id, target_id, edge_type, overlapping valid)`. There is no update or delete; a correction is a new block plus a `SUPERSEDES` edge | `I3.node_unique`, `I3.edge_unique` |
 | **I4** | **Edges are typed, and the type decides the family.** `edge_type` is one of the core types or a producer type declared with a family. Family is derived, never stored. `CONCURRENT_SIGNAL` is temporal, not causal | `I4.known_type`, `I4.family_declared` |
 | **I5** | **Facts and policies travel with the data.** Every `fact_key` used on a node appears in `declarations.facts` with a policy. A reader can compute `resolve` from the bundle alone | `I5.declared`, `I5.policy_known` |
+| **I6** | **A verdict judges a statement that was made.** Every resolution's `target_id` names a node in the bundle, and its `decided_at` is not earlier than that node's earliest `asserted_at`. A bundle that carries a verdict carries what it judges, so an export scoped to part of a store keeps the targets of the verdicts it includes | `I6.target_exists`, `I6.after_statement` |
 
 ## 3. Logical model
 

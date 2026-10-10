@@ -57,4 +57,4 @@ prompt = f"Answer from these notes. A note marked 'replaced' is no longer true.\
 
 ## The data
 
-`brain/` is a FactBlock bundle written by hand: ten statements, four `SUPERSEDES` links, one verdict, and one backfill batch per source (pricing page, chat, ticket, sales call, legal memo, changelog). `questions.jsonl` holds the questions, their dates, and which statements must and must not be presented as current. `factblock validate examples/support-agent/brain` passes all eleven checks.
+`brain/` is a FactBlock bundle written by hand: ten statements, four `SUPERSEDES` links, one verdict, and one backfill batch per source (pricing page, chat, ticket, sales call, legal memo, changelog). `questions.jsonl` holds the questions, their dates, and which statements must and must not be presented as current. `factblock validate examples/support-agent/brain` passes all thirteen checks.

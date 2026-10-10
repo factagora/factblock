@@ -90,7 +90,9 @@ with tempfile.TemporaryDirectory() as d:
     assert rows == snap and all(c.ok for c in factblock.validate(d / "plain"))
     for bad, why in (({"nodes": [{"id": "a", "statement": "x", "asserted_at": "2025-01-01"}]}, "has no known_at"),
                      ({"nodes": [{"id": "a", "statement": "x", "asserted_at": "2025-01-01", "known_at": "2025-01-02",
-                                  "attestation": {"batch": "nope"}}]}, "I2.batch_exists")):
+                                  "attestation": {"batch": "nope"}}]}, "I2.batch_exists"),
+                     ({**rows, "resolutions": [{"target_id": "zz", "value": "kept", "decided_at": "2025-02-01", "known_at": "2025-02-01"}]}, "I6.target_exists"),
+                     ({**rows, "resolutions": [{"target_id": "a", "value": "kept", "decided_at": "2024-12-01", "known_at": "2025-02-01"}]}, "I6.after_statement")):
         try:
             factblock.write_bundle(bad, d / "bad"); raise AssertionError(why)
         except ValueError as e:

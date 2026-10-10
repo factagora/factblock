@@ -57,7 +57,7 @@ t.save("out.html")                                                             #
 ## Check, convert, share
 
 ```bash
-factblock validate brain/                    # 11 checks, all ok
+factblock validate brain/                    # 13 checks, all ok
 factblock leak brain/ questions.jsonl        # answers that used blocks learned after the question (date-only asked_at = start of that day)
 factblock to-parquet brain/ brain-pq/        # DuckDB, Spark
 factblock sync brain/ https://tckg.factagora.com --space user:me   # hosted ledger, both ways ($TCKG_TOKEN)
