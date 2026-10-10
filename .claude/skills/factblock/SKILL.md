@@ -45,7 +45,7 @@ s = factblock.scan("brain/", as_of="2026-04-10")                         # every
 ```python
 t = factblock.timeline("brain/", as_of="2026-04-10", query="refund policy")   # one bar per statement: said until replaced, judged or due; group_by="speaker" groups rows
 g = factblock.graph("brain/", "<block id>", as_of="2026-04-10")   # what it rests on above, what came of it below; depth=2 walks further
-r = factblock.track_record("brain/", as_of="2026-04-10", by="speaker")   # right, wrong, open, overdue, hit_rate per group; r["record"]: on record before the verdict, or written later (from a cited source, or on the writer's word)
+r = factblock.track_record("brain/", as_of="2026-04-10", by="speaker")   # right, wrong, open, overdue, hit_rate per group; r["record"]: on record before the verdict, or written later (from a cited source, or on the writer's word); r["total"]["baseline"] when verdicts carry a return: "up" every time, and what following the calls made
 mine = factblock.track_record("brain/", as_of="2026-04-10", ids=[i["id"] for i in factblock.recall("brain/", "Nvidia", as_of="2026-04-10")["items"]])   # only calls like the one in front of you; speaker= for one speaker
 t.with_series("prices.csv", "Price")                                          # over a numeric series (date, value CSV); values after as_of are dropped
 t.save("out.html")                                                             # or .png/.svg with factblock[viz]; t.spec() is Vega-Lite, t.to_dict() the rows

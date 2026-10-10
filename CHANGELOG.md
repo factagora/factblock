@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.0.0a11 (2026-10-10)
+
+A hit rate next to the bar it has to clear.
+
+### Added
+- `track_record(...)` adds `baseline` to the total and to each group when verdicts carry a numeric `return` in their value (a price-horizon resolver writes `{return, excess_over_spy, direction}`): `always_up_hit_rate`, how often saying "up" every time would have been right on the same calls, and `avg_return_if_followed` / `avg_excess_if_followed`, the mean return of going long on "up" calls and short on "down" calls, outright and over SPY. `factblock track-record` prints it in one line. On `samples/cramer`: 54.7% right where "up" every time would have been 53.8%, while following the calls made +1.4% a call over SPY. A value stored as a JSON string, as a tckg export has it, is read the same.
+
 ## 1.0.0a10 (2026-10-10)
 
 The track record of calls like the one in front of you, not only of everything.

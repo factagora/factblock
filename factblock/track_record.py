@@ -5,6 +5,11 @@ and which of them were on record before they were resolved.
     r["groups"]      # per speaker: judged, right, wrong, mixed, open, overdue, hit_rate
     r["record"]      # before it was resolved: written then, written later from a cited source, written later on the writer's word
 
+Baseline, when verdicts carry a numeric `return` in their value (a price-horizon resolver writes {return,
+excess_over_spy, direction}): always_up_hit_rate is how often saying "up" every time would have been right on the same
+calls, the bar a hit rate has to clear in a rising market; avg_return_if_followed and avg_excess_if_followed are the
+mean return of going long on "up" calls and short on "down" calls, outright and over SPY.
+
 A statement counts once, by its latest verdict known on as_of. hit_rate is right / (right + wrong); mixed (partial,
 misleading) and undecidable verdicts are counted but left out of it. open is a prediction or commitment with no
 verdict yet; overdue, one past its due date with none.
@@ -16,12 +21,29 @@ was said first, and anyone can check it; with no source it rests on the writer's
 out. A verdict can come after the outcome itself, so this is the floor of what a track record can show, not more."""
 from __future__ import annotations
 
+import json
+
 from .bundle import Bundle, BundleLike, Instant, parse_instant
 from .recall import recall
 from .scan import _as_of
 from .timeline import _day, _outcome, _url
 
 OPEN_KINDS = ("prediction", "commitment")
+
+
+def _fields(value) -> dict:
+    """A verdict value as a dict: as written, or parsed from its JSON string (a tckg export); {} for a plain outcome."""
+    if isinstance(value, str) and value.startswith("{"):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _number(fields, key):
+    x = fields.get(key)
+    return float(x) if isinstance(x, (int, float)) and not isinstance(x, bool) else None
 
 
 def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, ids: list[str] | None = None,
@@ -62,7 +84,9 @@ def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, i
         record = None
         if v:
             record = "before" if written <= v["decided_at"] else "sourced" if _url(p) else "writer"
+        f = _fields(v.get("value")) if v else {}
         items.append({"id": n["id"], "kind": n["kind"], "statement": n.get("statement"), "said": _day(n["asserted_at"]),
+                      "direction": p.get("direction") or f.get("direction"), "return": _number(f, "return"), "excess": _number(f, "excess_over_spy"),
                       "group": str(p.get(by, n.get(by)) or "other") if by else None, "status": status,
                       "verdict": o or None, "decided": _day(v["decided_at"]) if v else None, "written": _day(written),
                       "record": record, "source": _url(p)})
@@ -71,7 +95,16 @@ def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, i
     def tally(rows):
         c = {k: sum(1 for i in rows if i["status"] == k) for k in ("right", "wrong", "mixed", "undecidable", "open", "overdue")}
         judged = len(rows) - c["open"] - c["overdue"]
-        return {"judged": judged, **c, "hit_rate": round(c["right"] / (c["right"] + c["wrong"]), 3) if c["right"] + c["wrong"] else None}
+        out = {"judged": judged, **c, "hit_rate": round(c["right"] / (c["right"] + c["wrong"]), 3) if c["right"] + c["wrong"] else None}
+        priced = [i for i in rows if i["return"] is not None and i["status"] in ("right", "wrong")]
+        if priced:   # what the same calls would have scored without the speaker's judgment, and what following them made
+            sign = {"up": 1, "down": -1}
+            followed = [i for i in priced if i["direction"] in sign]
+            excess = [i for i in followed if i["excess"] is not None]
+            out["baseline"] = {"n": len(priced), "always_up_hit_rate": round(sum(i["return"] > 0 for i in priced) / len(priced), 3),
+                               "avg_return_if_followed": round(sum(sign[i["direction"]] * i["return"] for i in followed) / len(followed), 4) if followed else None,
+                               "avg_excess_if_followed": round(sum(sign[i["direction"]] * i["excess"] for i in excess) / len(excess), 4) if excess else None}
+        return out
 
     groups = {}
     for i in items:

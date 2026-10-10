@@ -73,6 +73,15 @@ with tempfile.TemporaryDirectory() as d:
 
 cramer = factblock.track_record(ROOT / "samples" / "cramer", "2026-10-01")
 assert (cramer["total"]["right"], cramer["total"]["wrong"]) == (426, 353), cramer["total"]
+bl = cramer["total"]["baseline"]   # 54.7% right, but "up" every time would have been 53.8%
+assert (bl["n"], bl["always_up_hit_rate"], bl["avg_excess_if_followed"]) == (779, 0.538, 0.0136), bl
+assert "baseline" not in factblock.track_record(ROOT / "samples" / "rates", "2025-01-01")["total"]   # verdicts without a return
+
+with tempfile.TemporaryDirectory() as d:   # a tckg export carries the verdict value as a JSON string
+    factblock.write_bundle({"nodes": [node("s1", "prediction", "2026-01-05T00:00:00Z", "ana", "2026-02-05T23:59:59Z", LIVE, None) | {"payload": {"direction": "down"}}],
+                            "edges": [], "resolutions": [{**verdict("s1", "came_true", "2026-02-06T00:00:00Z"), "value": '{"return": -0.04, "excess_over_spy": -0.01}'}]}, d)
+    bl = factblock.track_record(d, "2026-03-01")["total"]["baseline"]
+    assert bl == {"n": 1, "always_up_hit_rate": 0.0, "avg_return_if_followed": 0.04, "avg_excess_if_followed": 0.01}, bl   # short a fall
 assert cramer["record"] == {"before": 0, "sourced": 779, "writer": 0}, cramer["record"]   # backfilled from dated recordings
 
-print("PASS track_record: latest verdict as of, open and overdue, hit rate, on record before vs a cited source vs the writer's word, ids and speaker, CLI, scan hint, cramer 426/353")
+print("PASS track_record: latest verdict as of, open and overdue, hit rate, on record before vs a cited source vs the writer's word, ids and speaker, baseline (always up, following the calls), CLI, scan hint, cramer 426/353")

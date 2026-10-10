@@ -65,6 +65,11 @@ def _print_track_record(r):
     print(f"on record before it was resolved: {rec['before']} of {judged}"
           + (f"; {rec['sourced']} written later from a cited source (checkable)" if rec["sourced"] else "")
           + (f"; {rec['writer']} written later on the writer's word (hindsight not ruled out)" if rec["writer"] else ""))
+    bl = r["total"].get("baseline")
+    if bl:
+        pct = lambda x: f"{x:+.1%}" if x is not None else "-"  # noqa: E731
+        print(f"baseline ({bl['n']} calls with a return): saying up every time would hit {bl['always_up_hit_rate']:.0%}; "
+              f"following the calls made {pct(bl['avg_return_if_followed'])} a call, {pct(bl['avg_excess_if_followed'])} over SPY")
     if r["left_out"]:
         print(f"left out: {r['left_out']} picked statement{'s' if r['left_out'] != 1 else ''} with no verdict that {'are' if r['left_out'] != 1 else 'is'} not a prediction or commitment")
     print(_cert(r["certificate"]))
