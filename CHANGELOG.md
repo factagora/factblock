@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- `scripts/check_published.py <version>`: installs that version from PyPI into a fresh venv and checks the README against it (first-screen commands, both examples' output, the coding-agents block). Run after each release.
+
 ## 1.0.0a13 (2026-10-11)
 
 One meaning in every reader.

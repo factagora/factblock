@@ -48,3 +48,11 @@ jobs:
 The wheel carries `factblock/profiles/claims/*` (the extraction profile is data, not code); the sdist
 also carries `SPEC.md`, `samples/`, `duckdb/` and `tests/`. `uv build` then listing the archives is the
 check if packaging changes.
+
+## After a release
+
+`python scripts/check_published.py <version>` installs that version from PyPI into a fresh venv and runs the README
+against it: the first screen's commands, both examples (their output must match what the README shows) and the
+block for coding agents. The tests run against the checkout; this checks what users actually install. The
+`verify` job in `release.yml` runs it after every publish.
+
