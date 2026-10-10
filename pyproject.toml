@@ -1,7 +1,7 @@
 [project]
 name = "factblock"
-version = "1.0.0a8"
-description = "Agent memory with a track record: record claims, predictions and commitments, judge them on outcomes, and show which were on record before the outcome was known. A temporal causal knowledge graph read as of any instant"
+version = "1.0.0a9"
+description = "Agent memory with a track record: record claims, predictions and commitments, judge them on outcomes, and show which were on record before they were resolved. A temporal causal knowledge graph read as of any instant"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]

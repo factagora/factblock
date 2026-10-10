@@ -1,15 +1,15 @@
 """Track records: how the claims, predictions and commitments in a bundle turned out, as known on a given day,
-and which of them were on record before their verdict.
+and which of them were on record before they were resolved.
 
     r = factblock.track_record("brain/", as_of="2026-07-01", by="speaker")
     r["groups"]      # per speaker: judged, right, wrong, mixed, open, overdue, hit_rate
-    r["record"]      # before its verdict: written then, written later from a cited source, written later on the writer's word
+    r["record"]      # before it was resolved: written then, written later from a cited source, written later on the writer's word
 
 A statement counts once, by its latest verdict known on as_of. hit_rate is right / (right + wrong); mixed (partial,
 misleading) and undecidable verdicts are counted but left out of it. open is a prediction or commitment with no
 verdict yet; overdue, one past its due date with none.
 
-On record before its verdict: a row is written when its batch was captured (SPEC 6), or at its known_at when the
+On record before it was resolved: a row is written when its batch was captured (SPEC 6), or at its known_at when the
 ledger stamped it live. Written by the verdict's decided_at, the statement was on record before it was judged.
 Written later, it was backfilled after the fact: a cited source (a dated recording, an article) can still show it
 was said first, and anyone can check it; with no source it rests on the writer's word, and hindsight is not ruled
@@ -27,7 +27,7 @@ OPEN_KINDS = ("prediction", "commitment")
 def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None) -> dict:
     """Use to see how statements turned out, as known on as_of: per group (a payload field such as speaker, or
     kind) how many were judged right, wrong or mixed, how many are open or overdue, and the hit rate; plus how many were
-    on record before their verdict. Returns {"as_of", "by", "groups", "total", "record", "items", "certificate"}."""
+    on record before they were resolved. Returns {"as_of", "by", "groups", "total", "record", "items", "certificate"}."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     t = _as_of(as_of)
     latest = {}

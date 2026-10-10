@@ -1,5 +1,5 @@
 """The one check that fails if track_record breaks: each statement counts once by its latest verdict known on as_of,
-open and overdue are told apart, hit rate is right / (right + wrong), and "on record before its verdict" separates a
+open and overdue are told apart, hit rate is right / (right + wrong), and "on record before it was resolved" separates a
 row the ledger stamped live from one backfilled with a cited source and one backfilled on the writer's word.
 Run: uv run python tests/test_track_record.py"""
 import pathlib
@@ -54,7 +54,7 @@ with tempfile.TemporaryDirectory() as d:
 
     out = subprocess.run([sys.executable, "-m", "factblock", "track-record", d, "--as-of", "2026-07-02", "--by", "speaker"],
                          capture_output=True, text=True, cwd=ROOT, check=True).stdout
-    assert "on record before its verdict: 1 of 3; 1 written later from a cited source" in out, out
+    assert "on record before it was resolved: 1 of 3; 1 written later from a cited source" in out, out
     assert "writer's word" in out, out
     scan = subprocess.run([sys.executable, "-m", "factblock", "scan", d, "--as-of", "2026-07-02"],
                           capture_output=True, text=True, cwd=ROOT, check=True).stdout

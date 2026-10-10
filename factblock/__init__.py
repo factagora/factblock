@@ -16,7 +16,7 @@
     to_okf(bundle, as_of, out) -> Path             # one OKF concept document per visible node, SPEC 9.1
     timeline(bundle, as_of, query="", series=None) -> Timeline   # what happened to statements over time, as a chart (timeline.py)
     graph(bundle, block_id, as_of, depth=2) -> Graph   # what one statement rests on and led to, as a chart (graph.py)
-    track_record(bundle, as_of, by=None) -> dict   # how statements turned out, and which were on record before their verdict
+    track_record(bundle, as_of, by=None) -> dict   # how statements turned out, and which were on record before they were resolved
 """
 from importlib.metadata import PackageNotFoundError, version as _version
 

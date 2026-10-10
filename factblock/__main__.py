@@ -62,7 +62,7 @@ def _print_track_record(r):
         hit = f"{g['hit_rate']:.0%}" if g["hit_rate"] is not None else "-"
         print(f"{n:<{w}}  " + "  ".join(f"{g[c]:>7}" for c in cols) + f"  {hit:>7}")
     rec, judged = r["record"], r["total"]["judged"]
-    print(f"on record before its verdict: {rec['before']} of {judged}"
+    print(f"on record before it was resolved: {rec['before']} of {judged}"
           + (f"; {rec['sourced']} written later from a cited source (checkable)" if rec["sourced"] else "")
           + (f"; {rec['writer']} written later on the writer's word (hindsight not ruled out)" if rec["writer"] else ""))
     print(_cert(r["certificate"]))
@@ -153,7 +153,7 @@ def main():
     g.add_argument("node_id", help="the block id (see scan, recall or timeline)")
     g.add_argument("--depth", type=int, default=1, help="links to walk from it; default 1")
     g.add_argument("--inline", action="store_true", help="with -o x.html: put the Vega code in the page so it renders with no network")
-    tr = cmd("track-record", "how claims, predictions and commitments turned out as of an instant: right, wrong, open, hit rate, and which were on record before their verdict")
+    tr = cmd("track-record", "how claims, predictions and commitments turned out as of an instant: right, wrong, open, hit rate, and which were on record before they were resolved")
     tr.add_argument("--by", help="a payload field (speaker, customer) or kind to group by")
     g.add_argument("-o", "--out", help="write .html, .png or .svg, .json (the rows) or .vl.json (the spec); default: print the rows as JSON")
     k = cmd("leak", "which answers in a dated question set rest on blocks learned after the question was asked", as_of=False, valid_at=False)

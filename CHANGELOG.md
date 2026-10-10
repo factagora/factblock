@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.0.0a9 (2026-10-10)
+
+One word, so the headline says exactly what `track-record` checks.
+
+### Changed
+- "On record before the outcome was known" is now "on record before they were resolved", in the README, package description and `llms.txt`, and `track-record` prints "on record before it was resolved". What is compared is the same as in 1.0.0a8: when a statement was written against its resolution's `decided_at`. An outcome can be known before it is resolved (a launch on 03-20, resolved on 03-28), so the old wording promised more than the check shows. "Resolved" is the word the format already uses (`resolutions.jsonl`). The `factblock resolve` command is unchanged and is still about declared facts, not verdicts.
+
 ## 1.0.0a8 (2026-10-10)
 
 How claims, predictions and commitments turned out, and whether each was on record before its verdict.
