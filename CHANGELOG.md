@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.0.0a10 (2026-10-10)
+
+The track record of calls like the one in front of you, not only of everything.
+
+### Added
+- `track_record(..., ids=, speaker=)` and `factblock track-record --ids a,b,c --speaker <name>`: count only the statements you pass (say, what `recall` or a search found about the call you are weighing) or one speaker's. An id not known on as_of is refused. `left_out` counts picked statements that are neither judged nor a prediction or commitment, so a claim nobody judged is not silently dropped.
+
 ### Fixed
 - `factblock track-record --by <field>`: the header lines up with the rows when the field name is longer than every group.
 

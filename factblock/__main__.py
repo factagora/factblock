@@ -65,6 +65,8 @@ def _print_track_record(r):
     print(f"on record before it was resolved: {rec['before']} of {judged}"
           + (f"; {rec['sourced']} written later from a cited source (checkable)" if rec["sourced"] else "")
           + (f"; {rec['writer']} written later on the writer's word (hindsight not ruled out)" if rec["writer"] else ""))
+    if r["left_out"]:
+        print(f"left out: {r['left_out']} picked statement{'s' if r['left_out'] != 1 else ''} with no verdict that {'are' if r['left_out'] != 1 else 'is'} not a prediction or commitment")
     print(_cert(r["certificate"]))
 
 
@@ -155,6 +157,8 @@ def main():
     g.add_argument("--inline", action="store_true", help="with -o x.html: put the Vega code in the page so it renders with no network")
     tr = cmd("track-record", "how claims, predictions and commitments turned out as of an instant: right, wrong, open, hit rate, and which were on record before they were resolved")
     tr.add_argument("--by", help="a payload field (speaker, customer) or kind to group by")
+    tr.add_argument("--ids", help="only these block ids, comma-separated (say, what recall or search found)")
+    tr.add_argument("--speaker", help="only this speaker's statements (payload speaker)")
     g.add_argument("-o", "--out", help="write .html, .png or .svg, .json (the rows) or .vl.json (the spec); default: print the rows as JSON")
     k = cmd("leak", "which answers in a dated question set rest on blocks learned after the question was asked", as_of=False, valid_at=False)
     k.add_argument("questions", help="JSONL: {id?, asked_at, evidence: [block id, ...]} per line. A date-only asked_at is the start of that day (UTC)")
@@ -273,7 +277,7 @@ def main():
         else:
             out_json(t.to_dict())
     elif a.cmd == "track-record":
-        r = track_record(a.bundle, a.as_of, by=a.by)
+        r = track_record(a.bundle, a.as_of, by=a.by, ids=[i.strip() for i in a.ids.split(",") if i.strip()] if a.ids else None, speaker=a.speaker)
         out_json(r) if a.json else _print_track_record(r)
     elif a.cmd == "graph":
         g = graph(a.bundle, a.node_id, a.as_of, depth=a.depth, valid_at=a.valid_at)

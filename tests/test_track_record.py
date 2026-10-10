@@ -56,6 +56,17 @@ with tempfile.TemporaryDirectory() as d:
                          capture_output=True, text=True, cwd=ROOT, check=True).stdout
     assert "on record before it was resolved: 1 of 3; 1 written later from a cited source" in out, out
     assert "writer's word" in out, out
+    picked = factblock.track_record(d, "2026-07-02", ids=["p1", "k1", "c1"])   # the record of calls like these
+    assert {i["id"] for i in picked["items"]} == {"p1", "k1"} and picked["left_out"] == 1, picked   # c1: a claim nobody judged
+    assert factblock.track_record(d, "2026-07-02", speaker="ANA")["total"]["judged"] == 2
+    try:
+        factblock.track_record(d, "2026-01-01", ids=["p5"])   # said on 02-01: not known yet
+        raise AssertionError("an id unknown as of as_of must be refused")
+    except ValueError as e:
+        assert "p5" in str(e)
+    out = subprocess.run([sys.executable, "-m", "factblock", "track-record", d, "--as-of", "2026-07-02", "--ids", "p1,k1,c1"],
+                         capture_output=True, text=True, cwd=ROOT, check=True).stdout
+    assert "left out: 1 picked statement" in out, out
     scan = subprocess.run([sys.executable, "-m", "factblock", "scan", d, "--as-of", "2026-07-02"],
                           capture_output=True, text=True, cwd=ROOT, check=True).stdout
     assert "not listed above" in scan and "track-record" in scan, scan
@@ -64,4 +75,4 @@ cramer = factblock.track_record(ROOT / "samples" / "cramer", "2026-10-01")
 assert (cramer["total"]["right"], cramer["total"]["wrong"]) == (426, 353), cramer["total"]
 assert cramer["record"] == {"before": 0, "sourced": 779, "writer": 0}, cramer["record"]   # backfilled from dated recordings
 
-print("PASS track_record: latest verdict as of, open and overdue, hit rate, on record before vs a cited source vs the writer's word, CLI, scan hint, cramer 426/353")
+print("PASS track_record: latest verdict as of, open and overdue, hit rate, on record before vs a cited source vs the writer's word, ids and speaker, CLI, scan hint, cramer 426/353")

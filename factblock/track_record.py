@@ -24,22 +24,34 @@ from .timeline import _day, _outcome, _url
 OPEN_KINDS = ("prediction", "commitment")
 
 
-def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None) -> dict:
+def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, ids: list[str] | None = None,
+                 speaker: str | None = None) -> dict:
     """Use to see how statements turned out, as known on as_of: per group (a payload field such as speaker, or
     kind) how many were judged right, wrong or mixed, how many are open or overdue, and the hit rate; plus how many were
-    on record before they were resolved. Returns {"as_of", "by", "groups", "total", "record", "items", "certificate"}."""
+    on record before they were resolved. Pass `ids` (say, what a search found) to count only those statements: the
+    record of calls like the one in front of you, rather than of everything. `speaker` keeps one speaker's.
+    Returns {"as_of", "by", "groups", "total", "record", "left_out", "items", "certificate"}; left_out counts picked
+    statements that are neither judged nor a prediction or commitment (a claim nobody has judged)."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     t = _as_of(as_of)
+    want = set(ids) if ids else None
+    if want:
+        missing = want - {n["id"] for n in b.nodes if n["known_at"] <= t}
+        if missing:
+            raise ValueError(f"not in the bundle as of {_day(t)}: {', '.join(sorted(missing))}")
     latest = {}
     for v in sorted((v for v in b.resolutions if v["known_at"] <= t), key=lambda v: (v["decided_at"], v["known_at"])):
         latest[v["target_id"]] = v
     captured = {k: parse_instant(d["captured_at"]) for k, d in b.backfills.items() if d.get("captured_at")}
-    items = []
+    items, left_out = [], 0
     for n in b.nodes:
-        v = latest.get(n["id"])
-        if n["known_at"] > t or not (v or n["kind"] in OPEN_KINDS):
-            continue
         p = n.get("payload") or {}
+        if n["known_at"] > t or (want and n["id"] not in want) or (speaker and str(p.get("speaker", "")).casefold() != speaker.casefold()):
+            continue
+        v = latest.get(n["id"])
+        if not (v or n["kind"] in OPEN_KINDS):
+            left_out += 1 if want else 0
+            continue
         o = str((v.get("outcome") or v.get("value")) if v else "")
         due = n.get("valid_to") if n["kind"] in OPEN_KINDS else None
         status = ("overdue" if due and due < t else "open") if not v else "undecidable" if o == "undecidable" else _outcome(o)
@@ -67,5 +79,5 @@ def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None) -
     record = {k: sum(1 for i in items if i["record"] == k) for k in ("before", "sourced", "writer")}
     return {"as_of": t.isoformat(), "by": by,
             "groups": [{"group": g, **tally(rows)} for g, rows in sorted(groups.items(), key=lambda x: str(x[0]))] if by else [],
-            "total": tally(items), "record": record, "items": items,
+            "total": tally(items), "record": record, "left_out": left_out, "items": items,
             "certificate": recall(b, "", as_of, limit=0)["certificate"]}
