@@ -38,5 +38,6 @@ No test framework: each `tests/test_*.py` asserts and prints one PASS line. A ne
 | `factblock/sync.py` | folder to store, both ways (SPEC 6.1) |
 | `factblock/adapters/` | Graphiti, Fact Check Tools |
 | `conformance/` | the answers any reader must give (`cases.jsonl`); `tests/test_conformance.py` holds Python and DuckDB to them |
+| `docs/guides/` | problem-titled guides; `tests/test_guides.py` runs their code and checks their output |
 | `scripts/check_published.py` | the README run against the version on PyPI, after a release (RELEASING.md) |
 | `samples/`, `examples/` | data the tests read; regenerate rather than hand-edit `samples/cramer` |

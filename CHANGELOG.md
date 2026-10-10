@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- `docs/guides/`: three guides titled by the problem a developer searches for (a RAG answering with a rate that changed, what an AI answer rested on and what changed since, evaluating an agent only on what was known), each on the IRS mileage data with code, expected output and what it does not do. `tests/test_guides.py` runs them as written.
+
 ## 1.0.0a14 (2026-10-11)
 
 The first screen is the developer's flow on official data: import the IRS mileage rate, add a change, read as of a day, draw it.

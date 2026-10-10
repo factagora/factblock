@@ -50,6 +50,14 @@ baseline (779 calls with a return): saying up every time would hit 54%; followin
 
 Two years of a TV commentator's market calls: right about as often as saying "up" every time, yet +1.4% a call over the market ([`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis)).
 
+## Guides
+
+- [Your RAG answers with a rate that changed](https://github.com/factagora/factblock/blob/main/docs/guides/stale-policy-in-rag.md)
+- [Show what an AI answer rested on, and what changed since](https://github.com/factagora/factblock/blob/main/docs/guides/answer-evidence-history.md)
+- [Evaluate an agent only on what was known at the time](https://github.com/factagora/factblock/blob/main/docs/guides/evaluate-as-of.md)
+
+Each one runs as written on the IRS data above, with its expected output and what it does not do.
+
 ## How it reads
 
 ```bash

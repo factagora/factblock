@@ -10,6 +10,12 @@ Use it when an agent answers from information that changes: prices and policies 
 - [SPEC](https://raw.githubusercontent.com/factagora/factblock/main/SPEC.md): the format. Three clocks, six invariants, read semantics, JSONL and Parquet profiles, writing and import rules
 - [Agent skill](https://raw.githubusercontent.com/factagora/factblock/main/.claude/skills/factblock/SKILL.md): the API in one page, for coding agents
 
+## Guides
+
+- [Your RAG answers with a rate that changed](https://raw.githubusercontent.com/factagora/factblock/main/docs/guides/stale-policy-in-rag.md): a date filter against as-of reads on the IRS mileage rate
+- [Show what an AI answer rested on, and what changed since](https://raw.githubusercontent.com/factagora/factblock/main/docs/guides/answer-evidence-history.md): record an answer, link its evidence, walk it later with `why`
+- [Evaluate an agent only on what was known at the time](https://raw.githubusercontent.com/factagora/factblock/main/docs/guides/evaluate-as-of.md): `leak` on an evaluation set
+
 ## Examples
 
 - [Support agent](https://raw.githubusercontent.com/factagora/factblock/main/examples/support-agent/README.md): five dated support questions, a date filter vs FactBlock (0/5 vs 5/5)
