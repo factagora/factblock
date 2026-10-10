@@ -1,7 +1,7 @@
 ---
 name: factblock
-description: Agent memory read as of a point in time with the factblock Python library. Use when an agent must answer from information that changes (prices, policies, corrected answers, promises, predictions), must not see the future in a backtest or replay, or must say what was known when it answered.
-when_to_use: "remember what the price was when the customer asked", "read memory as of a date", "no hindsight in a backtest", "which of the assistant's answers are now wrong", "keep corrections as history", "temporal knowledge graph in files"
+description: Agent memory read as of a point in time with the factblock Python library. Use when an agent must answer from information that changes (prices, policies, corrected answers, promises, predictions), must not see the future in a backtest or replay, must say what was known when it answered, or must keep a track record of claims, predictions and commitments judged on outcomes.
+when_to_use: "remember what the price was when the customer asked", "read memory as of a date", "no hindsight in a backtest", "which of the assistant's answers are now wrong", "keep corrections as history", "temporal knowledge graph in files", "track record of predictions", "hit rate of promises"
 ---
 
 # factblock
@@ -45,6 +45,7 @@ s = factblock.scan("brain/", as_of="2026-04-10")                         # every
 ```python
 t = factblock.timeline("brain/", as_of="2026-04-10", query="refund policy")   # one bar per statement: said until replaced, judged or due; group_by="speaker" groups rows
 g = factblock.graph("brain/", "<block id>", as_of="2026-04-10")   # what it rests on above, what came of it below; depth=2 walks further
+r = factblock.track_record("brain/", as_of="2026-04-10", by="speaker")   # right, wrong, open, overdue, hit_rate per group; r["record"]: on record before the verdict, or written later (from a cited source, or on the writer's word)
 t.with_series("prices.csv", "Price")                                          # over a numeric series (date, value CSV); values after as_of are dropped
 t.save("out.html")                                                             # or .png/.svg with factblock[viz]; t.spec() is Vega-Lite, t.to_dict() the rows
 ```

@@ -8,7 +8,7 @@ import pathlib
 import shutil
 import sys
 
-from . import __version__, Bundle, embedder, TckgStore, extract, from_records, graph, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
+from . import __version__, Bundle, embedder, TckgStore, extract, from_records, graph, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, track_record, validate, why, write_bundle, write_parquet
 from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
 
 # the wheel carries samples/rates at factblock/samples/rates (pyproject force-include); a checkout has it at the repo root
@@ -46,6 +46,26 @@ def _print_scan(r):
         print("verdicts:")
         for v in sorted(r.resolutions.to_pylist(), key=lambda v: v["decided_at"]):
             print(f"  {v['target_id']:<12} {v.get('outcome') or v.get('value')}   decided {_day(v['decided_at'])}" + (f"   by {v['resolver']}" if v.get("resolver") else ""))
+        listed = {n["id"] for n in nodes}
+        unlisted = {v["target_id"] for v in r.resolutions.to_pylist()} - listed
+        if unlisted:
+            print(f"{len(unlisted)} judged statement{'s are' if len(unlisted) != 1 else ' is'} not in force that day (past due or replaced), so not listed above: "
+                  "see them with --valid-at <an earlier date>, or how they turned out with track-record")
+
+
+def _print_track_record(r):
+    cols = ("judged", "right", "wrong", "mixed", "open", "overdue")
+    rows = [(str(g["group"]), g) for g in r["groups"]] + [("all", r["total"])]
+    w = max(len(n) for n, _ in rows)
+    print(f"{r['by'] or '':<{w}}  " + "  ".join(f"{c:>7}" for c in cols) + "      hit")
+    for n, g in rows:
+        hit = f"{g['hit_rate']:.0%}" if g["hit_rate"] is not None else "-"
+        print(f"{n:<{w}}  " + "  ".join(f"{g[c]:>7}" for c in cols) + f"  {hit:>7}")
+    rec, judged = r["record"], r["total"]["judged"]
+    print(f"on record before its verdict: {rec['before']} of {judged}"
+          + (f"; {rec['sourced']} written later from a cited source (checkable)" if rec["sourced"] else "")
+          + (f"; {rec['writer']} written later on the writer's word (hindsight not ruled out)" if rec["writer"] else ""))
+    print(_cert(r["certificate"]))
 
 
 def _print_why(r):
@@ -69,7 +89,7 @@ def _print_resolve(k, r):
 
 
 def main():
-    p = argparse.ArgumentParser(prog="factblock", description="Agent memory for decisions: dated claims and their causal links, in a folder, read as of any instant.")
+    p = argparse.ArgumentParser(prog="factblock", description="Agent memory with a track record: claims, predictions and commitments, judged on outcomes, with when and why, in a folder, read as of any instant.")
     p.add_argument("--version", action="version", version=f"factblock {__version__}")
     sub = p.add_subparsers(dest="cmd", metavar="command")
 
@@ -133,6 +153,8 @@ def main():
     g.add_argument("node_id", help="the block id (see scan, recall or timeline)")
     g.add_argument("--depth", type=int, default=1, help="links to walk from it; default 1")
     g.add_argument("--inline", action="store_true", help="with -o x.html: put the Vega code in the page so it renders with no network")
+    tr = cmd("track-record", "how claims, predictions and commitments turned out as of an instant: right, wrong, open, hit rate, and which were on record before their verdict")
+    tr.add_argument("--by", help="a payload field (speaker, customer) or kind to group by")
     g.add_argument("-o", "--out", help="write .html, .png or .svg, .json (the rows) or .vl.json (the spec); default: print the rows as JSON")
     k = cmd("leak", "which answers in a dated question set rest on blocks learned after the question was asked", as_of=False, valid_at=False)
     k.add_argument("questions", help="JSONL: {id?, asked_at, evidence: [block id, ...]} per line. A date-only asked_at is the start of that day (UTC)")
@@ -250,6 +272,9 @@ def main():
             print(f"{t.save(a.out, inline=a.inline)}: {t!r}")
         else:
             out_json(t.to_dict())
+    elif a.cmd == "track-record":
+        r = track_record(a.bundle, a.as_of, by=a.by)
+        out_json(r) if a.json else _print_track_record(r)
     elif a.cmd == "graph":
         g = graph(a.bundle, a.node_id, a.as_of, depth=a.depth, valid_at=a.valid_at)
         if a.out:

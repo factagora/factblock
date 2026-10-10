@@ -1,8 +1,10 @@
-# <img src="https://raw.githubusercontent.com/factagora/factblock/main/.github/logo.svg" alt="" height="40" align="top"> FactBlock: agent memory for decisions
+# <img src="https://raw.githubusercontent.com/factagora/factblock/main/.github/logo.svg" alt="" height="40" align="top"> FactBlock: agent memory with a track record
 
 [![test](https://github.com/factagora/factblock/actions/workflows/test.yml/badge.svg)](https://github.com/factagora/factblock/actions/workflows/test.yml) [![PyPI](https://img.shields.io/pypi/v/factblock)](https://pypi.org/project/factblock/) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/factagora/factblock/blob/main/LICENSE)
 
-**A temporal causal knowledge graph that remembers *when* and *why* for your AI.**
+**Record claims, predictions and commitments, judge them on outcomes, and show which were on record before the outcome was known.**
+
+It is a temporal causal knowledge graph: every block keeps *when* (said, learned, in force, judged) and *why* (the reasons given, the source, the evidence behind its verdict), so your AI reads it as of any date.
 
 ![FactBlock in 40 seconds: reads as of a date, a causal chain, a claim replaced not overwritten, a verdict that arrives later, and the hindsight leak without a clock. Real data from samples/cramer and samples/rates.](https://raw.githubusercontent.com/factagora/factblock/main/samples/demo.gif)
 
@@ -15,6 +17,7 @@ factblock scan brain/ --as-of 2024-05-01              # what was known that day,
 factblock recall brain/ "interest rates" --as-of 2024-05-01   # the blocks about something, as of that day
 factblock why brain/ c3 --as-of 2024-10-01            # the causal chain behind a block
 factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
+factblock track-record brain/ --as-of 2025-01-01  # right, wrong, open, hit rate; which were on record before their verdict
 factblock import kb.csv --backfill -o brain/          # rows you already have: id, text, said_at, effective_from, known_at, replaces
 factblock import crm.csv --backfill -o brain/ --map Claim=text,Date=said_at   # your own column names
 factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # prose, through your model key

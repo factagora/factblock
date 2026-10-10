@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.0.0a8 (2026-10-10)
+
+How claims, predictions and commitments turned out, and whether each was on record before its verdict.
+
+### Added
+- `factblock track-record <bundle> --as-of <date> [--by speaker]` and `factblock.track_record(bundle, as_of, by=)`: per group (a payload field such as speaker, or kind) how many statements were judged right, wrong or mixed, how many are open or overdue, and the hit rate (right / (right + wrong)), each statement counted once by its latest verdict known on that day. It also says how many were on record before their verdict: a row stamped live by a ledger, or captured in a batch before the verdict was decided, counts; one written later is reported as written from a cited source (checkable) or on the writer's word (hindsight not ruled out). On `samples/cramer`: 426 right, 353 wrong, and all 779 written later from a cited recording.
+
+### Changed
+- `factblock scan` says when judged statements are not listed because they were not in force that day (past due or replaced), and points to `--valid-at` and `track-record`. Before, their verdicts were listed under statements that did not appear.
+- The README, package description and CLI lead with the track record: "Agent memory with a track record." The format and every other read are unchanged.
+
 ## 1.0.0a7 (2026-10-10)
 
 From the first-use tests: matching by meaning, your own column and field names, and a format rule that catches verdicts on nothing.
