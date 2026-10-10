@@ -56,7 +56,7 @@ def _print_scan(r):
 def _print_track_record(r):
     cols = ("judged", "right", "wrong", "mixed", "open", "overdue")
     rows = [(str(g["group"]), g) for g in r["groups"]] + [("all", r["total"])]
-    w = max(len(n) for n, _ in rows)
+    w = max([len(n) for n, _ in rows] + [len(r["by"] or "")])
     print(f"{r['by'] or '':<{w}}  " + "  ".join(f"{c:>7}" for c in cols) + "      hit")
     for n, g in rows:
         hit = f"{g['hit_rate']:.0%}" if g["hit_rate"] is not None else "-"

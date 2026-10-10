@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- `factblock track-record --by <field>`: the header lines up with the rows when the field name is longer than every group.
+
 ## 1.0.0a9 (2026-10-10)
 
 One word, so the headline says exactly what `track-record` checks.
