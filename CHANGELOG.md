@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- The README's first screen is shorter: two lines of what it is, four commands, and the two examples in a few lines each. The full command list opens "How it reads".
+
 ## 1.0.0a12 (2026-10-11)
 
 How the project introduces itself, after outside feedback. No code change.

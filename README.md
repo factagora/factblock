@@ -8,24 +8,18 @@ Represent temporal causal knowledge graphs in portable files, reusable across AI
 
 ![FactBlock in 40 seconds: reads as of a date, a causal chain, a claim replaced not overwritten, a verdict that arrives later, and the hindsight leak without a clock. Real data from samples/cramer and samples/rates.](https://raw.githubusercontent.com/factagora/factblock/main/samples/demo.gif)
 
-Your data is full of claims: "the Team plan includes 10 seats", "we ship SSO in Q3", "revenue grows 20% this year". For each one it matters who said it and when, what it rests on, and whether it later changed or was confirmed. FactBlock gives you that structure so you do not build it yourself: it keeps when a claim was said and when you learned it, links the reasons given, never overwrites what changed, and adds verdicts as they arrive. Your agent recalls them as of any moment, so it decides on what was knowable then, not on hindsight.
+"The Team plan includes 10 seats." "We ship SSO in Q3." Who said it, when, on what basis, and did it change? FactBlock keeps that for you, so you do not build it yourself.
 
 ```bash
-pip install --pre factblock                           # alpha: --pre until 1.0
-factblock sample brain/                               # six dated claims, a reversal, three verdicts
-factblock scan brain/ --as-of 2024-05-01              # what was known that day, and what was hidden
-factblock recall brain/ "interest rates" --as-of 2024-05-01   # the blocks about something, as of that day
-factblock why brain/ c3 --as-of 2024-10-01            # the causal chain behind a block
-factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
-factblock track-record brain/ --as-of 2025-01-01  # right, wrong, open, hit rate; which were on record before they were resolved
-factblock import kb.csv --backfill -o brain/          # rows you already have: id, text, said_at, effective_from, known_at, replaces
-factblock import crm.csv --backfill -o brain/ --map Claim=text,Date=said_at   # your own column names
-factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # prose, through your model key
+pip install --pre factblock
+factblock sample brain/
+factblock recall brain/ "interest rates" --as-of 2024-05-01   # only what was known that day
+factblock track-record brain/ --as-of 2025-01-01              # how the claims turned out
 ```
 
-## Two examples
+## Said on one day, learned on another
 
-**A policy changes: what did the assistant know when it answered?** A refund policy is dated April 1 but reaches the help desk on April 20. When it happened and when you learned it are two different days, and a date filter only has the first. Replaying April 10 with one shows the new policy, and the bot looks wrong for having said 30 days. FactBlock reads as of the day:
+A refund policy is dated April 1 but reaches the help desk on April 20. A date filter only knows April 1. FactBlock reads as of the day:
 
 ```python
 factblock.context("examples/support-agent/brain", "refund window", as_of="2026-04-10")
@@ -37,9 +31,9 @@ factblock.context("examples/support-agent/brain", "refund window", as_of="2026-0
 #   replaced 2026-04-01 by: Refunds are available within 14 days of purchase.
 ```
 
-[`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent) asks five such questions (a price announced before it takes effect, the bot's wrong answer and its correction, a promise and whether it was kept, the late memo, a retired API). A date filter puts a stale answer into the prompt on all five, FactBlock on none.
+Five support questions, asked on the day: a date filter puts a stale answer in the prompt on all five, FactBlock on none ([`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent)).
 
-**A prediction is judged: how good was the call?** Predictions and promises get verdicts later, and the verdicts keep their own dates. `track-record` counts how they turned out as known on a day, next to the bar they had to clear, and says which were on record before they were resolved:
+## Judged later, counted honestly
 
 ```
 $ factblock track-record samples/cramer --as-of 2026-10-01
@@ -47,14 +41,20 @@ $ factblock track-record samples/cramer --as-of 2026-10-01
 all      779      426      353        0      629       46      55%
 on record before it was resolved: 0 of 779; 779 written later from a cited source (checkable)
 baseline (779 calls with a return): saying up every time would hit 54%; following the calls made +5.2% a call, +1.4% over SPY
-as of 2026-10-01  hidden: nothing  not in force: 134 nodes  known_at declared by a writer: 3905 rows in 373 batches
 ```
 
-Two years of one TV commentator's market calls: right a little more often than not, about as often as saying "up" every time, yet the calls beat the market on average. `--ids` counts only calls like the one you are weighing. [`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis) backtests the same files in DuckDB without hindsight, then gives a model the data as of a date and traces every line it cites back to the recording.
-
-![Following only his best subjects looks like +9.3% a call. Picked with what was known at the time, it makes +4.9%.](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/backtest.png)
+Two years of a TV commentator's market calls: right about as often as saying "up" every time, yet +1.4% a call over the market ([`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis)).
 
 ## How it reads
+
+```bash
+factblock scan brain/ --as-of 2024-05-01              # what was known that day, and what was hidden
+factblock why brain/ c3 --as-of 2024-10-01            # the causal chain behind a block
+factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
+factblock import kb.csv --backfill -o brain/          # rows you already have: id, text, said_at, effective_from, known_at, replaces
+factblock import crm.csv --backfill -o brain/ --map Claim=text,Date=said_at   # your own column names
+factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # prose, through your model key
+```
 
 ```
 $ factblock why brain/ c3 --as-of 2024-10-01
@@ -85,6 +85,8 @@ That string goes into your agent's prompt. The old claim is still there, marked 
 ## What comes out
 
 Two years of one public figure's statements, as files. [`samples/cramer`](https://github.com/factagora/factblock/tree/main/samples/cramer) is Jim Cramer on CNBC, 2024-09 to 2026-09: 2,091 blocks, 1,169 links he drew between them, 779 priced calls scored at their horizon. Every block links to the recording and the timestamp.
+
+![Following only his best subjects looks like +9.3% a call. Picked with what was known at the time, it makes +4.9%.](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/backtest.png)
 
 ```
 $ factblock scan samples/cramer --as-of 2025-01-01 | head -1
