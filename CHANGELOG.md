@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.0.0a6 (2026-10-10)
+
+A second chart: what one statement rests on and what came of it, for a notebook, a web page or a chat answer.
+
 ### Added
 - `factblock.graph(bundle, block_id, as_of, depth=1)` and `factblock graph`: what one statement rests on (causes, supports, the call it replaced) and what came of it (effects, what it supported, the call that replaced it), as a chart. One row per statement written in full beside a narrow column of dots and arrows, so it reads in a chat column; dots coloured by what became of each statement. Read as of `as_of`, like `why()`: links and verdicts learned later are not drawn; calls past their horizon are drawn unless `valid_at` asks for what was in force. Rows use the field names a graph renderer takes as they are (`{id, label, type, when, resolution}`, `{id, from, to, label}`) plus the FactBlock detail, versioned as `schemas/graph.v1.schema.json`. Same outputs as a timeline: `.spec()`, `.save()`, `.to_markdown()`, `.to_mcp()` for the MCP Apps view.
 - `why(..., in_force=False)` walks every block and link known by `as_of`, in force or not.
