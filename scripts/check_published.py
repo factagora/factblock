@@ -1,7 +1,7 @@
 """The README, run against the package on PyPI rather than this checkout: install factblock==VERSION into a fresh
 venv, run the first-screen commands in an empty folder, and check that the outputs the README shows are the
-outputs the package gives. Examples that read data from this repository (support-agent, cramer) get a copy of
-that data, never the code. Needs uv. Exit 1 on the first mismatch.
+outputs the package gives. The second example reads data from this repository (cramer) and gets a copy of that
+data, never the code. Needs uv. Exit 1 on the first mismatch.
 
     python scripts/check_published.py 1.0.0a13        # after a release; retries while PyPI catches up
 """
@@ -38,19 +38,18 @@ with tempfile.TemporaryDirectory() as d:
     work.mkdir()
     assert run([cli, "--version"], work).split()[-1] == version
 
-    # the first screen's four commands, as a new user types them
-    run([cli, "sample", "brain/"], work)
-    assert "Fed" in run([cli, "recall", "brain/", "interest rates", "--as-of", "2024-05-01"], work)
-    assert "on record before it was resolved" in run([cli, "track-record", "brain/", "--as-of", "2025-01-01"], work)
-
-    # the two examples: the package's output is what the README shows
-    shutil.copytree(ROOT / "examples" / "support-agent" / "brain", work / "examples" / "support-agent" / "brain")
-    shutil.copytree(ROOT / "samples" / "cramer", work / "samples" / "cramer")
+    # the first screen's commands, as a new user types them, then the first example on the folder they made
+    run([cli, "sample", "--policies", "policy/"], work)
+    run([cli, "import", "policy/policies.csv", "--backfill", "-o", "brain/"], work)
+    run([cli, "import", "policy/changes.csv", "--backfill", "-o", "brain/"], work)
+    assert "30 days" in run([cli, "recall", "brain/", "refund", "--as-of", "2026-04-10"], work)
+    assert "5 statements" in run([cli, "timeline", "brain/", "--as-of", "2026-04-25", "-o", "policy.html"], work)
     for day in ("2026-04-10", "2026-04-25"):
-        out = run([py, "-I", "-c", f"import factblock; print(factblock.context('examples/support-agent/brain', 'refund window', as_of='{day}'))"], work)
+        out = run([py, "-I", "-c", f"import factblock; print(factblock.context('brain/', 'refund', as_of='{day}'))"], work)
         for line in out.splitlines():
             if not line.startswith("(as of"):
                 assert f"# {line}" in readme, f"README lacks the context line for {day}: {line}"
+    shutil.copytree(ROOT / "samples" / "cramer", work / "samples" / "cramer")   # the second example reads the repository's data
     out = run([cli, "track-record", "samples/cramer", "--as-of", "2026-10-01"], work)
     for line in out.splitlines()[:4]:
         assert line in readme, f"README lacks the track-record line: {line}"
@@ -58,6 +57,8 @@ with tempfile.TemporaryDirectory() as d:
     # the block written for coding agents (tests/test_readme_agents.py runs it against the checkout)
     section = readme.split("## For coding agents", 1)[1].split("\n## ", 1)[0]
     code = section.split("```python\n", 1)[1].split("```", 1)[0]
-    out = run([py, "-I", "-c", code], work)
+    (work / "agents").mkdir()
+    run([cli, "sample", "brain/"], work / "agents")
+    out = run([py, "-I", "-c", code], work / "agents")
     assert "replaced 2024-09-18 by" in out, out
 print(f"PASS published: factblock {version} from PyPI runs the README's first screen, both examples and the coding-agents block as shown")

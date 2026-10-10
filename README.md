@@ -12,24 +12,29 @@ Represent temporal causal knowledge graphs in portable files, reusable across AI
 
 ```bash
 pip install --pre factblock
-factblock sample brain/
-factblock recall brain/ "interest rates" --as-of 2024-05-01   # only what was known that day
-factblock track-record brain/ --as-of 2025-01-01              # how the claims turned out
+factblock sample --policies policy/                        # two CSVs: product policies as of January, and the changes since
+factblock import policy/policies.csv --backfill -o brain/
+factblock import policy/changes.csv --backfill -o brain/   # a price change, and a refund memo that reached the help desk late
+factblock recall brain/ refund --as-of 2026-04-10          # what the help desk knew that day
 ```
 
 ## Said on one day, learned on another
 
-A refund policy is dated April 1 but reaches the help desk on April 20. A date filter only knows April 1. FactBlock reads as of the day:
+The refund memo is dated April 1 but reached the help desk on April 20. A date filter only knows April 1. FactBlock reads as of the day, as prompt lines for your agent:
 
 ```python
-factblock.context("examples/support-agent/brain", "refund window", as_of="2026-04-10")
+factblock.context("brain/", "refund", as_of="2026-04-10")
 # - 2026-01-05: Refunds are available within 30 days of purchase. (source: help center)
 
-factblock.context("examples/support-agent/brain", "refund window", as_of="2026-04-25")
-# - 2026-04-01: Refunds are available within 14 days of purchase. (learned 2026-04-20; source: legal memo dated April 1, filed to the KB April 20)
+factblock.context("brain/", "refund", as_of="2026-04-25")
+# - 2026-04-01: Refunds are available within 14 days of purchase. (learned 2026-04-20; source: legal memo dated April 1, filed to the help desk April 20)
 # - 2026-01-05: Refunds are available within 30 days of purchase. (source: help center)
 #   replaced 2026-04-01 by: Refunds are available within 14 days of purchase.
 ```
+
+The same files draw the history: `factblock timeline brain/ --as-of 2026-04-25 -o policy.html`.
+
+![Five policy statements as known on 25 April 2026: the $20 price replaced on 1 March, the 30-day refund replaced on 1 April](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/policy-timeline.png)
 
 Five support questions, asked on the day: a date filter puts a stale answer in the prompt on all five, FactBlock on none ([`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent)).
 
@@ -48,16 +53,18 @@ Two years of a TV commentator's market calls: right about as often as saying "up
 ## How it reads
 
 ```bash
-factblock scan brain/ --as-of 2024-05-01              # what was known that day, and what was hidden
-factblock why brain/ c3 --as-of 2024-10-01            # the causal chain behind a block
-factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
+factblock sample rates/                                # a bundle: six dated claims, a reversal, three verdicts
+factblock track-record rates/ --as-of 2025-01-01      # how claims, predictions and promises turned out
+factblock scan rates/ --as-of 2024-05-01              # what was known that day, and what was hidden
+factblock why rates/ c3 --as-of 2024-10-01            # the causal chain behind a block
+factblock resolve rates/ belief:fed:direction --as-of 2024-10-01
 factblock import kb.csv --backfill -o brain/          # rows you already have: id, text, said_at, effective_from, known_at, replaces
 factblock import crm.csv --backfill -o brain/ --map Claim=text,Date=said_at   # your own column names
 factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # prose, through your model key
 ```
 
 ```
-$ factblock why brain/ c3 --as-of 2024-10-01
+$ factblock why rates/ c3 --as-of 2024-10-01
 subject: c3  2024-06-20  Housing demand falls as mortgages track yields
     cause (CAUSES): c2  2024-04-10  Bond yields rise after the rate hike
         cause (CAUSES): c1  2024-03-20  The Fed raises interest rates
@@ -69,7 +76,7 @@ Run the same command `--as-of 2024-05-01` and the chain stops at `c2`, because `
 
 ```python
 import factblock
-print(factblock.context("brain/", "interest rates", as_of="2024-10-01"))
+print(factblock.context("rates/", "interest rates", as_of="2024-10-01"))
 # - 2024-09-18: The Fed cuts interest rates
 # - 2024-03-20: The Fed raises interest rates (learned 2024-04-15)
 #   replaced 2024-09-18 by: The Fed cuts interest rates
@@ -80,7 +87,7 @@ print(factblock.context("brain/", "interest rates", as_of="2024-10-01"))
 
 That string goes into your agent's prompt. The old claim is still there, marked as replaced, with the verdict it had as of that day; ask `as_of="2025-01-01"` and the verdict reads `false`, because it was re-resolved in December. A date filter would show both claims side by side with nothing to say which one stands. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
 
-`brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
+A bundle is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
 
 ## What comes out
 
@@ -117,7 +124,7 @@ Memory that cannot answer "what did I know on that date" leaks the future into e
 
 ```python
 import factblock
-r = factblock.scan("brain/", as_of="2024-05-01")
+r = factblock.scan("rates/", as_of="2024-05-01")
 r.nodes                 # pyarrow.Table: only blocks known by 2024-05-01
 r.certificate           # {'as_of': ..., 'masked': {'node': 4, 'edge': 2}, 'backfill': {'batches': 1, 'rows': 3}}
 ```
@@ -154,7 +161,7 @@ t = factblock.timeline("samples/cramer", as_of="2025-06-30", query="SPY").with_s
 
 ![His calls on the market over the S&P 500 as known on 30 June 2025; the four settled calls are labelled, one right and three wrong](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline.png)
 
-Values after the as-of day are dropped too. On the command line: `factblock timeline brain/ --as-of 2025-06-30 -q SPY --series sp500.csv -o spy.html`. The chart is a Vega-Lite spec (`t.spec()`), so it renders the same in a notebook, a web page (`react-vega`, `vega-embed`), or as an image in a chat answer. `t.to_html(inline=True)` is one self-contained page that renders with no network; `t.to_markdown()` is the same timeline as text for clients that cannot draw; `t.to_dict()` is the data for any other renderer, versioned as [`schemas/timeline.v1.schema.json`](https://github.com/factagora/factblock/blob/main/schemas/timeline.v1.schema.json). `samples/fed-funds-rate.csv` (FRED DFF, public domain) goes with `samples/rates`; the S&P 500 is licensed, so download it from FRED (`SP500`) yourself.
+Values after the as-of day are dropped too. On the command line: `factblock timeline samples/cramer --as-of 2025-06-30 -q SPY --series sp500.csv -o spy.html`. The chart is a Vega-Lite spec (`t.spec()`), so it renders the same in a notebook, a web page (`react-vega`, `vega-embed`), or as an image in a chat answer. `t.to_html(inline=True)` is one self-contained page that renders with no network; `t.to_markdown()` is the same timeline as text for clients that cannot draw; `t.to_dict()` is the data for any other renderer, versioned as [`schemas/timeline.v1.schema.json`](https://github.com/factagora/factblock/blob/main/schemas/timeline.v1.schema.json). `samples/fed-funds-rate.csv` (FRED DFF, public domain) goes with `samples/rates`; the S&P 500 is licensed, so download it from FRED (`SP500`) yourself.
 
 **In a chat answer.** An MCP server returns `t.to_mcp()` from its tool and serves `factblock.mcp_app_html()` as the resource `ui://factblock/timeline` (mime type and `_meta` in `factblock.timeline.MCP_APP_MIME` and `MCP_APP_META`; the tool's `_meta` is `MCP_APP_TOOL_META`). Hosts that support MCP Apps (Claude, ChatGPT, VS Code) then draw the chart inside the answer, in the host's theme; the rest show the markdown. The [tckg](https://github.com/factagora/tckg) `timeline` tool does exactly this. The same question asked as of two days:
 

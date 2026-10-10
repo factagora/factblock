@@ -2,8 +2,16 @@
 
 ## Unreleased
 
+## 1.0.0a14 (2026-10-11)
+
+The first screen is the developer's flow: import policies, add a change, read as of a day, draw it.
+
 ### Added
+- `factblock sample --policies <folder>` writes two CSVs, product policies as of January and the changes since (a price announced on Feb 15 for Mar 1, a refund memo dated Apr 1 that reached the help desk on Apr 20), to import with `factblock import`. The wheel carries them.
 - `scripts/check_published.py <version>`: installs that version from PyPI into a fresh venv and checks the README against it (first-screen commands, both examples' output, the coding-agents block). Run after each release.
+
+### Changed
+- The README opens with that flow: two imports, a read as of the day before the memo arrived and after, and the timeline of the same files. It runs as written after `pip install`, with no checkout. The rates examples further down read a folder named `rates/`.
 
 ## 1.0.0a13 (2026-10-11)
 

@@ -116,4 +116,13 @@ with tempfile.TemporaryDirectory() as tmp:
 s = factblock.scan(pathlib.Path(__file__).resolve().parents[1] / "samples" / "rates", "2025-01-01")
 assert {r["target_id"]: r["value"] for r in s.to_dicts("resolutions")}["c1"] in ("true", "false") and isinstance(s.to_dicts()[0].get("payload", {}), dict)
 assert factblock.__version__ and factblock.__version__[0].isdigit()
-print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__")
+with tempfile.TemporaryDirectory() as d:   # the README's first screen: sample --policies, two imports, as-of reads
+    cli = lambda *args: subprocess.run([sys.executable, "-m", "factblock", *args], cwd=d, check=True, capture_output=True, text=True).stdout  # noqa: E731
+    cli("sample", "--policies", "policy/")
+    cli("import", "policy/policies.csv", "--backfill", "-o", "brain/")
+    cli("import", "policy/changes.csv", "--backfill", "-o", "brain/")
+    before, after = (factblock.context(pathlib.Path(d) / "brain", "refund", as_of=day) for day in ("2026-04-10", "2026-04-25"))
+    assert "30 days" in before and "14 days" not in before, before   # the memo dated April 1 was learned April 20
+    assert "(learned 2026-04-20" in after and "replaced 2026-04-01 by" in after, after
+    assert "changes 2026-03-01 to" in factblock.context(pathlib.Path(d) / "brain", "Pro plan", as_of="2026-02-20")
+print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies imports and reads as the README shows")

@@ -1,6 +1,6 @@
 [project]
 name = "factblock"
-version = "1.0.0a13"
+version = "1.0.0a14"
 description = "An open format for claims and their history: build agent memory that tracks claims, evidence and changes, and lets you query what was known at any point in time. Temporal causal knowledge graphs in portable files"
 readme = "README.md"
 license = "Apache-2.0"
@@ -49,3 +49,4 @@ packages = ["factblock"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "samples/rates" = "factblock/samples/rates"   # `factblock sample` copies it; the repo keeps one copy at samples/
+"samples/policies" = "factblock/samples/policies"   # `factblock sample --policies`
