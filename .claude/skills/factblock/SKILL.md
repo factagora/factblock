@@ -43,6 +43,7 @@ s = factblock.scan("brain/", as_of="2026-04-10")                         # every
 
 ```python
 t = factblock.timeline("brain/", as_of="2026-04-10", query="refund policy")   # one bar per statement: said until replaced, judged or due; group_by="speaker" groups rows
+g = factblock.graph("brain/", "<block id>", as_of="2026-04-10")   # what it rests on above, what came of it below; depth=2 walks further
 t.with_series("prices.csv", "Price")                                          # over a numeric series (date, value CSV); values after as_of are dropped
 t.save("out.html")                                                             # or .png/.svg with factblock[viz]; t.spec() is Vega-Lite, t.to_dict() the rows
 ```

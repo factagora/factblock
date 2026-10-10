@@ -15,6 +15,7 @@
     to_claimreview(bundle, as_of, base_url=None) -> dict   # verdicts as schema.org ClaimReview JSON-LD, SPEC 9.2
     to_okf(bundle, as_of, out) -> Path             # one OKF concept document per visible node, SPEC 9.1
     timeline(bundle, as_of, query="", series=None) -> Timeline   # what happened to statements over time, as a chart (timeline.py)
+    graph(bundle, block_id, as_of, depth=2) -> Graph   # what one statement rests on and led to, as a chart (graph.py)
 """
 from importlib.metadata import PackageNotFoundError, version as _version
 
@@ -30,6 +31,7 @@ from .resolve import resolve
 from .scan import Scan, scan
 from .sync import Store, TckgStore, sync
 from .timeline import Timeline, mcp_app_html, read_series, timeline
+from .graph import Graph, graph
 from .validate import Check, validate
 from .why import why
 
@@ -38,4 +40,4 @@ try:
 except PackageNotFoundError:   # a checkout on sys.path, not installed
     __version__ = "0+unknown"
 
-__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore", "to_claimreview", "to_okf", "recall", "context", "from_records", "read_records", "timeline", "Timeline", "read_series", "mcp_app_html"]
+__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore", "to_claimreview", "to_okf", "recall", "context", "from_records", "read_records", "timeline", "Timeline", "read_series", "mcp_app_html", "graph", "Graph"]

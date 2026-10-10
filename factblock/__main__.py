@@ -1,5 +1,5 @@
 """The factblock command. `factblock --help` lists the subcommands in the order you meet them:
-sample, extract, import, scan, recall, why, resolve, timeline, leak, validate, sync, then the projections and adapters.
+sample, extract, import, scan, recall, why, resolve, timeline, graph, leak, validate, sync, then the projections and adapters.
 Reads print for people; `--json` prints the same answer as JSON."""
 import argparse
 import json
@@ -8,7 +8,7 @@ import pathlib
 import shutil
 import sys
 
-from . import __version__, Bundle, TckgStore, extract, from_records, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
+from . import __version__, Bundle, TckgStore, extract, from_records, graph, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, validate, why, write_bundle, write_parquet
 from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
 
 # the wheel carries samples/rates at factblock/samples/rates (pyproject force-include); a checkout has it at the repo root
@@ -127,6 +127,11 @@ def main():
     tl.add_argument("--group-by", help="a payload field to group the rows by, e.g. speaker or customer")
     tl.add_argument("--inline", action="store_true", help="with -o x.html: put the Vega code in the page so it renders with no network (MCP Apps, offline)")
     tl.add_argument("-o", "--out", help="write .html (no dependencies), .png or .svg (pip install vl-convert-python), .json (the rows) or .vl.json (the spec); default: print the rows as JSON")
+    g = cmd("graph", "what one statement rests on and what came of it, as a chart (causes, supports, replacements)", json_=False)
+    g.add_argument("node_id", help="the block id (see scan, recall or timeline)")
+    g.add_argument("--depth", type=int, default=1, help="links to walk from it; default 1")
+    g.add_argument("--inline", action="store_true", help="with -o x.html: put the Vega code in the page so it renders with no network")
+    g.add_argument("-o", "--out", help="write .html, .png or .svg, .json (the rows) or .vl.json (the spec); default: print the rows as JSON")
     k = cmd("leak", "which answers in a dated question set rest on blocks learned after the question was asked", as_of=False, valid_at=False)
     k.add_argument("questions", help="JSONL: {id?, asked_at, evidence: [block id, ...]} per line. A date-only asked_at is the start of that day (UTC)")
     cmd("validate", "the conformance checks of SPEC.md section 2; exit 1 if any fails", as_of=False, valid_at=False, json_=False)
@@ -236,6 +241,12 @@ def main():
             print(f"{t.save(a.out, inline=a.inline)}: {t!r}")
         else:
             out_json(t.to_dict())
+    elif a.cmd == "graph":
+        g = graph(a.bundle, a.node_id, a.as_of, depth=a.depth, valid_at=a.valid_at)
+        if a.out:
+            print(f"{g.save(a.out, inline=a.inline)}: {g!r}")
+        else:
+            out_json(g.to_dict())
     elif a.cmd == "leak":
         r = leak(a.bundle, a.questions)
         if a.json:

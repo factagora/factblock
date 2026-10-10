@@ -127,6 +127,15 @@ Values after the as-of day are dropped too. On the command line: `factblock time
 
 On 30 April the last call ("bigger forces are going to crush the entire market") is open; on 30 June it has been judged wrong and five later calls have appeared. The April answer cannot use what was learned in May.
 
+**What one statement rests on.** `factblock.graph(bundle, block_id, as_of)` draws the links around one statement: what it rests on above it, what came of it below, each row written in full, each dot coloured by what became of the statement. It walks `why()`, so a link or a verdict learned after `as_of` is not drawn.
+
+```python
+g = factblock.graph("samples/cramer", "fdc79a63b9b44a7f", as_of="2025-06-30", depth=2)
+g.nodes, g.edges     # {id, label, type, when, resolution} and {id, from, to, label}: a graph renderer takes them as they are
+```
+
+![What "The stock market is positioned to move higher" rested on and led to, as known on 30 June 2025](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/graph.png)
+
 ## Claims it is good at
 
 | Kind | Example | What you can ask that other memories cannot |

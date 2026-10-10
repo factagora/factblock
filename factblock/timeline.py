@@ -170,7 +170,53 @@ def read_series(series) -> list[tuple[datetime, float]]:
     return sorted(out)
 
 
-class Timeline:
+class Chart:
+    """What every chart here shares: one HTML page, an MCP tool result, files, and Jupyter display. A subclass
+    gives title, spec(), to_dict() and to_markdown()."""
+
+    def to_html(self, inline: bool = False) -> str:
+        """The chart as one HTML page that follows the reader's light or dark setting. inline=True puts the
+        Vega code in the page (about 800 KB) so it renders with no network, as in an MCP Apps iframe."""
+        return HTML.format(title=self.title, scripts=_scripts(inline), spec=json.dumps(self.spec(), default=str), dark=json.dumps(DARK))
+
+    def to_mcp(self) -> dict:
+        """A tool result for any MCP server: the markdown for the model and for hosts that cannot draw, the rows as
+        structuredContent, and the Vega-Lite spec in _meta for the MCP Apps view (mcp_app_html). Return it as a
+        CallToolResult(content=..., structuredContent=..., _meta=...)."""
+        return {"content": [{"type": "text", "text": self.to_markdown()}],
+                "structuredContent": json.loads(json.dumps(self.to_dict(), default=str)),
+                "_meta": {VL_META: json.loads(json.dumps(self.spec(), default=str))}}
+
+    def save(self, path, inline: bool = False) -> Path:
+        """Write the chart: .html (opens in a browser; inline=True for no network), .md (text), .json (the data in
+        its versioned schema), .vl.json (the spec), .png or .svg (need `pip install vl-convert-python`)."""
+        path = Path(path)
+        name = path.name.lower()
+        if name.endswith(".vl.json"):
+            path.write_text(json.dumps(self.spec(), indent=1, default=str))
+        elif name.endswith(".json"):
+            path.write_text(json.dumps(self.to_dict(), indent=1, default=str))
+        elif name.endswith(".html"):
+            path.write_text(self.to_html(inline))
+        elif name.endswith(".md"):
+            path.write_text(self.to_markdown() + "\n")
+        elif name.endswith((".png", ".svg")):
+            try:
+                import vl_convert as vlc
+            except ImportError:
+                raise ImportError("PNG and SVG need vl-convert: pip install vl-convert-python (or save as .html)") from None
+            spec = json.loads(json.dumps(self.spec(), default=str))
+            data = vlc.vegalite_to_png(spec, scale=2) if name.endswith(".png") else vlc.vegalite_to_svg(spec).encode()
+            path.write_bytes(data)
+        else:
+            raise ValueError(f"unknown format for {path}: use .html, .md, .png, .svg, .json or .vl.json")
+        return path
+
+    def _repr_mimebundle_(self, include=None, exclude=None):
+        return {"application/vnd.vegalite.v5+json": json.loads(json.dumps(self.spec(), default=str)), "text/plain": repr(self)}
+
+
+class Timeline(Chart):
     """Statements and what happened to them, as known on as_of. Render with spec(), save(), or by leaving it as
     the last line of a Jupyter cell. claims and events are plain dicts for any other renderer."""
 
@@ -199,11 +245,6 @@ class Timeline:
         body = _series_spec(self, width) if self.series else _bars_spec(self, width)
         return {"$schema": "https://vega.github.io/schema/vega-lite/v5.json", "config": CONFIG, **body}
 
-    def to_html(self, inline: bool = False) -> str:
-        """The chart as one HTML page that follows the reader's light or dark setting. inline=True puts the
-        Vega code in the page (about 800 KB) so it renders with no network, as in an MCP Apps iframe."""
-        return HTML.format(title=self.title, scripts=_scripts(inline), spec=json.dumps(self.spec(), default=str), dark=json.dumps(DARK))
-
     def to_markdown(self) -> str:
         """The chart as text, for a chat answer or any place that cannot draw: one line per statement with what
         became of it and a link to its source."""
@@ -215,42 +256,6 @@ class Timeline:
             lines.append(f"- {c['said']} · {c['statement']} **{what}**{tail}{src} `{c['id']}`")
         lines += ["", f"_As known on {self.as_of[:10]}: nothing learned later is shown._"]
         return "\n".join(lines)
-
-    def to_mcp(self) -> dict:
-        """A tool result for any MCP server: the markdown for the model and for hosts that cannot draw, the rows as
-        structuredContent, and the Vega-Lite spec in _meta for the MCP Apps view (mcp_app_html). Return it as a
-        CallToolResult(content=..., structuredContent=..., _meta=...)."""
-        return {"content": [{"type": "text", "text": self.to_markdown()}],
-                "structuredContent": json.loads(json.dumps(self.to_dict(), default=str)),
-                "_meta": {VL_META: json.loads(json.dumps(self.spec(), default=str))}}
-
-    def save(self, path, inline: bool = False) -> Path:
-        """Write the chart: .html (opens in a browser; inline=True for no network), .md (text), .json (the data,
-        schema factblock.timeline/v1), .vl.json (the spec), .png or .svg (need `pip install vl-convert-python`)."""
-        path = Path(path)
-        name = path.name.lower()
-        if name.endswith(".vl.json"):
-            path.write_text(json.dumps(self.spec(), indent=1, default=str))
-        elif name.endswith(".json"):
-            path.write_text(json.dumps(self.to_dict(), indent=1, default=str))
-        elif name.endswith(".html"):
-            path.write_text(self.to_html(inline))
-        elif name.endswith(".md"):
-            path.write_text(self.to_markdown() + "\n")
-        elif name.endswith((".png", ".svg")):
-            try:
-                import vl_convert as vlc
-            except ImportError:
-                raise ImportError("PNG and SVG need vl-convert: pip install vl-convert-python (or save as .html)") from None
-            spec = json.loads(json.dumps(self.spec(), default=str))
-            data = vlc.vegalite_to_png(spec, scale=2) if name.endswith(".png") else vlc.vegalite_to_svg(spec).encode()
-            path.write_bytes(data)
-        else:
-            raise ValueError(f"unknown format for {path}: use .html, .md, .png, .svg, .json or .vl.json")
-        return path
-
-    def _repr_mimebundle_(self, include=None, exclude=None):
-        return {"application/vnd.vegalite.v5+json": json.loads(json.dumps(self.spec(), default=str)), "text/plain": repr(self)}
 
     def __repr__(self):
         return f"<Timeline as of {self.as_of[:10]}: {len(self.claims)} statements, {len(self.events)} events{', with ' + self.series_name if self.series else ''}>"

@@ -16,12 +16,17 @@ ROLES = {"CAUSES": ("cause", "effect"), "CONTRIBUTING_FACTOR": ("contributing_ca
          "RESTATES": ("restatement", "restated"), "CONCURRENT_SIGNAL": ("concurrent", "concurrent")}
 
 
-def why(bundle: BundleLike, node_id: str, as_of: Instant, valid_at: Instant | None = None, depth: int = 3) -> dict:
+def why(bundle: BundleLike, node_id: str, as_of: Instant, valid_at: Instant | None = None, depth: int = 3,
+        in_force: bool = True) -> dict:
     """Use to explain one block: its causes, effects, supports, contradictions and replacements as known
-    at `as_of`, each with a role and the path from the root. Empty chain with reason not_yet or absent."""
+    at `as_of`, each with a role and the path from the root. Empty chain with reason not_yet or absent.
+    in_force=False walks every block and link known by as_of, in force at valid_at or not (a prediction past its
+    horizon, a replaced call): the record as it stood, which is what graph() draws."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     vis_nodes, vis_edges, _, bundle_cert = visible(b, as_of, valid_at)
     t, v = parse_instant(bundle_cert["as_of"]), parse_instant(bundle_cert["valid_at"])
+    if not in_force:
+        vis_nodes, vis_edges = [r for r in b.nodes if r["known_at"] <= t], [e for e in b.edges if e["known_at"] <= t]
     cert = {k: bundle_cert[k] for k in ("as_of", "read_at", "valid_at")}
     out = {"root": node_id, "as_of": cert["as_of"], "valid_at": cert["valid_at"], "chain": [], "certificate": cert}
     nodes = {r["id"]: r for r in vis_nodes}

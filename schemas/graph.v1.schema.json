@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/factagora/factblock/blob/main/schemas/graph.v1.schema.json",
+  "title": "factblock.graph/v1",
+  "description": "What Graph.to_dict() returns: one statement (root), the statements linked to it, and the links, as known on as_of. Dates are YYYY-MM-DD. nodes carry {id, label, type, when, resolution} and edges {id, from, to, label}, the fields a graph renderer takes as they are; the rest is FactBlock detail.",
+  "type": "object",
+  "required": ["schema", "as_of", "root", "title", "nodes", "edges", "certificate"],
+  "properties": {
+    "schema": {"const": "factblock.graph/v1"},
+    "as_of": {"type": "string", "description": "the instant the graph is read as of (ISO 8601)"},
+    "root": {"type": "string", "description": "the FactBlock id the graph is about"},
+    "title": {"type": "string"},
+    "nodes": {"type": "array", "items": {
+      "type": "object",
+      "required": ["id", "label", "type", "when", "statement", "root", "role", "status"],
+      "properties": {
+        "id": {"type": "string", "description": "the FactBlock id"},
+        "label": {"type": "string", "description": "the statement shortened for display"},
+        "type": {"type": "string", "description": "the block kind in capitals: CLAIM, PREDICTION, COMMITMENT, ENTITY, FACTOR, ..."},
+        "when": {"type": "string", "description": "the day it was said (asserted_at)"},
+        "resolution": {"enum": ["correct", "wrong", "ambiguous", null], "description": "the latest verdict known at as_of, in a renderer's words; null when none"},
+        "kind": {"type": "string"},
+        "statement": {"type": "string"},
+        "root": {"type": "boolean"},
+        "role": {"type": "string", "description": "how it links to the statement before it on the walk: cause, effect, support, supported, successor, predecessor, ...; 'this statement' for the root"},
+        "depth": {"type": "integer", "description": "links from the root"},
+        "status": {"enum": ["right", "wrong", "mixed", "open", "replaced"]},
+        "verdict": {"type": ["string", "null"], "description": "the latest verdict's outcome as written"},
+        "speaker": {"type": ["string", "null"]},
+        "source": {"type": ["string", "null"], "description": "a URL to the source"},
+        "history": {"type": "string", "description": "said, took effect, replaced, judged: one line"}
+      }
+    }},
+    "edges": {"type": "array", "items": {
+      "type": "object",
+      "required": ["id", "from", "to", "label", "family"],
+      "properties": {
+        "id": {"type": "string"},
+        "from": {"type": "string", "description": "source block id"},
+        "to": {"type": "string", "description": "target block id"},
+        "label": {"type": "string", "description": "the edge type: CAUSES, SUPPORTS, SUPERSEDES, ..."},
+        "family": {"enum": ["causal", "argumentative", "temporal"]},
+        "said": {"type": "string", "description": "the day the link was drawn"}
+      }
+    }},
+    "certificate": {"type": "object", "description": "the why() certificate: as_of, valid_at, what was hidden, what rests on declared backfill"}
+  }
+}
