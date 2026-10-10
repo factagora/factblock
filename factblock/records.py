@@ -42,7 +42,7 @@ def read_records(path) -> list[dict]:
 
 
 def from_records(rows: Iterable[dict], *, known_at: Instant | None = None, backfill: bool = False,
-                 namespace: str = "local") -> dict:
+                 namespace: str = "local", columns: dict[str, str] | None = None) -> dict:
     """Use when you have structured rows, not prose: each row becomes one block (or one verdict) with the
     dates its columns give. Pass the result to write_bundle(result, out, append=True); read_records(path)
     reads a .csv or .jsonl into rows. `factblock import` on the command line does both.
@@ -52,7 +52,7 @@ def from_records(rows: Iterable[dict], *, known_at: Instant | None = None, backf
     verdict    target, outcome, decided_at, known_at?, value?, resolver?, method?, evidence? (url;url)
 
     known_at, when missing on a row: `known_at=` if given, else the row's asserted_at (or decided_at) with
-    backfill=True, else now."""
+    backfill=True, else now. `columns` renames your columns first, e.g. {"Claim": "statement", "Date": "said_at"}."""
     now = datetime.now(timezone.utc)
     fallback = parse_instant(known_at) if known_at else None
     nodes, edges, resolutions = [], [], []
@@ -62,6 +62,8 @@ def from_records(rows: Iterable[dict], *, known_at: Instant | None = None, backf
         return _iso(parse_instant(k))
 
     for i, raw in enumerate(rows):
+        if columns:
+            raw = {columns.get(k, k): v for k, v in raw.items()}
         r = {ALIASES.get(k, k): v for k, v in raw.items() if v not in (None, "")}
         if "due" in raw and re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(raw["due"] or "")):   # "by 2026-04-30" holds through that day
             r["valid_to"] = _iso(parse_instant(raw["due"]) + timedelta(days=1, seconds=-1))

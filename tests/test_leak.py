@@ -56,4 +56,11 @@ assert p.returncode == 1 and '"leaked_questions": 1' in p.stdout, p.stdout
 
 p = subprocess.run([sys.executable, "-m", "factblock", "leak", str(RATES), str(QS)], capture_output=True, text=True)
 assert p.returncode == 1 and "1/3 questions leak" in p.stdout and "c3 known 2024-07-01" in p.stdout, p.stdout
-print("PASS leak: 1 of 3 questions, block and known_at named, missing id, not_in_force via valid_at, date-only asked_at = start of day, same-day minutes shown, malformed questions refused, CLI exit 1 on leak or unknown id, --json")
+# a question set with its own field names
+r = factblock.leak(RATES, [{"when": "2024-06-01", "cited": ["c3"]}], asked_key="when", evidence_key="cited")
+assert r["leaked_questions"] == 1 and r["per_question"][0]["leaked"][0]["id"] == "c3", r
+try:
+    factblock.leak(RATES, [{"when": "2024-06-01", "cited": ["c3"]}]); raise AssertionError("other field names passed silently")
+except ValueError as e:
+    assert "evidence_key" in str(e), e
+print("PASS leak: 1 of 3 questions, block and known_at named, missing id, not_in_force via valid_at, date-only asked_at = start of day, same-day minutes shown, malformed questions refused, your own field names, CLI exit 1 on leak or unknown id, --json")

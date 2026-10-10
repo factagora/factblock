@@ -16,6 +16,7 @@ factblock recall brain/ "interest rates" --as-of 2024-05-01   # the blocks about
 factblock why brain/ c3 --as-of 2024-10-01            # the causal chain behind a block
 factblock resolve brain/ belief:fed:direction --as-of 2024-10-01
 factblock import kb.csv --backfill -o brain/          # rows you already have: id, text, said_at, effective_from, known_at, replaces
+factblock import crm.csv --backfill -o brain/ --map Claim=text,Date=said_at   # your own column names
 factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # prose, through your model key
 ```
 
@@ -165,7 +166,7 @@ The common thread: a claim has a speaker, a time, a reason, and a later verdict.
 ```bash
 # news.jsonl: {"id": "n2", "text": "Acme cuts Q1 guidance to $1.0B.", "said_at": "2025-03-20T21:00:00Z", "known_at": "2025-03-21T02:00:00Z", "replaces": "n1"}
 factblock import news.jsonl -o news/
-factblock leak news/ questions.jsonl      # {"id": "q2", "asked_at": "2025-03-21T00:00:00Z", "evidence": ["n2"]} per line
+factblock leak news/ questions.jsonl      # {"id": "q2", "asked_at": "2025-03-21T00:00:00Z", "evidence": ["n2"]} per line; --evidence-key for another name
 ```
 
 A date-only `as_of` means the end of that day for reads and the start of that day for `leak`, so build each question's context with its full timestamp and give `leak` the same one. `leak` checks knowledge time and validity. Evidence that was knowable but already replaced when the question was asked is not a leak; `recall` marks it `superseded_by` if you need to catch that too.

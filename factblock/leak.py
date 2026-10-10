@@ -29,19 +29,23 @@ def _asked(v):
     return parse_instant(v)
 
 
-def leak(bundle, questions) -> dict:
+def leak(bundle, questions, *, asked_key: str = "asked_at", evidence_key: str = "evidence") -> dict:
     """questions: a JSONL path or dicts of {id?, asked_at, evidence: [block id, ...]}. A date-only asked_at
     means the start of that day (UTC), so a block learned later that day counts as a leak. A question without
     asked_at or an evidence list raises ValueError; ids the bundle lacks are listed under `missing`.
     `leaked_blocks` counts citations (a block cited by two leaking questions counts twice); each question
-    carries `day_only` when its asked_at had no time."""
+    carries `day_only` when its asked_at had no time. asked_key and evidence_key name those fields when your
+    question set calls them something else (e.g. evidence_key="cited_ids")."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     rows = {r["id"]: r for r in b.nodes}
     out = []
     for i, q in enumerate(_questions(questions)):
+        q = {**q, "asked_at": q.get(asked_key), "evidence": q.get(evidence_key)} if (asked_key, evidence_key) != ("asked_at", "evidence") else q
+        q = {k: v for k, v in q.items() if v is not None}
         # a question without these would pass as leak-free, which is the wrong answer for an eval gate
         if "asked_at" not in q or not isinstance(q.get("evidence"), list):
-            raise ValueError(f"question {q.get('id', i)} needs asked_at and evidence: [block id, ...]; got keys {sorted(q)}")
+            raise ValueError(f"question {q.get('id', i)} needs asked_at and evidence: [block id, ...]; got keys {sorted(q)} "
+                             "(if yours have other names, pass asked_key= / evidence_key=, or --asked-key / --evidence-key)")
         t = _asked(q["asked_at"])
         v = parse_instant(q["valid_at"]) if q.get("valid_at") else t
         leaked, missing = [], []

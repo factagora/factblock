@@ -102,6 +102,17 @@ with tempfile.TemporaryDirectory() as d:
         factblock.from_records([{"text": "no date"}]); raise AssertionError
     except ValueError as e:
         assert "needs asserted_at" in str(e)
+# your column names, mapped on the way in (library and CLI)
+r = factblock.from_records([{"Claim": "Audit log export by April 30.", "Date": "2026-02-01", "Customer": "Globex", "Ref": "c1"}],
+                           backfill=True, columns={"Claim": "statement", "Date": "said_at", "Ref": "id", "Customer": "customer"})
+assert r["nodes"][0]["id"] == "c1" and r["nodes"][0]["payload"] == {"customer": "Globex"} and r["nodes"][0]["asserted_at"] == "2026-02-01", r["nodes"][0]
+with tempfile.TemporaryDirectory() as tmp:
+    src = pathlib.Path(tmp) / "crm.csv"
+    src.write_text("Ref,Claim,Date,Due\nc1,Audit log export by April 30.,2026-02-01,2026-04-30\n")
+    p = subprocess.run([sys.executable, "-m", "factblock", "import", str(src), "-o", str(pathlib.Path(tmp) / "b"), "--backfill",
+                        "--map", "Ref=id,Claim=statement", "--map", "Date=said_at,Due=due"], capture_output=True, text=True)
+    n = factblock.Bundle(pathlib.Path(tmp) / "b").nodes[0]
+    assert p.returncode == 0 and n["id"] == "c1" and n["valid_to"].date().isoformat() == "2026-04-30", p.stderr
 s = factblock.scan(pathlib.Path(__file__).resolve().parents[1] / "samples" / "rates", "2025-01-01")
 assert {r["target_id"]: r["value"] for r in s.to_dicts("resolutions")}["c1"] in ("true", "false") and isinstance(s.to_dicts()[0].get("payload", {}), dict)
 assert factblock.__version__ and factblock.__version__[0].isdigit()

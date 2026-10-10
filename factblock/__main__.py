@@ -105,6 +105,7 @@ def main():
     im.add_argument("source", help="a .csv with a header row, or a .jsonl")
     im.add_argument("-o", "--out", required=True, help="bundle directory; created or appended to")
     im.add_argument("--known-at", help="when you learned rows that have no known_at of their own; default now")
+    im.add_argument("--map", action="append", metavar="YOURS=OURS", help="rename your columns, e.g. --map Claim=statement,Date=said_at,Customer=customer")
     im.add_argument("--backfill", action="store_true", help="rows without known_at are known when said (or decided): material from the past")
     im.add_argument("--namespace", default="local")
     cmd("scan", "what the folder knew as of an instant: blocks, edges, verdicts, and what was hidden")
@@ -134,6 +135,8 @@ def main():
     g.add_argument("-o", "--out", help="write .html, .png or .svg, .json (the rows) or .vl.json (the spec); default: print the rows as JSON")
     k = cmd("leak", "which answers in a dated question set rest on blocks learned after the question was asked", as_of=False, valid_at=False)
     k.add_argument("questions", help="JSONL: {id?, asked_at, evidence: [block id, ...]} per line. A date-only asked_at is the start of that day (UTC)")
+    k.add_argument("--asked-key", default="asked_at", help="the field holding when each question was asked; default asked_at")
+    k.add_argument("--evidence-key", default="evidence", help="the field holding the cited block ids; default evidence")
     cmd("validate", "the conformance checks of SPEC.md section 2; exit 1 if any fails", as_of=False, valid_at=False, json_=False)
     y = sub.add_parser("sync", help="folder <-> a hosted ledger, both ways, by identity; known_at travels as batches", description="folder <-> a hosted ledger (tckg), both ways")
     y.add_argument("bundle")
@@ -194,7 +197,11 @@ def main():
             print(f"{a.out}: +{s_['blocks']} blocks, +{s_['entities']} entities, +{s_['links']} links"
                   + (f" ({s_['links_dropped']} dropped)" if s_['links_dropped'] else "") + f", batch {s_['batch']}")
     elif a.cmd == "import":
-        r = from_records(read_records(a.source), known_at=a.known_at, backfill=a.backfill, namespace=a.namespace)
+        pairs = [x.split("=", 1) for m in a.map or [] for x in m.split(",") if x.strip()]
+        if any(len(x) != 2 for x in pairs):
+            p.error("--map takes YOURS=OURS pairs, e.g. --map Claim=statement,Date=said_at")
+        r = from_records(read_records(a.source), known_at=a.known_at, backfill=a.backfill, namespace=a.namespace,
+                         columns={k.strip(): v.strip() for k, v in pairs})
         count = lambda: (lambda b: (len(b.nodes), len(b.edges), len(b.resolutions)))(Bundle(a.out)) if (pathlib.Path(a.out) / "factblock.json").exists() else (0, 0, 0)  # noqa: E731
         before = count()
         write_bundle(r, a.out, append=True)
@@ -248,7 +255,7 @@ def main():
         else:
             out_json(g.to_dict())
     elif a.cmd == "leak":
-        r = leak(a.bundle, a.questions)
+        r = leak(a.bundle, a.questions, asked_key=a.asked_key, evidence_key=a.evidence_key)
         if a.json:
             out_json(r)
             sys.exit(1 if r["leaked_questions"] or r["missing_blocks"] else 0)

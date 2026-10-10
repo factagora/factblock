@@ -13,7 +13,7 @@ A **bundle** is a folder: `factblock.json` plus `nodes.jsonl`, `edges.jsonl`, `r
 ## Write
 
 ```bash
-factblock import kb.csv -o brain/ --backfill                                        # rows in (CSV/JSONL), no model
+factblock import kb.csv -o brain/ --backfill                                        # rows in (CSV/JSONL), no model; --map Claim=text,Date=said_at for your column names
 factblock extract notes.txt --observed-at 2026-03-14 -o brain/ --provider gemini   # text in, dated blocks out
 factblock extract items.jsonl -o brain/ --provider gemini --backfill                # one {text, observed_at, speaker?, source?} per line
 factblock sample brain/                                                             # a small bundle to try reads on
@@ -58,7 +58,7 @@ t.save("out.html")                                                             #
 
 ```bash
 factblock validate brain/                    # 13 checks, all ok
-factblock leak brain/ questions.jsonl        # answers that used blocks learned after the question (date-only asked_at = start of that day)
+factblock leak brain/ questions.jsonl        # answers that used blocks learned after the question (date-only asked_at = start of that day); --asked-key/--evidence-key for other field names
 factblock to-parquet brain/ brain-pq/        # DuckDB, Spark
 factblock sync brain/ https://tckg.factagora.com --space user:me   # hosted ledger, both ways ($TCKG_TOKEN)
 ```

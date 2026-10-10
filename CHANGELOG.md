@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+- `factblock import --map Claim=text,Date=said_at` and `from_records(..., columns={...})`: rows keep your column names; mapped columns are read as ours, the rest go to payload as before.
+- `factblock leak --asked-key --evidence-key` and `leak(..., asked_key=, evidence_key=)`: a question set with its own field names. A set whose fields are named otherwise is refused with a pointer to these options, not read as leak-free.
+
 ### Changed
 - SPEC invariant I6, checked by `validate` as `I6.target_exists` and `I6.after_statement`: every verdict names a node in the bundle and is not decided before that statement was made. A verdict on a missing block, or one dated before the promise it judges, used to pass; `write_bundle` and `factblock import` now refuse them with the check id. `validate` runs thirteen checks.
 
