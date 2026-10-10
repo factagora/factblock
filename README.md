@@ -1,14 +1,14 @@
-# <img src="https://raw.githubusercontent.com/factagora/factblock/main/.github/logo.svg" alt="" height="40" align="top"> FactBlock: agent memory with a track record
+# <img src="https://raw.githubusercontent.com/factagora/factblock/main/.github/logo.svg" alt="" height="40" align="top"> FactBlock: an open format for claims and their history
 
 [![test](https://github.com/factagora/factblock/actions/workflows/test.yml/badge.svg)](https://github.com/factagora/factblock/actions/workflows/test.yml) [![PyPI](https://img.shields.io/pypi/v/factblock)](https://pypi.org/project/factblock/) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/factagora/factblock/blob/main/LICENSE)
 
-**Record claims, predictions and commitments, judge them on outcomes, and show which were on record before they were resolved.**
+**Build agent memory that tracks claims, evidence and changes, and lets you query what was known at any point in time.**
 
-It is a temporal causal knowledge graph: every block keeps *when* (said, learned, in force, judged) and *why* (the reasons given, the source, the evidence behind its verdict), so your AI reads it as of any date.
+Represent temporal causal knowledge graphs in portable files, reusable across AI agents, analytics, and visualizations.
 
 ![FactBlock in 40 seconds: reads as of a date, a causal chain, a claim replaced not overwritten, a verdict that arrives later, and the hindsight leak without a clock. Real data from samples/cramer and samples/rates.](https://raw.githubusercontent.com/factagora/factblock/main/samples/demo.gif)
 
-Your data is full of claims: facts, opinions, predictions, promises. FactBlock extracts them, keeps when they were said and when you learned them, links what caused what, and never overwrites what changed. Your agent recalls them as of any moment, so it decides on what was knowable then, not on hindsight.
+Your data is full of claims: "the Team plan includes 10 seats", "we ship SSO in Q3", "revenue grows 20% this year". For each one it matters who said it and when, what it rests on, and whether it later changed or was confirmed. FactBlock gives you that structure so you do not build it yourself: it keeps when a claim was said and when you learned it, links the reasons given, never overwrites what changed, and adds verdicts as they arrive. Your agent recalls them as of any moment, so it decides on what was knowable then, not on hindsight.
 
 ```bash
 pip install --pre factblock                           # alpha: --pre until 1.0
@@ -22,6 +22,39 @@ factblock import kb.csv --backfill -o brain/          # rows you already have: i
 factblock import crm.csv --backfill -o brain/ --map Claim=text,Date=said_at   # your own column names
 factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # prose, through your model key
 ```
+
+## Two examples
+
+**A policy changes: what did the assistant know when it answered?** A refund policy is dated April 1 but reaches the help desk on April 20. When it happened and when you learned it are two different days, and a date filter only has the first. Replaying April 10 with one shows the new policy, and the bot looks wrong for having said 30 days. FactBlock reads as of the day:
+
+```python
+factblock.context("examples/support-agent/brain", "refund window", as_of="2026-04-10")
+# - 2026-01-05: Refunds are available within 30 days of purchase. (source: help center)
+
+factblock.context("examples/support-agent/brain", "refund window", as_of="2026-04-25")
+# - 2026-04-01: Refunds are available within 14 days of purchase. (learned 2026-04-20; source: legal memo dated April 1, filed to the KB April 20)
+# - 2026-01-05: Refunds are available within 30 days of purchase. (source: help center)
+#   replaced 2026-04-01 by: Refunds are available within 14 days of purchase.
+```
+
+[`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent) asks five such questions (a price announced before it takes effect, the bot's wrong answer and its correction, a promise and whether it was kept, the late memo, a retired API). A date filter puts a stale answer into the prompt on all five, FactBlock on none.
+
+**A prediction is judged: how good was the call?** Predictions and promises get verdicts later, and the verdicts keep their own dates. `track-record` counts how they turned out as known on a day, next to the bar they had to clear, and says which were on record before they were resolved:
+
+```
+$ factblock track-record samples/cramer --as-of 2026-10-01
+      judged    right    wrong    mixed     open  overdue      hit
+all      779      426      353        0      629       46      55%
+on record before it was resolved: 0 of 779; 779 written later from a cited source (checkable)
+baseline (779 calls with a return): saying up every time would hit 54%; following the calls made +5.2% a call, +1.4% over SPY
+as of 2026-10-01  hidden: nothing  not in force: 134 nodes  known_at declared by a writer: 3905 rows in 373 batches
+```
+
+Two years of one TV commentator's market calls: right a little more often than not, about as often as saying "up" every time, yet the calls beat the market on average. `--ids` counts only calls like the one you are weighing. [`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis) backtests the same files in DuckDB without hindsight, then gives a model the data as of a date and traces every line it cites back to the recording.
+
+![Following only his best subjects looks like +9.3% a call. Picked with what was known at the time, it makes +4.9%.](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/backtest.png)
+
+## How it reads
 
 ```
 $ factblock why brain/ c3 --as-of 2024-10-01
@@ -45,13 +78,9 @@ print(factblock.context("brain/", "interest rates", as_of="2024-10-01"))
 # (as of 2024-10-01)
 ```
 
-That string goes into your agent's prompt. The old claim is still there, marked as replaced, with the verdict it had as of that day; ask `as_of="2025-01-01"` and the verdict reads `false`, because it was re-resolved in December. A date filter would show both claims side by side with nothing to say which one stands. [`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent) runs five support questions both ways: a date filter puts a stale answer into the prompt on all five, FactBlock on none. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
+That string goes into your agent's prompt. The old claim is still there, marked as replaced, with the verdict it had as of that day; ask `as_of="2025-01-01"` and the verdict reads `false`, because it was re-resolved in December. A date filter would show both claims side by side with nothing to say which one stands. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
 
 `brain/` is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
-
-**Backtest it without hindsight.** The same files are a table, and they keep what a table of statements loses: when each verdict became known, what replaced what, which reasons were given. [`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis) backtests two years of one commentator's market calls in DuckDB, then gives a model the same data as of a date and traces every line it cites back to the recording.
-
-![Following only his best subjects looks like +9.3% a call. Picked with what was known at the time, it makes +4.9%.](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/backtest.png)
 
 ## What comes out
 
@@ -142,7 +171,7 @@ g.nodes, g.edges     # {id, label, type, when, resolution} and {id, from, to, la
 
 ## Claims it is good at
 
-| Kind | Example | What you can ask that other memories cannot |
+| Kind | Example | What you can ask |
 |---|---|---|
 | **Prediction** | "Yields keep climbing this year" (podcast, 2024-03-20) | What did this person believe on 2024-03-20? Did it come true? When did they say the opposite? |
 | **Stance** | CEO: "No price increase this year" (Jan), "An increase is unavoidable" (Jul) | How did the company's position move? What did we know in May? |
@@ -150,7 +179,7 @@ g.nodes, g.edges     # {id, label, type, when, resolution} and {id, from, to, la
 | **Commitment** | Sales: "We ship SSO by end of Q3" (to customer A) | Which promises to A are past due and unresolved? Recall them before the support agent answers ([`examples/promises`](https://github.com/factagora/factblock/tree/main/examples/promises)) |
 | **Your AI's own assertions** | Assistant: "Your plan includes 10 seats" (to user B) | Which of last month's assertions are now false? Where did each one come from? |
 
-The common thread: a claim has a speaker, a time, a reason, and a later verdict. RAG keeps chunks, entity graphs keep triples, chat memories keep summaries. None of them keep that.
+The common thread: a claim has a speaker, a time, a reason, and a later verdict. FactBlock keeps all four in one structure, and agents, SQL and charts read the same files.
 
 ## Use it with your AI
 

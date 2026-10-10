@@ -96,7 +96,7 @@ def _print_resolve(k, r):
 
 
 def main():
-    p = argparse.ArgumentParser(prog="factblock", description="Agent memory with a track record: claims, predictions and commitments, judged on outcomes, with when and why, in a folder, read as of any instant.")
+    p = argparse.ArgumentParser(prog="factblock", description="An open format for claims and their history: agent memory that tracks claims, evidence and changes, in a folder, read as of any instant.")
     p.add_argument("--version", action="version", version=f"factblock {__version__}")
     sub = p.add_subparsers(dest="cmd", metavar="command")
 

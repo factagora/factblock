@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 1.0.0a12 (2026-10-11)
+
+How the project introduces itself, after outside feedback. No code change.
+
+### Changed
+- The README, package description, CLI and `llms.txt` lead with "an open format for claims and their history": agent memory that tracks claims, evidence and changes, and answers what was known at any point in time. The track record moves to the second of two examples that open the README: a policy whose memo is dated April 1 but reaches the help desk April 20 (when it happened and when you learned it are different days), and two years of predictions judged against a baseline.
+- The README no longer says other memories cannot keep this; it shows what FactBlock keeps instead.
+
 ## 1.0.0a11 (2026-10-10)
 
 A hit rate next to the bar it has to clear.

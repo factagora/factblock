@@ -86,7 +86,7 @@ def logo():
 # --- scenes --------------------------------------------------------------------------------------
 
 def title(_):
-    words = Group(Text("FactBlock", style=f"bold {ACCENT}"), Text("Agent memory with a track record.", style="bold"), Text(""),
+    words = Group(Text("FactBlock", style=f"bold {ACCENT}"), Text("An open format for claims and their history.", style="bold"), Text(""),
                   Text("1  Every read is as of a date", style="white"),
                   Text("2  Claims are linked by cause", style="white"),
                   Text("3  Nothing is overwritten", style="white"),
@@ -295,7 +295,7 @@ def leak(a):
 
 
 def end(_):
-    words = Group(Text("FactBlock", style=f"bold {ACCENT}"), Text("Agent memory with a track record.", style="bold"), Text(""),
+    words = Group(Text("FactBlock", style=f"bold {ACCENT}"), Text("An open format for claims and their history.", style="bold"), Text(""),
                   Text("pip install --pre factblock", style=f"bold white on grey15"), Text(""),
                   Text("github.com/factagora/factblock", style=f"bold {ACCENT}"),
                   Text("An open format: plain files, Apache-2.0.", style=GRAY))
