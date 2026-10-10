@@ -1,0 +1,65 @@
+{
+ "factblock_version": "1.0-draft.1",
+ "namespace": "local",
+ "exported_as_of": "2026-10-10T17:48:21.315179Z",
+ "declarations": {
+  "facts": [],
+  "backfills": [
+   {
+    "batch": "known-20211217T000000Z",
+    "declared_known_at": "2021-12-17T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-10T17:48:21.085597Z"
+   },
+   {
+    "batch": "known-20220609T000000Z",
+    "declared_known_at": "2022-06-09T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-10T17:48:21.085597Z"
+   },
+   {
+    "batch": "known-20221229T000000Z",
+    "declared_known_at": "2022-12-29T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-10T17:48:21.085597Z"
+   },
+   {
+    "batch": "known-20231214T000000Z",
+    "declared_known_at": "2023-12-14T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-10T17:48:21.085597Z"
+   },
+   {
+    "batch": "known-20241219T000000Z",
+    "declared_known_at": "2024-12-19T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-10T17:48:21.085597Z"
+   },
+   {
+    "batch": "known-20251229T000000Z",
+    "declared_known_at": "2025-12-29T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-10T17:48:21.085597Z"
+   },
+   {
+    "batch": "known-20260713T000000Z",
+    "declared_known_at": "2026-07-13T00:00:00Z",
+    "reason": "known_at given by the writer",
+    "declared_by": "process:factblock-write",
+    "captured_at": "2026-10-10T17:48:21.315914Z"
+   }
+  ],
+  "edge_types": [],
+  "embedding": null
+ },
+ "tables": {
+  "nodes": "nodes.jsonl",
+  "edges": "edges.jsonl"
+ }
+}

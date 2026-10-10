@@ -12,31 +12,31 @@ Represent temporal causal knowledge graphs in portable files, reusable across AI
 
 ```bash
 pip install --pre factblock
-factblock sample --policies policy/                        # two CSVs: product policies as of January, and the changes since
-factblock import policy/policies.csv --backfill -o brain/
-factblock import policy/changes.csv --backfill -o brain/   # a price change, and a refund memo that reached the help desk late
-factblock recall brain/ refund --as-of 2026-04-10          # what the help desk knew that day
+factblock sample --policies irs/                                 # the IRS business mileage rate, 2022 to 2026, as CSV
+factblock import irs/mileage.csv --backfill -o brain/
+factblock import irs/mileage-2026-07.csv --backfill -o brain/    # 76 cents from July 1, announced July 13
+factblock recall brain/ "mileage rate" --as-of 2026-07-20 --valid-at 2026-07-05 --limit 1
 ```
 
-## Said on one day, learned on another
+## In force from one day, announced on another
 
-The refund memo is dated April 1 but reached the help desk on April 20. A date filter only knows April 1. FactBlock reads as of the day, as prompt lines for your agent:
+A trip on July 5, 2026. The IRS raised the rate to 76 cents from July 1, but announced it on July 13. A claim filed on July 10 gets 72.5 cents; the same claim re-checked on July 20 gets 76. The day of the trip and the day you ask are two clocks, and a date filter has one:
 
 ```python
-factblock.context("brain/", "refund", as_of="2026-04-10")
-# - 2026-01-05: Refunds are available within 30 days of purchase. (source: help center)
+factblock.context("brain/", "mileage rate", as_of="2026-07-10", valid_at="2026-07-05", limit=1)
+# - 2025-12-29: The IRS business standard mileage rate is 72.5 cents per mile. (in force from 2026-01-01; source: https://www.irs.gov/newsroom/irs-sets-2026-business-standard-mileage-rate-at-725-cents-per-mile-up-25-cents)
 
-factblock.context("brain/", "refund", as_of="2026-04-25")
-# - 2026-04-01: Refunds are available within 14 days of purchase. (learned 2026-04-20; source: legal memo dated April 1, filed to the help desk April 20)
-# - 2026-01-05: Refunds are available within 30 days of purchase. (source: help center)
-#   replaced 2026-04-01 by: Refunds are available within 14 days of purchase.
+factblock.context("brain/", "mileage rate", as_of="2026-07-20", valid_at="2026-07-05", limit=2)
+# - 2026-07-13: The IRS business standard mileage rate is 76 cents per mile. (in force from 2026-07-01; source: https://www.irs.gov/irb/2026-29_irb)
+# - 2025-12-29: The IRS business standard mileage rate is 72.5 cents per mile. (in force from 2026-01-01; source: https://www.irs.gov/newsroom/irs-sets-2026-business-standard-mileage-rate-at-725-cents-per-mile-up-25-cents)
+#   replaced 2026-07-01 by: The IRS business standard mileage rate is 76 cents per mile. (announced 2026-07-13)
 ```
 
-The same files draw the history: `factblock timeline brain/ --as-of 2026-04-25 -o policy.html`.
+Every rate links to the IRS release it came from. The same files draw the history: `factblock timeline brain/ --as-of 2026-10-10 -o mileage.html`.
 
-![Five policy statements as known on 25 April 2026: the $20 price replaced on 1 March, the 30-day refund replaced on 1 April](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/policy-timeline.png)
+![The IRS business mileage rate from 2022 to 2026, each rate replaced by the next](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/irs-mileage-timeline.png)
 
-Five support questions, asked on the day: a date filter puts a stale answer in the prompt on all five, FactBlock on none ([`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent)).
+[`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent) asks five support questions of a made-up company on the day they were asked (a price announced before it takes effect, a policy memo that arrived late, a promise and whether it was kept): a date filter puts a stale answer in the prompt on all five, FactBlock on none.
 
 ## Judged later, counted honestly
 

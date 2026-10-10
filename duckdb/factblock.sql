@@ -19,11 +19,10 @@ CREATE OR REPLACE MACRO factblock_nodes(bundle, as_of, valid_at := NULL) AS TABL
          (SELECT e.source_id
             FROM read_parquet(bundle || '/edges.parquet') e, t
            WHERE e.target_id = n.id AND e.edge_type = 'SUPERSEDES' AND e.known_at <= t.a
-             AND e.asserted_at <= t.v AND e.valid_from <= t.v AND (e.valid_to IS NULL OR t.v < e.valid_to)
+             AND e.valid_from <= t.v AND (e.valid_to IS NULL OR t.v < e.valid_to)
            ORDER BY e.asserted_at DESC, e.source_id DESC LIMIT 1) AS superseded_by
     FROM read_parquet(bundle || '/nodes.parquet') n, t
    WHERE n.known_at <= t.a
-     AND n.asserted_at <= t.v
      AND n.valid_from <= t.v
      AND (n.valid_to IS NULL OR t.v < n.valid_to);
 
@@ -32,7 +31,6 @@ CREATE OR REPLACE MACRO factblock_edges(bundle, as_of, valid_at := NULL) AS TABL
   SELECT e.*
     FROM read_parquet(bundle || '/edges.parquet') e, t
    WHERE e.known_at <= t.a
-     AND e.asserted_at <= t.v
      AND e.valid_from <= t.v
      AND (e.valid_to IS NULL OR t.v < e.valid_to);
 

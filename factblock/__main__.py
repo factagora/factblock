@@ -111,10 +111,10 @@ def main():
             s.add_argument("--json", action="store_true", help="print the answer as JSON")
         return s
 
-    s = sub.add_parser("sample", help="copy the sample bundle (six dated claims, a reversal, three verdicts) into a folder, or with --policies two CSVs to import",
-                       description="copy the sample bundle into a folder; with --policies, two CSVs of product policies (as of January, and the changes since) to import yourself")
+    s = sub.add_parser("sample", help="copy the sample bundle (six dated claims, a reversal, three verdicts) into a folder, or with --policies the IRS mileage rates as CSVs to import",
+                       description="copy the sample bundle into a folder; with --policies, the IRS business mileage rate as two CSVs (2022 to January 2026, and the July 2026 change announced after it took effect) to import yourself")
     s.add_argument("out", help="folder to create, e.g. brain/")
-    s.add_argument("--policies", action="store_true", help="the policy CSVs instead of the bundle")
+    s.add_argument("--policies", action="store_true", help="the IRS mileage rate CSVs instead of the bundle")
     e = sub.add_parser("extract", help="text in, dated blocks and their links appended to a bundle", description="text in, dated blocks and their links appended to a bundle")
     e.add_argument("source", help="a text file, - for stdin, or a .jsonl with one {text, observed_at, speaker?, source?, known_at?} per line")
     e.add_argument("--observed-at", help="when it was said or written (ISO 8601); required unless each .jsonl line has its own")
@@ -210,7 +210,7 @@ def main():
             p.error(f"{a.out} exists; pick a new folder")
         if a.policies:
             shutil.copytree(SAMPLES / "policies", a.out)
-            print(f"{a.out}: policies.csv (January) and changes.csv. Try: factblock import {pathlib.Path(a.out) / 'policies.csv'} --backfill -o brain/")
+            print(f"{a.out}: mileage.csv (IRS rates, 2022 to January 2026) and mileage-2026-07.csv. Try: factblock import {pathlib.Path(a.out) / 'mileage.csv'} --backfill -o brain/")
         else:
             shutil.copytree(SAMPLES / "rates", a.out)
             print(f"{a.out}: the sample bundle. Try: factblock scan {a.out} --as-of 2024-05-01")

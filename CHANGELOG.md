@@ -4,14 +4,18 @@
 
 ## 1.0.0a14 (2026-10-11)
 
-The first screen is the developer's flow: import policies, add a change, read as of a day, draw it.
+The first screen is the developer's flow on official data: import the IRS mileage rate, add a change, read as of a day, draw it.
+
+**Upgrading from 1.0.0a13.** SPEC 4.1 no longer caps a block's validity by when it was said. A row whose `valid_from` is before its `asserted_at` (a retroactive rule) now holds from `valid_from` for any read that knows it. No bundle in this repository has such a row, so their reads are unchanged; yours change only if you wrote one.
 
 ### Added
-- `factblock sample --policies <folder>` writes two CSVs, product policies as of January and the changes since (a price announced on Feb 15 for Mar 1, a refund memo dated Apr 1 that reached the help desk on Apr 20), to import with `factblock import`. The wheel carries them.
-- `scripts/check_published.py <version>`: installs that version from PyPI into a fresh venv and checks the README against it (first-screen commands, both examples' output, the coding-agents block). Run after each release.
+- `factblock sample --policies <folder>` writes the IRS business standard mileage rate from 2022 to 2026 as two CSVs to import with `factblock import`, every row linked to the IRS release it came from: `mileage.csv` (58.5 cents in January 2022 through 72.5 cents in January 2026, with the July 2022 increase announced before it took effect) and `mileage-2026-07.csv` (76 cents from July 1, 2026, announced July 13 in Internal Revenue Bulletin 2026-29). The wheel carries them.
+- `scripts/check_published.py <version>`: installs that version from PyPI into a fresh venv and checks the README against it (first-screen commands, both examples' output, the coding-agents block). The release workflow runs it after every publish.
+- Conformance cases for the retroactive rule: a July 5 trip read on July 10 (72.5 cents) and on July 20 (76 cents).
 
 ### Changed
-- The README opens with that flow: two imports, a read as of the day before the memo arrived and after, and the timeline of the same files. It runs as written after `pip install`, with no checkout. The rates examples further down read a folder named `rates/`.
+- SPEC 4.1: a block holds at `valid_at` when `valid_from <= valid_at < valid_to`; `asserted_at <= valid_at` is gone. It made a rule announced after it took effect invisible for the days it covers, so a July 5 trip read on July 20 still got 72.5 cents. The Python reader, `recall` and the DuckDB macros follow. An announcement not yet in force is still listed as upcoming only once it was said.
+- The README opens with that flow: two imports, the July 5 trip read on July 10 and on July 20, and the timeline of the same files. It runs as written after `pip install`, with no checkout. The made-up support desk moves to a one-line pointer to `examples/support-agent`, and the rates examples further down read a folder named `rates/`.
 
 ## 1.0.0a13 (2026-10-11)
 

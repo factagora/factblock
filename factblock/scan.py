@@ -26,7 +26,7 @@ def _visible(r, as_of, valid_at):
     if "asserted_at" not in r:          # resolutions have no validity interval
         return True
     to = r.get("valid_to")
-    return r["asserted_at"] <= valid_at and r["valid_from"] <= valid_at and (to is None or valid_at < to)
+    return r["valid_from"] <= valid_at and (to is None or valid_at < to)   # SPEC 4.1: asserted_at does not cap validity (retroactive rules)
 
 
 def _table(rows):

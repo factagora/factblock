@@ -39,16 +39,16 @@ with tempfile.TemporaryDirectory() as d:
     assert run([cli, "--version"], work).split()[-1] == version
 
     # the first screen's commands, as a new user types them, then the first example on the folder they made
-    run([cli, "sample", "--policies", "policy/"], work)
-    run([cli, "import", "policy/policies.csv", "--backfill", "-o", "brain/"], work)
-    run([cli, "import", "policy/changes.csv", "--backfill", "-o", "brain/"], work)
-    assert "30 days" in run([cli, "recall", "brain/", "refund", "--as-of", "2026-04-10"], work)
-    assert "5 statements" in run([cli, "timeline", "brain/", "--as-of", "2026-04-25", "-o", "policy.html"], work)
-    for day in ("2026-04-10", "2026-04-25"):
-        out = run([py, "-I", "-c", f"import factblock; print(factblock.context('brain/', 'refund', as_of='{day}'))"], work)
+    run([cli, "sample", "--policies", "irs/"], work)
+    run([cli, "import", "irs/mileage.csv", "--backfill", "-o", "brain/"], work)
+    run([cli, "import", "irs/mileage-2026-07.csv", "--backfill", "-o", "brain/"], work)
+    assert "76 cents" in run([cli, "recall", "brain/", "mileage rate", "--as-of", "2026-07-20", "--valid-at", "2026-07-05", "--limit", "1"], work)
+    assert "7 statements" in run([cli, "timeline", "brain/", "--as-of", "2026-10-10", "-o", "mileage.html"], work)
+    for as_of, n in (("2026-07-10", 1), ("2026-07-20", 2)):
+        out = run([py, "-I", "-c", f"import factblock; print(factblock.context('brain/', 'mileage rate', as_of='{as_of}', valid_at='2026-07-05', limit={n}))"], work)
         for line in out.splitlines():
             if not line.startswith("(as of"):
-                assert f"# {line}" in readme, f"README lacks the context line for {day}: {line}"
+                assert f"# {line}" in readme, f"README lacks the context line for {as_of}: {line}"
     shutil.copytree(ROOT / "samples" / "cramer", work / "samples" / "cramer")   # the second example reads the repository's data
     out = run([cli, "track-record", "samples/cramer", "--as-of", "2026-10-01"], work)
     for line in out.splitlines()[:4]:

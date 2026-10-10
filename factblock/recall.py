@@ -71,7 +71,7 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
             verdicts[r["target_id"]] = r
     t, va = parse_instant(cert["as_of"]), parse_instant(cert["valid_at"])
     ended = [n for n in b.nodes if (n["id"] in verdicts or n["kind"] in SETTLED) and n["id"] not in by_id and n["known_at"] <= t
-             and n.get("valid_to") is not None and n["valid_to"] <= va and n["asserted_at"] <= va]
+             and n.get("valid_to") is not None and n["valid_to"] <= va]
     wanted = lambda n: n["kind"] not in THINGS if kinds is None else not kinds or n["kind"] in kinds   # noqa: E731
     nodes = nodes + [{**n, "superseded_by": None, "_ended": True} for n in ended]
     items, excluded = [], {}

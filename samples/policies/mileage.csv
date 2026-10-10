@@ -1,0 +1,7 @@
+id,said_at,effective_from,text,replaces,source
+irs-2022-01,2021-12-17,2022-01-01,The IRS business standard mileage rate is 58.5 cents per mile.,,https://www.irs.gov/newsroom/irs-issues-standard-mileage-rates-for-2022
+irs-2022-07,2022-06-09,2022-07-01,The IRS business standard mileage rate is 62.5 cents per mile.,irs-2022-01,https://www.irs.gov/newsroom/irs-increases-mileage-rate-for-remainder-of-2022
+irs-2023,2022-12-29,2023-01-01,The IRS business standard mileage rate is 65.5 cents per mile.,irs-2022-07,https://www.irs.gov/newsroom/irs-issues-standard-mileage-rates-for-2023-business-use-increases-3-cents-per-mile
+irs-2024,2023-12-14,2024-01-01,The IRS business standard mileage rate is 67 cents per mile.,irs-2023,https://www.irs.gov/newsroom/irs-issues-standard-mileage-rates-for-2024-mileage-rate-increases-to-67-cents-a-mile-up-1-point-5-cents-from-2023
+irs-2025,2024-12-19,2025-01-01,The IRS business standard mileage rate is 70 cents per mile.,irs-2024,https://www.irs.gov/newsroom/irs-increases-the-standard-mileage-rate-for-business-use-in-2025-key-rate-increases-3-cents-to-70-cents-per-mile
+irs-2026-01,2025-12-29,2026-01-01,The IRS business standard mileage rate is 72.5 cents per mile.,irs-2025,https://www.irs.gov/newsroom/irs-sets-2026-business-standard-mileage-rate-at-725-cents-per-mile-up-25-cents

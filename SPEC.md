@@ -132,7 +132,7 @@ embedding:   { model, dimensions } | null
 
 A conforming reader implements these; an engine that embeds the reference library gets them for free.
 
-**4.1 As-of.** `read(as_of, valid_at?)` returns blocks with `known_at <= as_of` that also hold at `valid_at`: `asserted_at <= valid_at` and `valid_from <= valid_at < valid_to` (null `valid_to` is open). `valid_at` defaults to `as_of`, so the one-argument read means "as best we knew on D, what held on D". `as_of` has no default. A date-only `as_of` means the end of that day in UTC.
+**4.1 As-of.** `read(as_of, valid_at?)` returns blocks with `known_at <= as_of` that also hold at `valid_at`: `valid_from <= valid_at < valid_to` (null `valid_to` is open). When a block was said does not cap when it holds: a rule announced on July 13 that applies from July 1 (`valid_from` before `asserted_at`) holds on July 5 for any read that knows it. `valid_at` defaults to `as_of`, so the one-argument read means "as best we knew on D, what held on D". `as_of` has no default. A date-only `as_of` means the end of that day in UTC.
 
 **4.2 Certificate.** Every as-of read returns `{ as_of, read_at, masked: {node, edge, resolution}, backfill: {batches, rows} | null, rules_as_of? }`. `masked` counts blocks hidden because `known_at > as_of` (learned later: the hindsight the read blocked). Blocks known by `as_of` but not in force at `valid_at` are not masked; a reader MAY count them under `not_in_force: {node, edge, resolution}`. The split keeps `masked` the same across readers and countable from `known_at` alone (file or row-group statistics). Omit keys whose value is zero or null.
 
