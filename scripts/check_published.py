@@ -42,7 +42,11 @@ with tempfile.TemporaryDirectory() as d:
     run([cli, "sample", "--policies", "irs/"], work)
     run([cli, "import", "irs/mileage.csv", "--backfill", "-o", "brain/"], work)
     run([cli, "import", "irs/mileage-2026-07.csv", "--backfill", "-o", "brain/"], work)
-    assert "76 cents" in run([cli, "recall", "brain/", "mileage rate", "--as-of", "2026-07-20", "--valid-at", "2026-07-05", "--limit", "1"], work)
+    for as_of, n, rate in (("2026-07-10", "1", "72.5 cents"), ("2026-07-20", "2", "76 cents")):
+        out = run([cli, "recall", "brain/", "mileage rate", "--as-of", as_of, "--limit", n], work)
+        assert rate in out.splitlines()[0], out
+        for line in out.splitlines():
+            assert line in readme, f"README lacks the recall line for {as_of}: {line}"
     assert "7 statements" in run([cli, "timeline", "brain/", "--as-of", "2026-10-10", "-o", "mileage.html"], work)
     for as_of, n in (("2026-07-10", 1), ("2026-07-20", 2)):
         out = run([py, "-I", "-c", f"import factblock; print(factblock.context('brain/', 'mileage rate', as_of='{as_of}', valid_at='2026-07-05', limit={n}))"], work)

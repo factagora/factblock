@@ -6,16 +6,27 @@
 
 Represent temporal causal knowledge graphs in portable files, reusable across AI agents, analytics, and visualizations.
 
-![FactBlock in 40 seconds: reads as of a date, a causal chain, a claim replaced not overwritten, a verdict that arrives later, and the hindsight leak without a clock. Real data from samples/cramer and samples/rates.](https://raw.githubusercontent.com/factagora/factblock/main/samples/demo.gif)
+"The Team plan includes 10 seats." "We ship SSO in Q3." Who said it, when, on what basis, and did it change? FactBlock keeps that, so you do not build it.
 
-"The Team plan includes 10 seats." "We ship SSO in Q3." Who said it, when, on what basis, and did it change? FactBlock keeps that for you, so you do not build it yourself.
+![FactBlock in 40 seconds: reads as of a date, a causal chain, a claim replaced not overwritten, a verdict that arrives later, and the hindsight leak without a clock. Real data from samples/cramer and samples/rates.](https://raw.githubusercontent.com/factagora/factblock/main/samples/demo.gif)
 
 ```bash
 pip install --pre factblock
 factblock sample --policies irs/                                 # the IRS business mileage rate, 2022 to 2026, as CSV
 factblock import irs/mileage.csv --backfill -o brain/
 factblock import irs/mileage-2026-07.csv --backfill -o brain/    # 76 cents from July 1, announced July 13
-factblock recall brain/ "mileage rate" --as-of 2026-07-20 --valid-at 2026-07-05 --limit 1
+factblock recall brain/ "mileage rate" --as-of 2026-07-10 --limit 1   # asked July 10: 72.5 (76 not announced yet)
+factblock recall brain/ "mileage rate" --as-of 2026-07-20 --limit 2   # asked July 20: 76, and 72.5 marked replaced
+```
+
+```
+irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 72.5 cents per mile.
+1 of 6 matching   as of 2026-07-10  hidden: 1 node, 1 edge  known_at declared by a writer: 11 rows in 6 batches
+
+irs-2026-07  claim       2026-07-13  The IRS business standard mileage rate is 76 cents per mile.
+irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 72.5 cents per mile.
+                           replaced 2026-07-01 by irs-2026-07: The IRS business standard mileage rate is 76 cents per mile.
+2 of 7 matching   as of 2026-07-20  hidden: nothing  known_at declared by a writer: 13 rows in 7 batches
 ```
 
 ## In force from one day, announced on another
@@ -259,6 +270,8 @@ p1,2026-01-10,,,The Team plan costs $30 per user per month.,
 p2,2026-02-20,2026-03-15,,The Team plan costs $36 per user per month.,p1
 ```
 
+`factblock import plans.csv --backfill -o kb/` writes them. `--backfill` reads a row without `known_at` as known when it was said; without it, as known today, so a read of an earlier day does not see it.
+
 `said_at` (or `asserted_at`) is when it was said, `effective_from` (or `valid_from`, default `said_at`) when it takes effect, `known_at` when you learned it, `replaces` the id it supersedes. A row with `target`, `outcome` and `decided_at` is a verdict. Any other column goes into the payload. In Python, any dicts with the format's own names will do:
 
 ```python
@@ -296,7 +309,7 @@ Format, not platform. Apache-2.0. tckg is one writer of this format; nothing her
 
 ## Status
 
-`1.0-draft.1`. Works today: `import` (CSV or JSONL rows, no model), `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](https://github.com/factagora/factblock/tree/main/factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `track-record`, `timeline`, `graph`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. On PyPI as `1.0.0a11` (`pip install --pre factblock`). The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
+`1.0-draft.1`. Works today: `import` (CSV or JSONL rows, no model), `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](https://github.com/factagora/factblock/tree/main/factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `track-record`, `timeline`, `graph`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. An alpha on PyPI (`pip install --pre factblock`). The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
 
 ```bash
 uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
