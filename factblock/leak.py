@@ -33,7 +33,9 @@ def leak(bundle, questions, *, asked_key: str = "asked_at", evidence_key: str = 
     """questions: a JSONL path or dicts of {id?, asked_at, evidence: [block id, ...]}. A date-only asked_at
     means the start of that day (UTC), so a block learned later that day counts as a leak. A question without
     asked_at or an evidence list raises ValueError; ids the bundle lacks are listed under `missing`.
-    `leaked_blocks` counts citations (a block cited by two leaking questions counts twice); each question
+    `leaked_blocks` counts citations (a block cited by two leaking questions counts twice). A leaked citation's
+    `reason` is `known_later` (hindsight) or `not_in_force` (known, but not in force at the question's valid_at);
+    `known_later_questions` counts the questions with at least one `known_later` citation. Each question
     carries `day_only` when its asked_at had no time. asked_key and evidence_key name those fields when your
     question set calls them something else (e.g. evidence_key="cited_ids")."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
@@ -59,5 +61,6 @@ def leak(bundle, questions, *, asked_key: str = "asked_at", evidence_key: str = 
         out.append({"id": q.get("id", i), "asked_at": t.isoformat(), "day_only": _day_only(q["asked_at"]), "evidence": len(q["evidence"]), "leaked": leaked, "missing": missing})
     n = len(out)
     bad = sum(1 for q in out if q["leaked"])
-    return {"questions": n, "leaked_questions": bad, "leak_rate": round(bad / n, 4) if n else 0.0,
+    later = sum(1 for q in out if any(l["reason"] == "known_later" for l in q["leaked"]))
+    return {"questions": n, "leaked_questions": bad, "known_later_questions": later, "leak_rate": round(bad / n, 4) if n else 0.0,
             "leaked_blocks": sum(len(q["leaked"]) for q in out), "missing_blocks": sum(len(q["missing"]) for q in out), "per_question": out}

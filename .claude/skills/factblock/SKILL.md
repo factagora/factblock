@@ -16,6 +16,7 @@ factblock import kb.csv -o brain/ --backfill                                    
 factblock extract notes.txt --observed-at 2026-03-14 -o brain/ --provider gemini   # text in, dated blocks out
 factblock extract items.jsonl -o brain/ --provider gemini --backfill                # one {text, observed_at, speaker?, source?} per line
 factblock sample brain/                                                             # a small bundle to try reads on
+factblock sample --policies irs/                                                    # the IRS mileage rates as two CSVs: import irs/mileage.csv, then irs/mileage-2026-07.csv (both --backfill)
 ```
 
 `--provider fake` needs no model (one block per sentence). `--backfill` means "known when it was said", for past material; without it the blocks are known now.
@@ -30,12 +31,21 @@ Verdict, resolution: the same thing, a row in `resolutions.jsonl` (`outcome` is 
 import factblock
 ctx = factblock.context("brain/", "refund policy", as_of="2026-04-10")   # prompt lines, as known then
 r = factblock.recall("brain/", "refund policy", as_of="2026-04-10")      # same, as dicts: items[i]["superseded_by"], ["verdict"], ["known_at"]
+r = factblock.recall("brain/", "mileage rate", as_of="2026-07-10", valid_at="2026-07-05")   # as known on the filing day, in force on the trip day (default valid_at = as_of)
 r = factblock.recall("brain/", "what does it cost", as_of="2026-04-10", embed=factblock.embedder("gemini"))   # by meaning too
 w = factblock.why("brain/", r["items"][0]["id"], as_of="2026-04-10")     # causes, effects, replacements of one block
 s = factblock.scan("brain/", as_of="2026-04-10")                         # everything visible, as Arrow tables (.nodes, .edges, .resolutions)
 ```
 
 `recall` and `context` return every kind of statement (claims, predictions, your own kinds such as `commitment`) and leave out entities, factors, timeseries and episodes; `kinds=(...)` narrows it and `result["excluded"]` counts what was left out. Matching is keyword-based over the statement and payload text (a shared 4-letter stem counts), so query with the words the statements use; `""` lists everything. `verdict=` filters by the latest visible verdict: an outcome (`did_not` for a prediction, `broken` for a commitment), `"open"`, `"resolved"`, or `"overdue"` (past its deadline, no verdict). Items carry `due` (deadline ahead) or `ended` (passed), and `verdict`, `superseded_by`, `upcoming` when they apply; absent keys mean they do not. Announced changes not in force yet come back as `item["upcoming"]` (on the block they will replace) or in `result["upcoming"]`.
+
+To record what an answer rested on, write the answer as a block and one `SUPPORTS` edge from each block it used; `why` follows `SUPPORTS` (and causal and temporal edges), not `DERIVED_FROM`. Later, `why("brain/", "answer-1", as_of="2026-07-20")` lists each relied-on block (`support`) and the block that replaced it (`successor`). Leave `valid_at` out there: the answer itself was not said yet on the trip day, so `valid_at="2026-07-05"` hides it.
+
+```python
+at = "2026-07-10T15:00:00Z"
+factblock.write_bundle({"nodes": [{"id": "answer-1", "kind": "claim", "statement": "Reimburse the July 5 trip at 72.5 cents a mile.", "asserted_at": at, "known_at": at}],
+                        "edges": [{"source_id": "irs-2026-01", "target_id": "answer-1", "edge_type": "SUPPORTS", "asserted_at": at, "known_at": at}]}, "brain/", append=True)
+```
 
 `as_of` accepts `'2026-04-10'` (the end of that day, UTC), an ISO timestamp, a `date` or a `datetime`. Every result carries a `certificate`: what the read hid because it was learned later (`masked`) or not in force (`not_in_force`).
 
@@ -61,6 +71,7 @@ t.save("out.html")                                                             #
 ```bash
 factblock validate brain/                    # 13 checks, all ok
 factblock leak brain/ questions.jsonl        # answers that used blocks learned after the question (date-only asked_at = start of that day); --asked-key/--evidence-key for other field names
+# each leaked citation has a reason: known_later (hindsight) or not_in_force (known, but not in force at the question's valid_at); known_later_questions counts hindsight only
 factblock to-parquet brain/ brain-pq/        # DuckDB, Spark
 factblock sync brain/ https://tckg.factagora.com --space user:me   # hosted ledger, both ways ($TCKG_TOKEN)
 ```

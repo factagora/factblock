@@ -5,6 +5,10 @@
 ### Added
 - `docs/guides/`: three guides titled by the problem a developer searches for (a RAG answering with a rate that changed, what an AI answer rested on and what changed since, evaluating an agent only on what was known), each on the IRS mileage data with code, expected output and what it does not do. `tests/test_guides.py` runs them as written.
 
+### Changed
+- `factblock leak` and `leak()` count hindsight apart from timing: the result has `known_later_questions` (questions citing a block learned after they were asked), and the CLI summary splits the leaking questions into learned later and only not in force when both occur.
+- The agent skill covers what agents had to find in `--help` or the source: `factblock sample --policies`, `recall(..., valid_at=)` for the trip day apart from the filing day, recording what an answer rested on with `SUPPORTS` edges and reading it back with `why`, and the two leak reasons.
+
 ## 1.0.0a14 (2026-10-11)
 
 The first screen is the developer's flow on official data: import the IRS mileage rate, add a change, read as of a day, draw it.

@@ -307,7 +307,9 @@ def main():
                 at = lambda s: s[:16].replace("T", " ") if any(l["known_at"][:10] == q["asked_at"][:10] for l in q["leaked"]) else s[:10]  # noqa: E731
                 print(f"{q['id']}: asked {at(q['asked_at'])}{' (date only, read as 00:00 UTC)' if q['day_only'] else ''}, " + ", ".join(f"{l['id']} known {at(l['known_at'])} ({l['reason']})" for l in q["leaked"])
                       + (f", missing {q['missing']}" if q["missing"] else ""))
-        print(f"{r['leaked_questions']}/{r['questions']} questions leak ({r['leak_rate']:.0%}), {r['leaked_blocks']} citation{'s' if r['leaked_blocks'] != 1 else ''} of blocks learned after the question"
+        nif = r["leaked_questions"] - r["known_later_questions"]
+        print(f"{r['leaked_questions']}/{r['questions']} questions leak ({r['leak_rate']:.0%}), {r['leaked_blocks']} citation{'s' if r['leaked_blocks'] != 1 else ''} of blocks learned after the question or not in force"
+              + (f" ({r['known_later_questions']} learned later, {nif} only not in force)" if nif else "")
               + (f", {r['missing_blocks']} evidence ids not in the bundle" if r["missing_blocks"] else ""))
         sys.exit(1 if r["leaked_questions"] or r["missing_blocks"] else 0)   # an id the bundle lacks cannot be checked
     elif a.cmd == "validate":
