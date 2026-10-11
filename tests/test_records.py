@@ -117,7 +117,7 @@ with tempfile.TemporaryDirectory() as tmp:
 s = factblock.scan(pathlib.Path(__file__).resolve().parents[1] / "samples" / "rates", "2025-01-01")
 assert {r["target_id"]: r["value"] for r in s.to_dicts("resolutions")}["c1"] in ("true", "false") and isinstance(s.to_dicts()[0].get("payload", {}), dict)
 assert factblock.__version__ and factblock.__version__[0].isdigit()
-with tempfile.TemporaryDirectory() as d:   # the README's first screen: the IRS mileage rate, with a retroactive change
+with tempfile.TemporaryDirectory() as d:   # the README quickstart and "In force from one day": the IRS mileage rate, with a retroactive change
     cli = lambda *args: subprocess.run([sys.executable, "-m", "factblock", *args], cwd=d, check=True, capture_output=True, text=True).stdout  # noqa: E731
     cli("sample", "--policies", "irs/")
     cli("import", "irs/mileage.csv", "--backfill", "-o", "brain/")

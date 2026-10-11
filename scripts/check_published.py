@@ -60,9 +60,12 @@ with tempfile.TemporaryDirectory() as d:
 
     # the block written for coding agents (tests/test_readme_agents.py runs it against the checkout)
     section = readme.split("## For coding agents", 1)[1].split("\n## ", 1)[0]
+    setup = section.split("```bash\n", 1)[1].split("```", 1)[0]
     code = section.split("```python\n", 1)[1].split("```", 1)[0]
     (work / "agents").mkdir()
-    run([cli, "sample", "brain/"], work / "agents")
+    for line in setup.splitlines():
+        if line.startswith("factblock "):
+            run([cli, *line.split("#")[0].split()[1:]], work / "agents")
     out = run([py, "-I", "-c", code], work / "agents")
-    assert "replaced 2024-09-18 by" in out, out
+    assert "replaced 2026-07-01 by" in out, out
 print(f"PASS published: factblock {version} from PyPI runs the README's first screen, both examples and the coding-agents block as shown")

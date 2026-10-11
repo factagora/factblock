@@ -38,4 +38,24 @@ as of 2026-07-20  hidden: nothing  known_at declared by a writer: 4 rows in 4 ba
 
 As of July 10 the answer rests on the 72.5-cent rate and nothing replaces it; the certificate says one link was hidden because it was learned later. As of July 20 the same walk shows the rate it rested on has a successor, 76 cents. The answer was right with what was known, and is out of date now. `factblock.why(...)` returns the same chain as rows, so an agent can list its answers whose support has a successor and correct them.
 
+The same walk follows causes too. On the sample bundle, as of October 2024:
+
+```bash
+factblock sample rates/
+```
+
+```text
+$ factblock why rates/ c3 --as-of 2024-10-01
+subject: c3  2024-06-20  Housing demand falls as mortgages track yields
+    cause (CAUSES): c2  2024-04-10  Bond yields rise after the rate hike
+        cause (CAUSES): c1  2024-03-20  The Fed raises interest rates
+            successor (SUPERSEDES): c4  2024-09-18  The Fed cuts interest rates
+as of 2024-10-01  hidden: nothing  known_at declared by a writer: 4 rows in 3 batches
+
+$ factblock why rates/ c3 --as-of 2024-05-01
+c3: not_yet   as of 2024-05-01  hidden: 1 node
+```
+
+As of May 2024, `c3` was not known yet, so there is no chain to walk. Add `--json` to any read for the machine form.
+
 **What it does not do.** It does not decide that an answer is wrong. It shows what the answer rested on and what happened to those blocks; a verdict on the answer is your own row (`resolutions.jsonl`). The links are the ones you write; FactBlock does not infer them.
