@@ -21,6 +21,8 @@ r2 = factblock.leak(RATES, [{"asked_at": "2024-10-01", "evidence": ["c4", "zzz"]
                             {"asked_at": "2024-10-01", "valid_at": "2024-06-01", "evidence": ["c4"]}])   # c4 known, but not in force in June
 assert r2["per_question"][0]["missing"] == ["zzz"] and r2["per_question"][0]["leaked"] == [] and r2["per_question"][0]["id"] == 0
 assert r2["per_question"][1]["leaked"][0]["reason"] == "not_in_force"
+assert (r2["leaked_questions"], r2["known_later_questions"]) == (1, 0), r2   # not in force is counted apart from hindsight
+assert r["known_later_questions"] == 1, r
 assert factblock.leak(RATES, [])["leak_rate"] == 0.0
 
 # a question the check cannot read must fail loudly, not pass as leak-free
