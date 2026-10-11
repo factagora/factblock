@@ -1,5 +1,5 @@
-"""The factblock command. `factblock --help` lists the subcommands in the order you meet them:
-sample, extract, import, scan, recall, why, resolve, timeline, graph, leak, validate, sync, then the projections and adapters.
+"""The factblock command. `factblock --help` lists the subcommands by what you do with them (GROUPS): start, write,
+read, check, advanced. `demo` runs but is not listed.
 Reads print for people; `--json` prints the same answer as JSON."""
 import argparse
 import json
@@ -97,13 +97,20 @@ def _print_resolve(k, r):
     print(_cert(r["certificate"]))
 
 
+GROUPS = {"start": "sample", "write": "import, extract", "read": "recall, scan, track-record, timeline   (every read takes --as-of)",
+          "check": "leak, validate", "advanced": "why, graph, resolve, sync, to-parquet, to-claimreview, to-okf, from-factcheck"}
+
+
 def main():
-    p = argparse.ArgumentParser(prog="factblock", description="An open format for claims and their history: agent memory that tracks claims, evidence and changes, in a folder, read as of any instant.")
+    p = argparse.ArgumentParser(prog="factblock", description="An open format for claims and their history: agent memory that tracks claims, evidence and changes, in a folder, read as of any instant.",
+                                formatter_class=argparse.RawDescriptionHelpFormatter, epilog="\n".join(
+                                    ["commands:"] + [f"  {g:<9} {names}" for g, names in GROUPS.items()]
+                                    + ["", "factblock <command> -h says what one does. Start here: factblock sample --policies irs/"]))
     p.add_argument("--version", action="version", version=f"factblock {__version__}")
-    sub = p.add_subparsers(dest="cmd", metavar="command")
+    sub = p.add_subparsers(dest="cmd", metavar="command", help="one of the commands below")
 
     def cmd(name, help_, as_of=True, valid_at=True, json_=True):
-        s = sub.add_parser(name, help=help_, description=help_)
+        s = sub.add_parser(name, description=help_)
         s.add_argument("bundle", help="the bundle directory")
         if as_of:
             s.add_argument("--as-of", required=True, help="the instant to read as of (date or ISO 8601); nothing learned later is shown")
@@ -113,11 +120,10 @@ def main():
             s.add_argument("--json", action="store_true", help="print the answer as JSON")
         return s
 
-    s = sub.add_parser("sample", help="copy the sample bundle (six dated claims, a reversal, three verdicts) into a folder, or with --policies the IRS mileage rates as CSVs to import",
-                       description="copy the sample bundle into a folder; with --policies, the IRS business mileage rate as two CSVs (2022 to January 2026, and the July 2026 change announced after it took effect) to import yourself")
+    s = sub.add_parser("sample", description="copy the sample bundle into a folder; with --policies, the IRS business mileage rate as two CSVs (2022 to January 2026, and the July 2026 change announced after it took effect) to import yourself")
     s.add_argument("out", help="folder to create, e.g. brain/")
     s.add_argument("--policies", action="store_true", help="the IRS mileage rate CSVs instead of the bundle")
-    e = sub.add_parser("extract", help="text in, dated blocks and their links appended to a bundle", description="text in, dated blocks and their links appended to a bundle")
+    e = sub.add_parser("extract", description="text in, dated blocks and their links appended to a bundle")
     e.add_argument("source", help="a text file, - for stdin, or a .jsonl with one {text, observed_at, speaker?, source?, known_at?} per line")
     e.add_argument("--observed-at", help="when it was said or written (ISO 8601); required unless each .jsonl line has its own")
     e.add_argument("-o", "--out", required=True, help="bundle directory; created or appended to")
@@ -128,8 +134,7 @@ def main():
     e.add_argument("--known-at", help="when you learned it; default now")
     e.add_argument("--backfill", action="store_true", help="known_at = observed_at: material from the past, known when it was said")
     e.add_argument("--namespace", default="local")
-    im = sub.add_parser("import", help="rows you already have (CSV or JSONL) in, dated blocks and verdicts appended to a bundle; no model",
-                        description="rows you already have (CSV or JSONL) in, dated blocks and verdicts appended to a bundle. "
+    im = sub.add_parser("import", description="rows you already have (CSV or JSONL) in, dated blocks and verdicts appended to a bundle. "
                                     "Statement columns: id, statement|text, asserted_at|said_at, valid_from|effective_from, valid_to|effective_to|due, "
                                     "known_at, kind, replaces (id;id), anything else goes to payload. "
                                     "Verdict columns: target, outcome, decided_at, known_at, resolver, method, evidence (url;url).")
@@ -174,7 +179,7 @@ def main():
     k.add_argument("--asked-key", default="asked_at", help="the field holding when each question was asked; default asked_at")
     k.add_argument("--evidence-key", default="evidence", help="the field holding the cited block ids; default evidence")
     cmd("validate", "the conformance checks of SPEC.md section 2; exit 1 if any fails", as_of=False, valid_at=False, json_=False)
-    y = sub.add_parser("sync", help="folder <-> a hosted ledger, both ways, by identity; known_at travels as batches", description="folder <-> a hosted ledger (tckg), both ways")
+    y = sub.add_parser("sync", description="folder <-> a hosted ledger (tckg), both ways, by identity; known_at travels as batches")
     y.add_argument("bundle")
     y.add_argument("url", help="the ledger, e.g. https://tckg.factagora.com")
     y.add_argument("--space", help="whose memory this is on the ledger; rows that carry their own space keep it")
@@ -186,9 +191,9 @@ def main():
     cr.add_argument("--base-url", help="each review's url becomes <base-url>/<block id>")
     ok = cmd("to-okf", "the blocks visible as of an instant, as an OKF bundle (markdown + frontmatter)", json_=False)
     ok.add_argument("out", help="directory to write")
-    c = sub.add_parser("to-parquet", help="the same bundle in the Parquet profile, for DuckDB, Spark, Databricks", description="JSONL bundle to the Parquet profile")
+    c = sub.add_parser("to-parquet", description="the same bundle in the Parquet profile, for DuckDB, Spark, Databricks")
     c.add_argument("bundle"); c.add_argument("out")
-    fc = sub.add_parser("from-factcheck", help="published fact-checks in (Google Fact Check Tools API shape), dated claims with dated verdicts out", description="fact-checks in, dated claims with dated verdicts out")
+    fc = sub.add_parser("from-factcheck", description="published fact-checks in (Google Fact Check Tools API shape), dated claims with dated verdicts out")
     fc.add_argument("-o", "--out", required=True, help="bundle directory; created or appended to")
     fc.add_argument("--query", help="search the live API; needs --api-key or $FACTCHECK_API_KEY")
     fc.add_argument("--language", help="BCP-47 filter for --query, e.g. en or ko")
@@ -196,14 +201,13 @@ def main():
     fc.add_argument("--api-key")
     fc.add_argument("--from-json", help="a saved claims:search response, or a JSON array of claims")
     fc.add_argument("--namespace", default="factcheck")
-    sub.add_parser("demo", help="an animated walkthrough of a bundle, for screens and recordings (pip install --pre 'factblock[demo]')", add_help=False)
+    sub.add_parser("demo", add_help=False)   # runnable, not listed: it is for recordings
     if sys.argv[1:2] == ["demo"]:      # its own argument parser; Rich is an optional extra
         from .demo import main as demo
         return demo(sys.argv[2:])
     a = p.parse_args()
     if not a.cmd:                       # bare `factblock`: show what it can do, not an error
         p.print_help()
-        print("\nStart here: factblock sample brain/ && factblock scan brain/ --as-of 2024-05-01")
         return
     out_json = lambda d: print(json.dumps(d, indent=1, default=str))  # noqa: E731
 
