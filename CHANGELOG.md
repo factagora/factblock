@@ -7,6 +7,9 @@
 
 ### Changed
 - `factblock leak` and `leak()` count hindsight apart from timing: the result has `known_later_questions` (questions citing a block learned after they were asked), and the CLI summary splits the leaking questions into learned later and only not in force when both occur.
+- `factblock import` says when rows without `known_at` were recorded as known now, which hides them from reads of an earlier day, and points to `--backfill` for past material.
+- `factblock recall` with nothing found says why in one line: matching blocks said by then but recorded later (with the `--backfill` hint), or no block with those words (try other words or `--embed`).
+- A missing model extra (`extract`, `recall --embed`) prints its install line and exits 1, without a traceback.
 - The agent skill covers what agents had to find in `--help` or the source: `factblock sample --policies`, `recall(..., valid_at=)` for the trip day apart from the filing day, recording what an answer rested on with `SUPPORTS` edges and reading it back with `why`, and the two leak reasons.
 
 ## 1.0.0a14 (2026-10-11)

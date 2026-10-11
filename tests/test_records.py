@@ -4,6 +4,7 @@ as-of reads use exactly the dates in the columns; write_bundle declares batches 
 input alone, and refuses to write an invalid bundle. Run: uv run python tests/test_records.py"""
 import copy
 import pathlib
+import importlib.util
 import subprocess
 import sys
 import tempfile
@@ -127,4 +128,18 @@ with tempfile.TemporaryDirectory() as d:   # the README's first screen: the IRS 
     assert "72.5 cents" in before and "76 cents" in after, (before, after)   # announced July 13, in force from July 1
     assert "72.5 cents" in factblock.context(brain, "mileage rate", as_of="2026-07-20", valid_at="2026-06-20", limit=1)
     assert "changes 2022-07-01 to" in factblock.context(brain, "mileage rate", as_of="2022-06-20", limit=1)
-print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies (IRS mileage) imports and reads as the README shows, retroactive change included")
+with tempfile.TemporaryDirectory() as d:   # the README's rows, imported without --backfill: an empty read says why
+    cli = lambda *args: subprocess.run([sys.executable, "-m", "factblock", *args], cwd=d, check=True, capture_output=True, text=True).stdout  # noqa: E731
+    (pathlib.Path(d) / "plans.csv").write_text("id,said_at,effective_from,known_at,text,replaces\np1,2026-01-10,,,The Team plan costs $30 per user per month.,\n"
+                                               "p2,2026-02-20,2026-03-15,,The Team plan costs $36 per user per month.,p1\n")
+    assert "2 rows without known_at recorded as known now" in cli("import", "plans.csv", "-o", "kb/")
+    out = cli("recall", "kb/", "Team plan", "--as-of", "2026-04-01")
+    assert "0 of 0 matching" in out and "2 matching blocks were said by 2026-04-01 but recorded" in out and "--backfill" in out, out
+    assert "known now" not in cli("import", "plans.csv", "--backfill", "-o", "kb2/")
+    assert "said by" not in cli("recall", "kb2/", "Team plan", "--as-of", "2026-01-01")   # not said yet: nothing to suggest
+    out = cli("recall", "kb2/", "price", "--as-of", "2026-04-01")   # the data says "costs"
+    assert "no block has these words" in out and "--embed" in out, out
+    assert "no block has these words" not in cli("recall", "kb2/", "Team plan", "--as-of", "2026-01-01")
+    p = subprocess.run([sys.executable, "-m", "factblock", "recall", "kb2/", "x", "--as-of", "2026-04-01", "--embed", "openai"], cwd=d, capture_output=True, text=True)
+    assert importlib.util.find_spec("openai") or p.returncode != 0 and "Traceback" not in p.stderr and "pip install" in p.stderr, p.stderr   # a missing extra: its message, no traceback
+print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies (IRS mileage) imports and reads as the README shows, retroactive change included; an import without known_at and an empty recall say why (learned later, or no such words), a missing model extra prints its fix without a traceback")

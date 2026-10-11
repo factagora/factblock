@@ -10,6 +10,8 @@ import sys
 
 from . import __version__, Bundle, embedder, TckgStore, extract, from_records, graph, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, track_record, validate, why, write_bundle, write_parquet
 from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
+from .bundle import parse_instant
+from .recall import THINGS, _hits, _terms
 
 # the wheel carries samples/rates at factblock/samples/rates (pyproject force-include); a checkout has it at the repo root
 SAMPLES = next((d for d in (pathlib.Path(__file__).parent / "samples", pathlib.Path(__file__).resolve().parents[1] / "samples") if (d / "rates").exists()), None)
@@ -246,6 +248,12 @@ def main():
         added = [x - y for x, y in zip(count(), before)]
         same = len(r["nodes"]) + len(r["edges"]) + len(r["resolutions"]) - sum(added)
         print(f"{a.out}: +{added[0]} blocks, +{added[1]} replaced, +{added[2]} verdicts" + (f", {same} already there" if same else ""))
+        # rows with no known_at of their own got the manifest's exported_as_of (now); say so, or a read of the past finds nothing
+        now = r["manifest"]["exported_as_of"]
+        stamped = sum(1 for x in r["nodes"] + r["resolutions"] if not a.backfill and not a.known_at and x["known_at"] == now)
+        if stamped:
+            print(f"{stamped} row{'s' if stamped != 1 else ''} without known_at recorded as known now ({now[:10]}), reads as of an earlier day do not see "
+                  f"{'them' if stamped != 1 else 'it'}. Past material? Import into a new folder with --backfill.")
     elif a.cmd == "scan":
         r = scan(a.bundle, a.as_of, a.valid_at)
         if a.json:
@@ -256,7 +264,8 @@ def main():
         else:
             _print_scan(r)
     elif a.cmd == "recall":
-        r = recall(a.bundle, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else None, verdict=a.verdict,
+        b = Bundle(a.bundle)
+        r = recall(b, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else None, verdict=a.verdict,
                    embed=embedder(a.embed) if a.embed else None)
         if a.json:
             out_json(r)
@@ -275,6 +284,15 @@ def main():
             print(f"{len(r['items'])} of {r['matched']} matching   {_cert(r['certificate'])}")
             if r["excluded"]:
                 print("left out by kind: " + ", ".join(f"{n} {k}" for k, n in r["excluded"].items()) + " (--all-kinds to include)")
+            elif not r["matched"] and not r["upcoming"] and not a.verdict:   # nothing found: say why, in one line
+                t, terms = parse_instant(r["as_of"]), _terms(a.query)
+                found = [n for n in b.nodes if n["kind"] not in THINGS and (not terms or _hits(terms, n))]
+                late = [n for n in found if n["asserted_at"] <= t < n["known_at"]]   # said by then, recorded after
+                if late:
+                    print(f"{len(late)} matching block{'s were' if len(late) != 1 else ' was'} said by {r['as_of'][:10]} but recorded "
+                          f"{min(n['known_at'] for n in late).date().isoformat()}. If you imported past material, import it into a new folder with --backfill.")
+                elif terms and not found:
+                    print("no block has these words; try other words, or --embed gemini (or openai) to match by meaning")
     elif a.cmd == "why":
         r = why(a.bundle, a.node_id, a.as_of, a.valid_at, a.depth)
         out_json(r) if a.json else _print_why(r)
@@ -360,7 +378,7 @@ def run():
         main()
     except BrokenPipeError:        # `factblock scan ... | head`
         sys.stderr.close()
-    except (ValueError, FileNotFoundError) as e:   # bad input: the message says what to fix, a traceback adds nothing
+    except (ValueError, FileNotFoundError, ImportError) as e:   # bad input or a missing extra: the message says what to fix, a traceback adds nothing
         sys.exit(f"factblock: error: {e}")
 
 
