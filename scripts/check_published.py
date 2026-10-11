@@ -42,7 +42,11 @@ with tempfile.TemporaryDirectory() as d:
     run([cli, "sample", "--policies", "irs/"], work)
     run([cli, "import", "irs/mileage.csv", "--backfill", "-o", "brain/"], work)
     run([cli, "import", "irs/mileage-2026-07.csv", "--backfill", "-o", "brain/"], work)
-    assert "76 cents" in run([cli, "recall", "brain/", "mileage rate", "--as-of", "2026-07-20", "--valid-at", "2026-07-05", "--limit", "1"], work)
+    for as_of, n, rate in (("2026-07-10", "1", "72.5 cents"), ("2026-07-20", "2", "76 cents")):
+        out = run([cli, "recall", "brain/", "mileage rate", "--as-of", as_of, "--limit", n], work)
+        assert rate in out.splitlines()[0], out
+        for line in out.splitlines():
+            assert line in readme, f"README lacks the recall line for {as_of}: {line}"
     assert "7 statements" in run([cli, "timeline", "brain/", "--as-of", "2026-10-10", "-o", "mileage.html"], work)
     for as_of, n in (("2026-07-10", 1), ("2026-07-20", 2)):
         out = run([py, "-I", "-c", f"import factblock; print(factblock.context('brain/', 'mileage rate', as_of='{as_of}', valid_at='2026-07-05', limit={n}))"], work)
@@ -56,9 +60,12 @@ with tempfile.TemporaryDirectory() as d:
 
     # the block written for coding agents (tests/test_readme_agents.py runs it against the checkout)
     section = readme.split("## For coding agents", 1)[1].split("\n## ", 1)[0]
+    setup = section.split("```bash\n", 1)[1].split("```", 1)[0]
     code = section.split("```python\n", 1)[1].split("```", 1)[0]
     (work / "agents").mkdir()
-    run([cli, "sample", "brain/"], work / "agents")
+    for line in setup.splitlines():
+        if line.startswith("factblock "):
+            run([cli, *line.split("#")[0].split()[1:]], work / "agents")
     out = run([py, "-I", "-c", code], work / "agents")
-    assert "replaced 2024-09-18 by" in out, out
+    assert "replaced 2026-07-01 by" in out, out
 print(f"PASS published: factblock {version} from PyPI runs the README's first screen, both examples and the coding-agents block as shown")

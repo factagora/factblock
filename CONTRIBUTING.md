@@ -22,6 +22,10 @@ what you changed, or a new `tests/test_<thing>.py` and a line in `.github/workfl
 - **A new writer or reader** (an adapter for another store or feed): `factblock/adapters/<name>.py`,
   one test with a synthetic fixture under `tests/fixtures/`, a line in SPEC.md section 10. The one rule
   every writer keeps is section 6: never invent `known_at`; declare a backfill batch instead.
+- **A new store for `sync`**: two methods, `pull(as_of)` and `push(manifest, nodes, edges)` (`factblock/sync.py`,
+  the `Store` protocol). `TckgStore` is the one for tckg over HTTP; `tests/test_sync.py` has a forty-line
+  in-memory one that shows the single rule a store has to keep: declare the bundle's batches as your own
+  backfill batches, never adopt an imported row as learned now. A SQLite, Neo4j, or warehouse store is the same two methods.
 - **A new projection** (another standard a bundle should speak): `factblock/<name>.py`, a subsection
   under SPEC.md section 9 with the mapping table and what the projection loses.
 - **Extraction rules** live in `factblock/profiles/claims/` as three files, not in code, so that other

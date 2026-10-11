@@ -6,39 +6,52 @@
 
 Represent temporal causal knowledge graphs in portable files, reusable across AI agents, analytics, and visualizations.
 
-![FactBlock in 40 seconds: reads as of a date, a causal chain, a claim replaced not overwritten, a verdict that arrives later, and the hindsight leak without a clock. Real data from samples/cramer and samples/rates.](https://raw.githubusercontent.com/factagora/factblock/main/samples/demo.gif)
+"The Team plan includes 10 seats." "We ship SSO in Q3." Who said it, when, on what basis, and did it change? FactBlock keeps that, so you do not build it.
 
-"The Team plan includes 10 seats." "We ship SSO in Q3." Who said it, when, on what basis, and did it change? FactBlock keeps that for you, so you do not build it yourself.
+It is files in a folder; [factagora.ai](https://factagora.ai) hosts the same files when you want to share them ([below](#same-files-hosted)).
+
+![FactBlock in 40 seconds: reads as of a date, a causal chain, a claim replaced not overwritten, a verdict that arrives later, and the hindsight leak without a clock. Real data from samples/cramer and samples/rates.](https://raw.githubusercontent.com/factagora/factblock/main/samples/demo.gif)
 
 ```bash
 pip install --pre factblock
 factblock sample --policies irs/                                 # the IRS business mileage rate, 2022 to 2026, as CSV
 factblock import irs/mileage.csv --backfill -o brain/
 factblock import irs/mileage-2026-07.csv --backfill -o brain/    # 76 cents from July 1, announced July 13
-factblock recall brain/ "mileage rate" --as-of 2026-07-20 --valid-at 2026-07-05 --limit 1
+factblock recall brain/ "mileage rate" --as-of 2026-07-10 --limit 1   # asked July 10: 72.5 (76 not announced yet)
+factblock recall brain/ "mileage rate" --as-of 2026-07-20 --limit 2   # asked July 20: 76, and 72.5 marked replaced
+```
+
+```
+irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 72.5 cents per mile.
+1 of 6 matching   as of 2026-07-10  hidden: 1 node, 1 edge
+
+irs-2026-07  claim       2026-07-13  The IRS business standard mileage rate is 76 cents per mile.
+irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 72.5 cents per mile.
+                           replaced 2026-07-01 by irs-2026-07: The IRS business standard mileage rate is 76 cents per mile.
+2 of 7 matching   as of 2026-07-20  hidden: nothing
 ```
 
 ## In force from one day, announced on another
 
-A trip on July 5, 2026. The IRS raised the rate to 76 cents from July 1, but announced it on July 13. A claim filed on July 10 gets 72.5 cents; the same claim re-checked on July 20 gets 76. The day of the trip and the day you ask are two clocks, and a date filter has one:
+A trip on July 5, 2026: the IRS raised the rate to 76 cents from July 1 but announced it on July 13. The day of the trip and the day you ask are two clocks, and a date filter has one. `valid_at` is the trip, `as_of` the asking:
 
 ```python
-factblock.context("brain/", "mileage rate", as_of="2026-07-10", valid_at="2026-07-05", limit=1)
-# - 2025-12-29: The IRS business standard mileage rate is 72.5 cents per mile. (in force from 2026-01-01; source: https://www.irs.gov/newsroom/irs-sets-2026-business-standard-mileage-rate-at-725-cents-per-mile-up-25-cents)
-
+import factblock
 factblock.context("brain/", "mileage rate", as_of="2026-07-20", valid_at="2026-07-05", limit=2)
 # - 2026-07-13: The IRS business standard mileage rate is 76 cents per mile. (in force from 2026-07-01; source: https://www.irs.gov/irb/2026-29_irb)
 # - 2025-12-29: The IRS business standard mileage rate is 72.5 cents per mile. (in force from 2026-01-01; source: https://www.irs.gov/newsroom/irs-sets-2026-business-standard-mileage-rate-at-725-cents-per-mile-up-25-cents)
 #   replaced 2026-07-01 by: The IRS business standard mileage rate is 76 cents per mile. (announced 2026-07-13)
 ```
 
-Every rate links to the IRS release it came from. The same files draw the history: `factblock timeline brain/ --as-of 2026-10-10 -o mileage.html`.
-
-![The IRS business mileage rate from 2022 to 2026, each rate replaced by the next](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/irs-mileage-timeline.png)
+Asked on July 10 with the same `valid_at` and `limit=1`, you get 72.5 cents and nothing replacing it. Every rate links to the IRS release it came from.
 
 [`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent) asks five support questions of a made-up company on the day they were asked (a price announced before it takes effect, a policy memo that arrived late, a promise and whether it was kept): a date filter puts a stale answer in the prompt on all five, FactBlock on none.
 
 ## Judged later, counted honestly
+
+```bash
+git clone https://github.com/factagora/factblock && cd factblock   # this sample is in the repository, not the package
+```
 
 ```
 $ factblock track-record samples/cramer --as-of 2026-10-01
@@ -48,208 +61,9 @@ on record before it was resolved: 0 of 779; 779 written later from a cited sourc
 baseline (779 calls with a return): saying up every time would hit 54%; following the calls made +5.2% a call, +1.4% over SPY
 ```
 
-Two years of a TV commentator's market calls: right about as often as saying "up" every time, yet +1.4% a call over the market ([`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis)).
+Two years of a TV commentator's market calls ([`samples/cramer`](https://github.com/factagora/factblock/tree/main/samples/cramer)): right about as often as saying "up" every time, yet +1.4% a call over the market ([`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis)).
 
-## Guides
-
-- [Your RAG answers with a rate that changed](https://github.com/factagora/factblock/blob/main/docs/guides/stale-policy-in-rag.md)
-- [Show what an AI answer rested on, and what changed since](https://github.com/factagora/factblock/blob/main/docs/guides/answer-evidence-history.md)
-- [Evaluate an agent only on what was known at the time](https://github.com/factagora/factblock/blob/main/docs/guides/evaluate-as-of.md)
-
-Each one runs as written on the IRS data above, with its expected output and what it does not do.
-
-## How it reads
-
-```bash
-factblock sample rates/                                # a bundle: six dated claims, a reversal, three verdicts
-factblock track-record rates/ --as-of 2025-01-01      # how claims, predictions and promises turned out
-factblock scan rates/ --as-of 2024-05-01              # what was known that day, and what was hidden
-factblock why rates/ c3 --as-of 2024-10-01            # the causal chain behind a block
-factblock resolve rates/ belief:fed:direction --as-of 2024-10-01
-factblock import kb.csv --backfill -o brain/          # rows you already have: id, text, said_at, effective_from, known_at, replaces
-factblock import crm.csv --backfill -o brain/ --map Claim=text,Date=said_at   # your own column names
-factblock extract transcript.txt --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/   # prose, through your model key
-```
-
-```
-$ factblock why rates/ c3 --as-of 2024-10-01
-subject: c3  2024-06-20  Housing demand falls as mortgages track yields
-    cause (CAUSES): c2  2024-04-10  Bond yields rise after the rate hike
-        cause (CAUSES): c1  2024-03-20  The Fed raises interest rates
-            successor (SUPERSEDES): c4  2024-09-18  The Fed cuts interest rates
-as of 2024-10-01  hidden: nothing  backfilled: 4 rows in 3 batches
-```
-
-Run the same command `--as-of 2024-05-01` and the chain stops at `c2`, because `c3` was not known yet. Add `--json` to any read for the machine form.
-
-```python
-import factblock
-print(factblock.context("rates/", "interest rates", as_of="2024-10-01"))
-# - 2024-09-18: The Fed cuts interest rates
-# - 2024-03-20: The Fed raises interest rates (learned 2024-04-15)
-#   replaced 2024-09-18 by: The Fed cuts interest rates
-#   verdict: true (decided 2024-05-01 by process:tckg-resolver)
-# - 2024-04-10: Bond yields rise after the rate hike (learned 2024-04-15)
-# (as of 2024-10-01)
-```
-
-That string goes into your agent's prompt. The old claim is still there, marked as replaced, with the verdict it had as of that day; ask `as_of="2025-01-01"` and the verdict reads `false`, because it was re-resolved in December. A date filter would show both claims side by side with nothing to say which one stands. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as pyarrow tables.
-
-A bundle is a folder of plain files. Commit it to git, query it with DuckDB, hand it to another agent, or [sync it with a hosted ledger](#same-files-hosted). Nothing here needs a server.
-
-## What comes out
-
-Two years of one public figure's statements, as files. [`samples/cramer`](https://github.com/factagora/factblock/tree/main/samples/cramer) is Jim Cramer on CNBC, 2024-09 to 2026-09: 2,091 blocks, 1,169 links he drew between them, 779 priced calls scored at their horizon. Every block links to the recording and the timestamp.
-
-![Following only his best subjects looks like +9.3% a call. Picked with what was known at the time, it makes +4.9%.](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/backtest.png)
-
-```
-$ factblock scan samples/cramer --as-of 2025-01-01 | head -1
-as of 2025-01-01  hidden: 1775 nodes, 1025 edges, 753 resolutions  not in force: 15 nodes  backfilled: 471 rows in 52 batches
-
-$ factblock why samples/cramer 1b77a1a885470207 --as-of 2026-09-10
-subject: 1b77a1a885470207  2025-07-17  The current data center buildout is the largest construction boom since World War II.
-    effect (CAUSES): c43aac6a842836bf  2025-07-17  Lead contractors such as ABB and Legrand are receiving strong data center orders.
-        effect (CAUSES): 041ef1dfd5dbb6df  2025-07-17  Companies involved in the data center buildout, such as Eaton and Parker-Hannifin, are receiving a large number of new orders.
-            effect (CAUSES): 2751ba237ecd5415  2025-07-17  Parker-Hannifin is a good stock to own.
-            effect (CAUSES): 7d3af08ba4f4f027  2025-07-17  Eaton is a good stock to own.
-```
-
-A call and its verdict carry separate clocks, so the same read gives different answers on different days:
-
-```
-66027d5985bf9605  prediction  2024-09-11  Nvidia's business is currently growing, not slowing down.   NVDA, up
-  verdict: came_true   decided 2024-12-10   NVDA +23.3% over 90 days   known 2024-12-10
-```
-
-As of 2024-11-01 the call is open. As of 2024-12-10 it came true. As of 2024-09-10 it does not exist yet. `to-claimreview samples/cramer --as-of 2025-06-01` writes the 197 verdicts known by then as schema.org JSON-LD.
-
-Every block carries two clocks: **asserted_at**, when it was said (`--observed-at` for `extract`), and **known_at**, when your system learned it. By default that is now, so a 2024 transcript extracted today is hidden from a 2024 read; `--backfill` declares it known when it was said, which is what you want for material from the past. `--provider fake` splits sentences without a model, enough to see the files; `gemini` and `openai` do the real extraction with your key. Every edge carries a type with a family (causal, argumentative, temporal) and the speaker's own confidence. Nothing is a chunk, nothing is a bare triple; the unit is a dated statement someone made.
-
-## When
-
-Memory that cannot answer "what did I know on that date" leaks the future into every evaluation and every backtest. FactBlock reads are always **as of** an instant:
-
-```python
-import factblock
-r = factblock.scan("rates/", as_of="2024-05-01")
-r.nodes                 # pyarrow.Table: only blocks known by 2024-05-01
-r.certificate           # {'as_of': ..., 'masked': {'node': 4, 'edge': 2}, 'backfill': {'batches': 1, 'rows': 3}}
-```
-
-The certificate says how many rows were hidden because they were learned later, and which rows were backfilled from the past under a declared batch. An answer with masking is a correct answer for that instant, and it says so.
-
-A statement that gets corrected or reversed is not overwritten. The new block points at the old one with `SUPERSEDES`, both keep their intervals, and a read as of a date in between still sees the old one. That is how "when did they change their mind" stays answerable.
-
-## Why
-
-Edges are the speaker's reasoning, not co-occurrence: `CAUSES`, `CONTRIBUTING_FACTOR`, `TRIGGERS`, `PREVENTS`, `SUPPORTS`, `CONTRADICTS`, `CONCURRENT_SIGNAL`, `SUPERSEDES`. `why` walks them from a block to the given depth, as of an instant, and names the role at every hop (`cause`, `effect`, `successor`, `contradiction`), so the chain never includes a reason that was not yet known.
-
-Declared facts make conflicts explicit. Declare `belief:fed:direction` with a policy (`latest_valid`, `latest_observed`, `source_priority`, `strict`) and `resolve` returns one value or the reason there is none: `no_data`, `not_yet`, `no_value_at`, `unresolved_conflict`. It never guesses.
-
-## Timelines
-
-Once your data is a bundle, one call draws what happened to each statement over time, as known on a day you pick.
-
-```python
-t = factblock.timeline("examples/promises/brain", as_of="2026-05-10", group_by="customer")
-t                                                  # in Jupyter, the chart; hover for the history and block id, click for the source
-t.save("promises.html")                            # .html needs nothing; .png and .svg need factblock[viz]
-```
-
-![Three sales promises grouped by customer: one kept, one broken, one open, as known on 10 May 2026](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline-bars.png)
-
-One bar per statement, from the day it was said to the day it was replaced, judged or due, coloured by what became of it. The rest of its story (took effect, learned late, replaced by what, every verdict with its date) is in the tooltip and in `t.claims` and `t.events`. Read as of an earlier day and the verdicts, replacements and statements learned after it are not drawn.
-
-Add a numeric series (prices, rates, any CSV with a date and a value) and the same statements sit on it where they were said:
-
-```python
-t = factblock.timeline("samples/cramer", as_of="2025-06-30", query="SPY").with_series("sp500.csv", "S&P 500")
-```
-
-![His calls on the market over the S&P 500 as known on 30 June 2025; the four settled calls are labelled, one right and three wrong](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline.png)
-
-Values after the as-of day are dropped too. On the command line: `factblock timeline samples/cramer --as-of 2025-06-30 -q SPY --series sp500.csv -o spy.html`. The chart is a Vega-Lite spec (`t.spec()`), so it renders the same in a notebook, a web page (`react-vega`, `vega-embed`), or as an image in a chat answer. `t.to_html(inline=True)` is one self-contained page that renders with no network; `t.to_markdown()` is the same timeline as text for clients that cannot draw; `t.to_dict()` is the data for any other renderer, versioned as [`schemas/timeline.v1.schema.json`](https://github.com/factagora/factblock/blob/main/schemas/timeline.v1.schema.json). `samples/fed-funds-rate.csv` (FRED DFF, public domain) goes with `samples/rates`; the S&P 500 is licensed, so download it from FRED (`SP500`) yourself.
-
-**In a chat answer.** An MCP server returns `t.to_mcp()` from its tool and serves `factblock.mcp_app_html()` as the resource `ui://factblock/timeline` (mime type and `_meta` in `factblock.timeline.MCP_APP_MIME` and `MCP_APP_META`; the tool's `_meta` is `MCP_APP_TOOL_META`). Hosts that support MCP Apps (Claude, ChatGPT, VS Code) then draw the chart inside the answer, in the host's theme; the rest show the markdown. The [tckg](https://github.com/factagora/tckg) `timeline` tool does exactly this. The same question asked as of two days:
-
-<p><img src="https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline-2025-04-30.png" width="49%" alt="As of 30 April 2025: 11 statements, the last call still open"> <img src="https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/timeline-2025-06-30.png" width="49%" alt="As of 30 June 2025: 16 statements, that call judged wrong on 6 June"></p>
-
-On 30 April the last call ("bigger forces are going to crush the entire market") is open; on 30 June it has been judged wrong and five later calls have appeared. The April answer cannot use what was learned in May.
-
-**What one statement rests on.** `factblock.graph(bundle, block_id, as_of)` draws the links around one statement: what it rests on above it, what came of it below, each row written in full, each dot coloured by what became of the statement. It walks `why()`, so a link or a verdict learned after `as_of` is not drawn.
-
-```python
-g = factblock.graph("samples/cramer", "fdc79a63b9b44a7f", as_of="2025-06-30", depth=2)
-g.nodes, g.edges     # {id, label, type, when, resolution} and {id, from, to, label}: a graph renderer takes them as they are
-```
-
-![What "The stock market is positioned to move higher" rested on and led to, as known on 30 June 2025](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/graph.png)
-
-## Claims it is good at
-
-| Kind | Example | What you can ask |
-|---|---|---|
-| **Prediction** | "Yields keep climbing this year" (podcast, 2024-03-20) | What did this person believe on 2024-03-20? Did it come true? When did they say the opposite? |
-| **Stance** | CEO: "No price increase this year" (Jan), "An increase is unavoidable" (Jul) | How did the company's position move? What did we know in May? |
-| **Fact that gets corrected** | "Q2 revenue was $4.1B", restated to $3.9B six weeks later | `resolve` as of August gives $4.1B, as of October $3.9B, as of July `no_data` |
-| **Commitment** | Sales: "We ship SSO by end of Q3" (to customer A) | Which promises to A are past due and unresolved? Recall them before the support agent answers ([`examples/promises`](https://github.com/factagora/factblock/tree/main/examples/promises)) |
-| **Your AI's own assertions** | Assistant: "Your plan includes 10 seats" (to user B) | Which of last month's assertions are now false? Where did each one come from? |
-
-The common thread: a claim has a speaker, a time, a reason, and a later verdict. FactBlock keeps all four in one structure, and agents, SQL and charts read the same files.
-
-## Use it with your AI
-
-**Recall as context.** `recall` ranks the visible blocks about a query and `context` turns them into prompt lines. Matching is by keyword over the statement and the payload's text (speaker, quote, imported columns): a shared four-letter stem counts, so `cost` finds "costs" but `price` does not; an empty query lists everything, newest first. `verdict="did_not"` (or `"broken"` for a commitment, `"open"`, `"resolved"`, `"overdue"`) narrows to settled, unsettled or past-due blocks, `kinds=` to kinds of your own such as `commitment`. A change that was announced but is not in force yet is shown as `changes <date> to: ...`, so the agent can say "$30, rising to $36 on 15 March". Read with `as_of` set to the decision time (now, or a past instant for a backtest). `scan` returns everything visible as Arrow tables when you want to build your own.
-
-**Analytics.** `to-parquet` writes the Parquet profile. DuckDB reads it with no Python through [`duckdb/factblock.sql`](https://github.com/factagora/factblock/blob/main/duckdb/factblock.sql): `factblock_nodes(bundle, as_of)`, `factblock_edges`, `factblock_certificate`. Spark and Databricks read the same files.
-
-**From an existing graph.** [`factblock/adapters/graphiti.py`](https://github.com/factagora/factblock/blob/main/factblock/adapters/graphiti.py) turns a Graphiti graph into a bundle; the store's own timestamps become declared backfill batches, because a store that stamped time itself is a witness.
-
-**Speak the standards.** `to-claimreview` writes the verdicts visible as of an instant as schema.org ClaimReview JSON-LD; `to-okf` writes the blocks as an Open Knowledge Format bundle (markdown with frontmatter) that catalogs and agents read; `from-factcheck` brings published fact-checks in (Google's Fact Check Tools API shape) as dated claims with dated verdicts, every row under a batch declared at its review date. None of them is the storage format; they are doors.
-
-**Check your evals.** `leak` takes a question set with dates (`{asked_at, evidence: [block ids]}` per line) and reports how many answers depend on blocks learned after the question's date, naming each block and when it became known. A date-only `asked_at` means the start of that day, so news ingested later that day counts as a leak; give a timestamp to be exact. It exits non-zero on a leak, so it fits in CI. On [StreamingQA](https://github.com/factagora/factblock/tree/main/bench/streamingqa) (1,000 sampled questions about dated news, keyword recall, top 5), a recall that ignores time cites a block learned after the question for **79.7% of questions**; the same recall as of the question date cites none, by construction, and says how much it hid. This measures leakage, not answer accuracy: how much right evidence the as-of recall keeps is not measured yet. If your memory benchmark never reports this number, it is measuring hindsight.
-
-**Backtests with ingest lag.** When each item has a publication time and the time your system ingested it, publication is `said_at` and ingestion is `known_at`. Do not pass `--backfill`: it would date every item to its publication and erase exactly the lag you are testing.
-
-```bash
-# news.jsonl: {"id": "n2", "text": "Acme cuts Q1 guidance to $1.0B.", "said_at": "2025-03-20T21:00:00Z", "known_at": "2025-03-21T02:00:00Z", "replaces": "n1"}
-factblock import news.jsonl -o news/
-factblock leak news/ questions.jsonl      # {"id": "q2", "asked_at": "2025-03-21T00:00:00Z", "evidence": ["n2"]} per line; --evidence-key for another name
-```
-
-A date-only `as_of` means the end of that day for reads and the start of that day for `leak`, so build each question's context with its full timestamp and give `leak` the same one. `leak` checks knowledge time and validity. Evidence that was knowable but already replaced when the question was asked is not a leak; `recall` marks it `superseded_by` if you need to catch that too.
-
-## For coding agents
-
-The whole API in one block. It runs as is; `tests/test_readme_agents.py` keeps it that way.
-
-```bash
-pip install --pre factblock
-factblock sample brain/          # or: factblock extract notes.txt --observed-at 2024-03-20 -o brain/ --provider gemini
-```
-
-```python
-import factblock
-print(factblock.context("brain/", "interest rates", as_of="2024-10-01"))   # prompt lines, as known that day
-r = factblock.recall("brain/", "interest rates", as_of="2024-10-01")       # same, as dicts
-c1 = next(i for i in r["items"] if i["id"] == "c1")
-print(c1["superseded_by"]["statement"], c1["verdict"]["outcome"])          # what replaced it, how it was settled
-```
-
-Words are matched as written. To match by meaning too, pass `embed=factblock.embedder("gemini")` (or `"openai"`, or your own function) to `recall`, `context` or `timeline`, or `--embed gemini` on the command line: "price" then finds a block that says "costs". The vectors are an index cached in `brain/.factblock-cache/`, not part of the bundle.
-
-Three rules: every read takes `as_of` (no default); a change is a new block plus `SUPERSEDES`, never an edit; `known_at` is when you learned a row: give it honestly (default now; `--backfill` means when it was said) and let `import`, `extract` or `write_bundle` declare the batch that attests it. Never claim a ledger stamp you did not get. Claude Code users can copy [`.claude/skills/factblock`](https://github.com/factagora/factblock/tree/main/.claude/skills/factblock) into their project; other agents read [`llms.txt`](https://github.com/factagora/factblock/blob/main/llms.txt).
-
-| If you know | In FactBlock |
-|---|---|
-| Mem0 `m.add(messages, user_id=...)` | `factblock import` for rows, `factblock extract` for prose; in Python `from_records(rows)` or `extract(text, observed_at=...)`, then `write_bundle(..., append=True)`; the user is a `space` |
-| Mem0 `m.search(query, user_id=...)` | `recall(bundle, query, as_of=...)` or `context(...)` for the prompt |
-| Graphiti edge `valid_at` / `invalid_at` | `valid_from` / `valid_to` on the block, plus `known_at`: when you learned it |
-| Graphiti `expired_at` (an edge closed later) | the old block stays; a new block `SUPERSEDES` it, known from that moment |
-| A vector store with a date filter | `recall(as_of=..., embed=...)` matches by meaning too, and also hides what was learned later, keeps what was replaced (marked), and attaches verdicts. Vectors are an index cached beside the bundle (`.factblock-cache/`), not part of it |
-
-### Write rows you already have
+## Your own rows
 
 Most memory starts as rows, not prose: a pricing table, a policy log, a CRM export. `import` takes them as they are, no model, and every date comes from your columns.
 
@@ -258,6 +72,8 @@ id,said_at,effective_from,known_at,text,replaces
 p1,2026-01-10,,,The Team plan costs $30 per user per month.,
 p2,2026-02-20,2026-03-15,,The Team plan costs $36 per user per month.,p1
 ```
+
+`factblock import plans.csv --backfill -o kb/` writes them. `--backfill` reads a row without `known_at` as known when it was said; without it, as known today, so a read of an earlier day does not see it. Your own column names: `--map Claim=text,Date=said_at`.
 
 `said_at` (or `asserted_at`) is when it was said, `effective_from` (or `valid_from`, default `said_at`) when it takes effect, `known_at` when you learned it, `replaces` the id it supersedes. A row with `target`, `outcome` and `decided_at` is a verdict. Any other column goes into the payload. In Python, any dicts with the format's own names will do:
 
@@ -268,50 +84,74 @@ factblock.write_bundle({"nodes": [{"id": "r1", "kind": "claim", "statement": "An
 
 `write_bundle` fills the manifest, declares one batch per `known_at`, and validates the whole folder before it writes; a bundle that would fail `validate` raises and is not written.
 
-### Words for verdicts
+Prose instead of rows: `factblock extract notes.txt --observed-at 2024-03-20 --backfill -o brain/` through your model key (`--provider gemini` with `GEMINI_API_KEY` after `pip install --pre 'factblock[gemini]'`, or `openai`), or `--provider fake` to see the files without a model.
 
-| You may say | In the files | Read with |
-|---|---|---|
-| verdict, resolution | a row in `resolutions.jsonl`: `target_id`, `outcome`, `decided_at`, `known_at` | `recall` (`item["verdict"]`), `scan(...).resolutions`, `to-claimreview` |
-| outcome | the verdict's value: `true`, `false`, `came_true`, `did_not`, ... (SPEC 3.6) | |
-| `resolve` | not about verdicts: one value for a declared fact (`fact_key`) by its policy | `factblock resolve` |
+## For coding agents
+
+The whole API in one block. It runs as is; `tests/test_readme_agents.py` keeps it that way.
+
+```bash
+pip install --pre factblock
+factblock sample --policies irs/
+factblock import irs/mileage.csv --backfill -o brain/
+factblock import irs/mileage-2026-07.csv --backfill -o brain/
+```
+
+```python
+import factblock
+print(factblock.context("brain/", "mileage rate", as_of="2026-07-20", limit=2))   # prompt lines, as known that day
+r = factblock.recall("brain/", "mileage rate", as_of="2026-07-20", limit=2)       # the same, as dicts
+old = r["items"][1]
+print(old["statement"], "->", old["superseded_by"]["statement"])                  # what replaced it
+```
+
+That string goes into your agent's prompt. The old rate is still there, marked as replaced. `factblock.recall(...)` returns the same blocks as dicts with a certificate, and `factblock.scan(...)` returns everything visible as Arrow tables. Add `--json` to any read on the command line for the machine form.
+
+Words are matched as written. To match by meaning too, pass `embed=factblock.embedder("gemini")` (or `"openai"`, or your own function) to `recall`, `context` or `timeline`, or `--embed gemini` on the command line: "price" then finds a block that says "costs". The vectors are an index cached in `brain/.factblock-cache/`, not part of the bundle.
+
+Three rules: every read takes `as_of` (no default, [SPEC 4](https://github.com/factagora/factblock/blob/main/SPEC.md#4-read-semantics)); a change is a new block plus `SUPERSEDES`, never an edit; `known_at` is when you learned a row: give it honestly (default now; `--backfill` means when it was said) and let `import`, `extract` or `write_bundle` declare the batch that attests it. Claude Code users can copy [`.claude/skills/factblock`](https://github.com/factagora/factblock/tree/main/.claude/skills/factblock) into their project; other agents read [`llms.txt`](https://github.com/factagora/factblock/blob/main/llms.txt).
+
+| If you know | In FactBlock |
+|---|---|
+| Mem0 `m.add(messages, user_id=...)` | `factblock import` for rows, `factblock extract` for prose; in Python `from_records(rows)` or `extract(text, observed_at=...)`, then `write_bundle(..., append=True)`; the user is a `space` |
+| Mem0 `m.search(query, user_id=...)` | `recall(bundle, query, as_of=...)` or `context(...)` for the prompt |
+| Graphiti edge `valid_at` / `invalid_at` | `valid_from` / `valid_to` on the block, plus `known_at`: when you learned it |
+| Graphiti `expired_at` (an edge closed later) | the old block stays; a new block `SUPERSEDES` it, known from that moment |
+| A vector store with a date filter | `recall(as_of=..., embed=...)` matches by meaning too, and also hides what was learned later, keeps what was replaced (marked), and attaches verdicts. Vectors are an index cached beside the bundle (`.factblock-cache/`), not part of it |
+
+## Charts
+
+`factblock timeline brain/ --as-of 2026-10-10 -o mileage.html` draws the history from the same files.
+
+![The IRS business mileage rate from 2022 to 2026, each rate replaced by the next](https://raw.githubusercontent.com/factagora/factblock/main/examples/analysis/img/irs-mileage-timeline.png)
+
+Over a numeric series, inside a chat answer (MCP Apps), and what one statement rests on: [`docs/timelines.md`](https://github.com/factagora/factblock/blob/main/docs/timelines.md).
+
+## Guides and examples
+
+- [Your RAG answers with a rate that changed](https://github.com/factagora/factblock/blob/main/docs/guides/stale-policy-in-rag.md)
+- [Show what an AI answer rested on, and what changed since](https://github.com/factagora/factblock/blob/main/docs/guides/answer-evidence-history.md)
+- [Evaluate an agent only on what was known at the time](https://github.com/factagora/factblock/blob/main/docs/guides/evaluate-as-of.md): `leak` checks an eval set's evidence against each question's date. On [StreamingQA](https://github.com/factagora/factblock/tree/main/bench/streamingqa), a recall that ignores time cites a block learned after the question for **79.7% of questions**.
+- [`examples/promises`](https://github.com/factagora/factblock/tree/main/examples/promises): sales promises from one CSV; open, past due, broken, kept as of any date.
+- [`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis): DuckDB and Jupyter over `samples/cramer`.
+- DuckDB without Python: `to-parquet`, then [`duckdb/factblock.sql`](https://github.com/factagora/factblock/blob/main/duckdb/factblock.sql) (`factblock_nodes(bundle, as_of)`, `factblock_edges`, `factblock_certificate`). Spark and Databricks read the same files.
+- Standards: `to-claimreview` (schema.org ClaimReview), `to-okf` (Open Knowledge Format), `from-factcheck` (Google Fact Check Tools). None of them is the storage format; they are doors.
+- From an existing graph: [`factblock/adapters/graphiti.py`](https://github.com/factagora/factblock/blob/main/factblock/adapters/graphiti.py) turns a Graphiti graph into a bundle, its timestamps as declared backfill batches.
+
+The three guides run as written on the IRS data above, with expected output and what they do not do.
 
 ## Same files, hosted
 
-A folder is one writer's memory. [factagora.ai](https://factagora.ai) is where a `brain/` meets other people's. Upload it and it comes back with **more rows, never changed rows**: verdicts on predictions whose horizon has passed (mechanical ones from prices and published figures, judgment calls from the community, each with evidence), links to what other people claimed about the same thing (`SUPPORTS`, `CONTRADICTS`), entities resolved across worldviews. Every added row carries its own `known_at`, stamped by the server rather than by you, so a verdict is as replayable as the claim it judges: as of last June, the prediction was still open.
+A folder is one writer's memory. [factagora.ai](https://factagora.ai) is where a `brain/` meets other people's. Upload it and it comes back with **more rows, never changed rows**: verdicts on predictions whose horizon has passed (mechanical ones from prices and published figures, judgment calls from the community, each with evidence), links to what other people claimed about the same thing (`SUPPORTS`, `CONTRADICTS`), entities resolved across worldviews. Every added row carries its own `known_at`, stamped by the server rather than by you, so a verdict is as replayable as the claim it judges: as of last June, the prediction was still open. One ledger is shared by many agents and users, with an MCP address per worldview; `GET /v1/export` hands the folder back at any instant, so you can leave with your files.
 
-It also gives what a folder cannot: one ledger shared by many agents and users, natural-language writes at scale, and an MCP address per worldview, so a user plugs one into Claude or Cursor and reaches nothing else. Browse public worldviews there, or ask one a question as of a date. `GET /v1/export` hands the folder back at any instant. The format is the contract; you can leave with your files.
-
-`factblock sync brain/ <url> --space <space>` moves rows both ways by identity: what only the folder has goes up, what only the ledger has comes down, nothing is changed in place. A row's `known_at` travels as the batch that attests it, so the ledger learns a 2024 transcript as known in 2024, not today, and the folder learns a verdict at the instant the ledger stamped it. Run it again and it is a no-op. `--pull-only` into a folder that does not exist yet clones a space. The token is `$TCKG_TOKEN` or `--token`.
-
-**Bring your own store.** `sync` talks to a store through two methods, `pull(as_of)` and `push(manifest, nodes, edges)` ([`factblock/sync.py`](https://github.com/factagora/factblock/blob/main/factblock/sync.py), the `Store` protocol). `TckgStore` is the one for tckg over HTTP; [`tests/test_sync.py`](https://github.com/factagora/factblock/blob/main/tests/test_sync.py) has a forty-line in-memory one that shows the single rule a store has to keep: declare the bundle's batches as your own backfill batches, never adopt an imported row as learned now. A SQLite, Neo4j, or warehouse store is the same two methods.
+`factblock sync brain/ <url> --space <space>` moves rows both ways by identity: what only the folder has goes up, what only the ledger has comes down, nothing is changed in place. A row's `known_at` travels as the batch that attests it, so the ledger learns a 2024 transcript as known in 2024, not today, and the folder learns a verdict at the instant the ledger stamped it. Run it again and it is a no-op. `--pull-only` into a folder that does not exist yet clones a space. The token is `$TCKG_TOKEN` or `--token`. Another store is two methods: see [CONTRIBUTING.md](https://github.com/factagora/factblock/blob/main/CONTRIBUTING.md).
 
 The same ledger runs closed for companies at [app.factagora.com](https://app.factagora.com): your support logs, your sales promises, your own assistant's assertions, as claims with verdicts, inside your tenant.
 
-## The format
+## The format and status
 
-[`SPEC.md`](https://github.com/factagora/factblock/blob/main/SPEC.md) is short. Six invariants (present, attested, unique, typed, declared, verdicts on statements that were made), a JSONL profile and a Parquet profile, read semantics, and the conformance checks `validate` runs (thirteen of them). Projections to OKF and ClaimReview are described, and `to-claimreview` writes the verdicts visible as of an instant as schema.org JSON-LD, so a bundle can feed systems that speak those.
+[`SPEC.md`](https://github.com/factagora/factblock/blob/main/SPEC.md) is short: six invariants, a JSONL and a Parquet profile, read semantics (what a read hides and the certificate that says so, section 4), edge types and their families (3.3), declared facts and `resolve` (3.7), and the thirteen checks `validate` runs. Nothing is a chunk, nothing is a bare triple; the unit is a dated statement someone made. A bundle is a folder of plain files: commit it to git, query it with DuckDB, hand it to another agent. Nothing here needs a server.
 
 Format, not platform. Apache-2.0. tckg is one writer of this format; nothing here requires it. Contributions are welcome under the DCO: see [CONTRIBUTING.md](https://github.com/factagora/factblock/blob/main/CONTRIBUTING.md).
 
-## Status
-
-`1.0-draft.1`. Works today: `import` (CSV or JSONL rows, no model), `extract` (providers `gemini`, `openai`, and `fake` for offline runs; the claims profile is three files under [`factblock/profiles/claims`](https://github.com/factagora/factblock/tree/main/factblock/profiles/claims) that any language can run), `validate`, `scan`, `recall`, `why`, `leak`, `resolve`, `track-record`, `timeline`, `graph`, `to-parquet`, `sync` with a tckg ledger or a store of your own, `to-claimreview`, `to-okf`, `from-factcheck`, the DuckDB macros, the Graphiti adapter, and the tckg export. Extraction quality on real transcripts is being measured separately; the rules are the ones a dated-claims pipeline has run on hundreds of videos. On PyPI as `1.0.0a11` (`pip install --pre factblock`). The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
-
-```bash
-uv sync --extra gemini                                 # or --extra openai; the fake provider needs nothing
-export GEMINI_API_KEY=...                              # or GOOGLE_GENAI_USE_VERTEXAI=1 GOOGLE_CLOUD_PROJECT=... for Vertex
-echo "The Fed will keep raising rates this year. That means bond yields keep climbing." \
-  | uv run python -m factblock extract - --observed-at 2024-03-20 --speaker "Jim Cramer" --backfill -o brain/
-uv run python -m factblock scan brain/ --as-of 2024-05-01
-```
-
-```bash
-uv sync
-uv run python -m factblock validate samples/rates
-uv run python -m factblock scan samples/rates --as-of 2024-08-01
-uv run python -m factblock why samples/rates c3 --as-of 2024-10-01 --json
-uv run python -m factblock leak samples/rates samples/rates-questions.jsonl
-uv run python -m factblock resolve samples/rates belief:fed:direction --as-of 2024-10-01
-uv run python tests/test_rates.py && uv run python tests/test_why.py && uv run python tests/test_recall.py && uv run python tests/test_leak.py && uv run python tests/test_sync.py && uv run python tests/test_claimreview.py && uv run python tests/test_okf.py && uv run python tests/test_factcheck.py && uv run python tests/test_graphiti_adapter.py && uv run python tests/test_duckdb.py
-```
+An alpha on PyPI (`pip install --pre factblock`), format `1.0-draft.1`. Extraction quality on real transcripts is being measured separately. The format reaches 1.0.0 when a reader or writer maintained outside this repository exists; until then minor versions may change fields and the manifest's `factblock_version` says which one a bundle speaks.
