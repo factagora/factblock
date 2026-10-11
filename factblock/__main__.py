@@ -255,6 +255,7 @@ def main():
         # rows with no known_at of their own got the manifest's exported_as_of (now); say so, or a read of the past finds nothing
         now = r["manifest"]["exported_as_of"]
         stamped = sum(1 for x in r["nodes"] + r["resolutions"] if not a.backfill and not a.known_at and x["known_at"] == now)
+        stamped = min(stamped, added[0] + added[2])   # a re-import writes nothing new
         if stamped:
             print(f"{stamped} row{'s' if stamped != 1 else ''} without known_at recorded as known now ({now[:10]}), reads as of an earlier day do not see "
                   f"{'them' if stamped != 1 else 'it'}. Past material? Import into a new folder with --backfill.")

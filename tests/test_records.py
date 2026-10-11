@@ -137,6 +137,7 @@ with tempfile.TemporaryDirectory() as d:   # the README's rows, imported without
     (pathlib.Path(d) / "plans.csv").write_text("id,said_at,effective_from,known_at,text,replaces\np1,2026-01-10,,,The Team plan costs $30 per user per month.,\n"
                                                "p2,2026-02-20,2026-03-15,,The Team plan costs $36 per user per month.,p1\n")
     assert "2 rows without known_at recorded as known now" in cli("import", "plans.csv", "-o", "kb/")
+    assert "known now" not in cli("import", "plans.csv", "-o", "kb/")   # second import adds nothing
     out = cli("recall", "kb/", "Team plan", "--as-of", "2026-04-01")
     assert "0 of 0 matching" in out and "2 matching blocks were said by 2026-04-01 but recorded" in out and "--backfill" in out, out
     assert "known now" not in cli("import", "plans.csv", "--backfill", "-o", "kb2/")

@@ -36,13 +36,14 @@ irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 7
 A trip on July 5, 2026: the IRS raised the rate to 76 cents from July 1 but announced it on July 13. The day of the trip and the day you ask are two clocks, and a date filter has one. `valid_at` is the trip, `as_of` the asking:
 
 ```python
+import factblock
 factblock.context("brain/", "mileage rate", as_of="2026-07-20", valid_at="2026-07-05", limit=2)
 # - 2026-07-13: The IRS business standard mileage rate is 76 cents per mile. (in force from 2026-07-01; source: https://www.irs.gov/irb/2026-29_irb)
 # - 2025-12-29: The IRS business standard mileage rate is 72.5 cents per mile. (in force from 2026-01-01; source: https://www.irs.gov/newsroom/irs-sets-2026-business-standard-mileage-rate-at-725-cents-per-mile-up-25-cents)
 #   replaced 2026-07-01 by: The IRS business standard mileage rate is 76 cents per mile. (announced 2026-07-13)
 ```
 
-Asked on July 10 with the same `valid_at`, only the 72.5-cent line comes back. Every rate links to the IRS release it came from.
+Asked on July 10 with the same `valid_at` and `limit=1`, you get 72.5 cents and nothing replacing it. Every rate links to the IRS release it came from.
 
 [`examples/support-agent`](https://github.com/factagora/factblock/tree/main/examples/support-agent) asks five support questions of a made-up company on the day they were asked (a price announced before it takes effect, a policy memo that arrived late, a promise and whether it was kept): a date filter puts a stale answer in the prompt on all five, FactBlock on none.
 
