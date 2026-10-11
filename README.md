@@ -21,12 +21,12 @@ factblock recall brain/ "mileage rate" --as-of 2026-07-20 --limit 2   # asked Ju
 
 ```
 irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 72.5 cents per mile.
-1 of 6 matching   as of 2026-07-10  hidden: 1 node, 1 edge  known_at declared by a writer: 11 rows in 6 batches
+1 of 6 matching   as of 2026-07-10  hidden: 1 node, 1 edge
 
 irs-2026-07  claim       2026-07-13  The IRS business standard mileage rate is 76 cents per mile.
 irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 72.5 cents per mile.
                            replaced 2026-07-01 by irs-2026-07: The IRS business standard mileage rate is 76 cents per mile.
-2 of 7 matching   as of 2026-07-20  hidden: nothing  known_at declared by a writer: 13 rows in 7 batches
+2 of 7 matching   as of 2026-07-20  hidden: nothing
 ```
 
 ## In force from one day, announced on another

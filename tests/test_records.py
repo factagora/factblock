@@ -123,6 +123,10 @@ with tempfile.TemporaryDirectory() as d:   # the README's first screen: the IRS 
     cli("import", "irs/mileage.csv", "--backfill", "-o", "brain/")
     cli("import", "irs/mileage-2026-07.csv", "--backfill", "-o", "brain/")
     brain = pathlib.Path(d) / "brain"
+    readme = (pathlib.Path(__file__).resolve().parents[1] / "README.md").read_text()
+    for as_of, n in (("2026-07-10", "1"), ("2026-07-20", "2")):   # the quickstart's output, as the README shows it
+        for line in cli("recall", "brain/", "mileage rate", "--as-of", as_of, "--limit", n).splitlines():
+            assert line in readme, f"README lacks the recall line for {as_of}: {line}"
     before = factblock.context(brain, "mileage rate", as_of="2026-07-10", valid_at="2026-07-05", limit=1)
     after = factblock.context(brain, "mileage rate", as_of="2026-07-20", valid_at="2026-07-05", limit=1)
     assert "72.5 cents" in before and "76 cents" in after, (before, after)   # announced July 13, in force from July 1

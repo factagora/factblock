@@ -21,8 +21,8 @@ def _day(v):
     return v.date().isoformat() if hasattr(v, "date") else str(v)[:10]
 
 
-def _cert(c):
-    m = c.get("masked", {}); b = c.get("backfill")
+def _cert(c, backfill=True):
+    m = c.get("masked", {}); b = backfill and c.get("backfill")
     parts = [f"as of {c['as_of'][:10]}"]
     if c.get("valid_at", "")[:10] != c["as_of"][:10]:
         parts.append(f"valid at {c['valid_at'][:10]}")
@@ -285,7 +285,7 @@ def main():
                     print(f"{'':<25}  changes {_day(i['upcoming']['from'])} to {i['upcoming']['id']}: {i['upcoming'].get('statement')}")
             for u in r["upcoming"]:
                 print(f"{u['id']:<12} {u['kind']:<11} {_day(u['asserted_at'])}  {u['statement']}   (takes effect {_day(u['from'])})")
-            print(f"{len(r['items'])} of {r['matched']} matching   {_cert(r['certificate'])}")
+            print(f"{len(r['items'])} of {r['matched']} matching   {_cert(r['certificate'], backfill=False)}")   # batches: in --json, and in scan
             if r["excluded"]:
                 print("left out by kind: " + ", ".join(f"{n} {k}" for k, n in r["excluded"].items()) + " (--all-kinds to include)")
             elif not r["matched"] and not r["upcoming"] and not a.verdict:   # nothing found: say why, in one line

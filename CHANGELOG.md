@@ -11,6 +11,7 @@
 - `factblock recall` with nothing found says why in one line: matching blocks said by then but recorded later (with the `--backfill` hint), or no block with those words (try other words or `--embed`).
 - Reading `samples/cramer` outside a checkout fails with the `git clone` line to get it, instead of suggesting `factblock sample` (the package does not carry it).
 - `factblock --help` lists the commands in five groups (start, write, read, check, advanced) and ends with `Start here: factblock sample --policies irs/`. `demo` still runs but is not listed. No command is renamed or removed.
+- The `recall` summary line ends at what was hidden; the backfill batch count is still in `--json` and in `scan`.
 - README: the job sentence comes before the GIF, the quickstart reads the same folder as asked on July 10 (72.5 cents, the change not announced yet) and on July 20 (76, with 72.5 marked replaced) and shows the real output, which `scripts/check_published.py` now checks line by line, the rows section shows `import ... --backfill` and what happens without it, and Status says alpha on PyPI instead of a version number.
 - A missing model extra (`extract`, `recall --embed`) prints its install line and exits 1, without a traceback.
 - The agent skill covers what agents had to find in `--help` or the source: `factblock sample --policies`, `recall(..., valid_at=)` for the trip day apart from the filing day, recording what an answer rested on with `SUPPORTS` edges and reading it back with `why`, and the two leak reasons.
