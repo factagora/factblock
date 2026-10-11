@@ -52,6 +52,9 @@ class Bundle:
         self.path = Path(path)
         mpath = self.path / "factblock.json"
         if not mpath.exists():
+            if self.path.parts[-2:] == ("samples", "cramer"):   # in the repository, not in the wheel
+                raise FileNotFoundError(f"no FactBlock bundle at {self.path}: samples/cramer is in the repository, not in the package. "
+                                        "Get it with `git clone https://github.com/factagora/factblock && cd factblock`")
             raise FileNotFoundError(f"no FactBlock bundle at {self.path}: factblock.json is missing. "
                                     f"Make one with `factblock sample {self.path}` or `factblock extract <text> --observed-at <date> -o {self.path}`")
         manifest = json.loads(mpath.read_text())
