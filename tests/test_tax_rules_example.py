@@ -19,4 +19,14 @@ assert ex["applies"]({"applies_if": ""}, {"county": "Orange"})
 
 assert ex["renotify"]("2025-06-01") == []                                          # the law had not changed yet
 assert [x.split(" ")[0] for x in ex["renotify"]("2026-10-12")] == ["memo-client-a"]
-print("PASS tax-rules example: 12/12 without a model; advice flagged only after its basis was replaced")
+# a firm's own files repeat old answers; declared as resting on a rule (based_on), they must not crowd it out
+ex["ROWS"].extend(ex["restatements"]())
+ex["_views"].clear()
+got = {q["id"]: ex["factblock_read"](q)["value"] for q in ex["QUESTIONS"]}
+assert got == want, {k: (got[k], want[k]) for k in want if got[k] != want[k]}
+
+flagged = {x.split(" ")[0] for x in ex["renotify"]("2026-10-12")}
+assert {f"boi-rule-mail-{n}" for n in range(8)} <= flagged, flagged                # replaced after they were sent, too
+assert not any(x.startswith("bonus-2025-mail") for x in flagged), flagged           # no client facts: the 100% rule does not apply
+
+print("PASS tax-rules example: 12/12 without a model, also with 16 stale restatements added; advice flagged only after its basis was replaced")

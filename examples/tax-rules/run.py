@@ -1,8 +1,9 @@
-"""Twelve tax questions a CPA firm gets, three ways to answer them with the same model and the same rules.
+"""Twelve tax questions a CPA firm gets, four ways to answer them with the same model and the same rules.
 
     python examples/tax-rules/run.py              # deterministic part only: what FactBlock picks, no model
-    python examples/tax-rules/run.py --llm        # also ask a model three ways (Gemini; GEMINI_API_KEY or Vertex)
+    python examples/tax-rules/run.py --llm        # also ask a model four ways (Gemini; GEMINI_API_KEY or Vertex)
     python examples/tax-rules/run.py --llm --json
+    python examples/tax-rules/run.py --llm --restatements   # plus sixteen stale reminders from the firm's own files
 
 The rules are public U.S. tax law that changed over time (rules.csv, every row links to its source):
 bonus depreciation (changed retroactively, and only for property acquired after a date), research costs
@@ -11,6 +12,7 @@ on, off, on, then gone for U.S. companies), and a disaster postponement that cov
 
   model only     the question, nothing else
   vector RAG     the four rows closest in meaning to the question, as most retrieval stacks do (time-blind)
+  dated RAG      the same, among rows said on or before the day asked (a timestamp filter)
   FactBlock      the rows that apply to this client (applies_if), read as of the day asked (as_of)
                  for the day the question is about (valid_at), replacements marked
 
@@ -30,6 +32,20 @@ import factblock
 HERE = Path(__file__).resolve().parent
 ROWS = list(csv.DictReader((HERE / "rules.csv").open()))
 QUESTIONS = [json.loads(l) for l in (HERE / "questions.jsonl").open() if l.strip()]
+
+
+def restatements():
+    """What a firm's own files add: the same old answer in reminder after reminder, each dated before the
+    change and saying which rule it rests on (based_on). With --restatements they join the rows."""
+    rows = []
+    for basis, text, days in (
+            ("boi-rule", "Client reminder #{n}: your company must file its BOI report with FinCEN; do not miss the deadline. Delaware C corporations formed before 2024 must file.",
+             ["2024-10-15", "2024-11-01", "2024-11-12", "2024-11-20", "2024-12-02", "2024-12-10", "2024-12-23", "2024-12-24"]),
+            ("bonus-2025", "Planning note #{n}: equipment placed in service in 2025 qualifies for 40% bonus depreciation on the 2025 return.",
+             ["2024-11-05", "2024-12-15", "2025-01-15", "2025-02-01", "2025-02-20", "2025-03-01", "2025-04-10", "2025-05-20"])):
+        rows += [{"id": f"{basis}-mail-{n}", "said_at": d, "effective_from": d, "effective_to": "", "text": text.format(n=n + 1), "value": "",
+                  "applies_if": "", "replaces": "", "based_on": basis, "source": "firm client email"} for n, d in enumerate(days)]
+    return rows
 
 
 def applies(row, facts):
@@ -73,7 +89,8 @@ def view(facts):
 
 def factblock_read(q):
     b = view(q["facts"])
-    r = factblock.recall(b, q["query"], as_of=q["asked_at"], valid_at=q["valid_at"], limit=6)
+    # the pick reads every match, not the prompt's top 6: restatements must not crowd out the rule they repeat
+    r = factblock.recall(b, q["query"], as_of=q["asked_at"], valid_at=q["valid_at"], limit=len(ROWS))
     # the deterministic answer: rows in force and not replaced, the most specific first, then the newest said
     live = [i for i in r["items"] if not i.get("superseded_by")]
     payload = {n["id"]: n.get("payload") or {} for n in factblock.Bundle(b).nodes}
@@ -91,9 +108,12 @@ def renotify(asked_at):
     for m in (r for r in ROWS if r["based_on"]):
         facts = dict(c.split("=") for c in m["applies_if"].split(";") if c)
         facts |= {"acquired": "2025-02-10"} if facts.get("client") == "A" else {}   # the client's file
-        r = factblock.recall(view(facts), "", as_of=asked_at, valid_at=m["effective_from"], limit=100)
-        basis = next((i for i in r["items"] if i["id"] == m["based_on"]), None)
-        if basis and basis.get("superseded_by"):
+        # replaced for the day it was said (a retroactive change) or for today (a change after it was said)
+        basis = None
+        for day in (m["effective_from"], asked_at):
+            r = factblock.recall(view(facts), "", as_of=asked_at, valid_at=day, limit=len(ROWS))
+            basis = next((i for i in r["items"] if i["id"] == m["based_on"] and i.get("superseded_by")), None) or basis
+        if basis:
             out.append(f"{m['id']} ({m['said_at']}): {m['text']}\n    rests on {basis['id']}, replaced by "
                        f"{basis['superseded_by']['id']} (said {basis['superseded_by']['asserted_at'].date()}): {basis['superseded_by']['statement']}")
     return out
@@ -115,8 +135,9 @@ def _embed(text):
     return _client().models.embed_content(model="gemini-embedding-001", contents=[text]).embeddings[0].values
 
 
-def vector_rag(q, k=4):
-    """Time-blind retrieval: embed every row once, take the k nearest to the question."""
+def vector_rag(q, k=4, dated=False):
+    """Retrieval by meaning: embed every row once, take the k nearest to the question. dated=True first drops
+    rows said after the day asked, the timestamp filter a retrieval stack adds when it adds time at all."""
     from factblock.embed import cosine
     cache = HERE / ".factblock-cache" / "vectors.json"   # gitignored, like recall's own cache
     vecs = json.loads(cache.read_text()) if cache.exists() else {}
@@ -126,7 +147,8 @@ def vector_rag(q, k=4):
         cache.parent.mkdir(exist_ok=True)
         cache.write_text(json.dumps(vecs))
     qv = _embed(q["question"])
-    top = sorted(ROWS, key=lambda r: -cosine(qv, vecs[r["id"]]))[:k]
+    pool = [r for r in ROWS if not dated or r["said_at"] <= q["asked_at"]]
+    top = sorted(pool, key=lambda r: -cosine(qv, vecs[r["id"]]))[:k]
     return "\n".join(f"- {r['said_at']}: {r['text']} (source: {r['source']})" for r in top)
 
 
@@ -146,6 +168,8 @@ def ask(q, notes, model="gemini-2.5-flash"):
 
 def main():
     llm, as_json = "--llm" in sys.argv, "--json" in sys.argv
+    if "--restatements" in sys.argv:
+        ROWS.extend(restatements())
     today = dt.date.today().isoformat()
     res = []
     for q in QUESTIONS:
@@ -155,13 +179,14 @@ def main():
             rag = vector_rag(q)
             row["model_only"] = ask(q, None)
             row["vector_rag"] = ask(q, rag)
+            row["dated_rag"] = ask(q, vector_rag(q, dated=True))
             row["factblock_llm"] = ask(q, fb["context"])
             row["rag_context"] = rag
         res.append(row)
     if as_json:
         print(json.dumps({"results": res, "renotify": renotify(today)}, indent=1, default=str))
         return
-    arms = ["factblock_rule"] + (["model_only", "vector_rag", "factblock_llm"] if llm else [])
+    arms = ["factblock_rule"] + (["model_only", "vector_rag", "dated_rag", "factblock_llm"] if llm else [])
     got = lambda r, a: r[a]["value"] if a == "factblock_rule" else r[a]   # noqa: E731
     for r in res:
         print(f"\n{r['id']}  asked {r['asked_at']}  {r['kind']}\n    right answer: {r['answer']}")
