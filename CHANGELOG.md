@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Who vouches (SPEC 3.4): every `known_at` rests on one actor's word, the ledger that stamped the row or the `declared_by` of its batch. `track_record` names it per item (`vouched_by`) and counts the statements on record before their verdict by it (`record_vouched_by`), and `factblock track-record` prints that breakdown under the "on record before" line when the count is not zero. Existing keys and output lines are unchanged.
 - `docs/guides/`: three guides titled by the problem a developer searches for (a RAG answering with a rate that changed, what an AI answer rested on and what changed since, evaluating an agent only on what was known), each on the IRS mileage data with code, expected output and what it does not do. `tests/test_guides.py` runs them as written.
 
 ### Changed

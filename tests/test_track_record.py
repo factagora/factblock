@@ -51,11 +51,13 @@ with tempfile.TemporaryDirectory() as d:
     record = {i["id"]: i["record"] for i in r["items"]}
     assert record == {"p1": "before", "p2": "writer", "k1": "sourced", "p4": None, "p5": None}, record
     assert r["record"] == {"before": 1, "sourced": 1, "writer": 1}
+    assert r["record_vouched_by"] == {"tckg:test": 1} and {i["id"]: i["vouched_by"] for i in r["items"]}["p2"] == "process:factblock-write"
 
     out = subprocess.run([sys.executable, "-m", "factblock", "track-record", d, "--as-of", "2026-07-02", "--by", "speaker"],
                          capture_output=True, text=True, cwd=ROOT, check=True).stdout
     assert "on record before it was resolved: 1 of 3; 1 written later from a cited source" in out, out
     assert "writer's word" in out, out
+    assert "on whose word it was written then: tckg:test 1" in out, out
     picked = factblock.track_record(d, "2026-07-02", ids=["p1", "k1", "c1"])   # the record of calls like these
     assert {i["id"] for i in picked["items"]} == {"p1", "k1"} and picked["left_out"] == 1, picked   # c1: a claim nobody judged
     assert factblock.track_record(d, "2026-07-02", speaker="ANA")["total"]["judged"] == 2
@@ -71,8 +73,21 @@ with tempfile.TemporaryDirectory() as d:
                           capture_output=True, text=True, cwd=ROOT, check=True).stdout
     assert "not listed above" in scan and "track-record" in scan, scan
 
+with tempfile.TemporaryDirectory() as d:   # who vouches: a batch captured before the verdict counts as before, on its declarer's word (SPEC 3.4)
+    early = {"batch": "collector-0105", "declared_known_at": "2026-01-05T00:00:00Z", "reason": "first seen by the collector",
+             "declared_by": "process:collector", "captured_at": "2026-01-05T00:10:00Z"}
+    factblock.write_bundle({"manifest": {"declarations": {"backfills": [early]}}, "nodes": [
+        node("q1", "prediction", "2026-01-05T00:00:00Z", "ana", "2026-03-31T23:59:59Z", {"batch": "collector-0105"}),
+        node("q2", "prediction", "2026-01-05T00:00:00Z", "ana", "2026-03-31T23:59:59Z", LIVE)],
+        "resolutions": [verdict("q1", "came_true", "2026-03-01T00:00:00Z"), verdict("q2", "did_not", "2026-03-01T00:00:00Z")]}, d)
+    r = factblock.track_record(d, "2026-04-01")
+    assert r["record"]["before"] == 2 and r["record_vouched_by"] == {"process:collector": 1, "tckg:test": 1}, r["record_vouched_by"]
+    out = subprocess.run([sys.executable, "-m", "factblock", "track-record", d, "--as-of", "2026-04-01"], capture_output=True, text=True, cwd=ROOT, check=True).stdout
+    assert "on record before it was resolved: 2 of 2\n  on whose word it was written then: process:collector 1, tckg:test 1" in out, out
+
 cramer = factblock.track_record(ROOT / "samples" / "cramer", "2026-10-01")
 assert (cramer["total"]["right"], cramer["total"]["wrong"]) == (426, 353), cramer["total"]
+assert cramer["record"] == {"before": 0, "sourced": 779, "writer": 0} and cramer["record_vouched_by"] == {}, cramer["record"]
 bl = cramer["total"]["baseline"]   # 54.7% right, but "up" every time would have been 53.8%
 assert (bl["n"], bl["always_up_hit_rate"], bl["avg_excess_if_followed"]) == (779, 0.538, 0.0136), bl
 assert "baseline" not in factblock.track_record(ROOT / "samples" / "rates", "2025-01-01")["total"]   # verdicts without a return
@@ -84,4 +99,4 @@ with tempfile.TemporaryDirectory() as d:   # a tckg export carries the verdict v
     assert bl == {"n": 1, "always_up_hit_rate": 0.0, "avg_return_if_followed": 0.04, "avg_excess_if_followed": 0.01}, bl   # short a fall
 assert cramer["record"] == {"before": 0, "sourced": 779, "writer": 0}, cramer["record"]   # backfilled from dated recordings
 
-print("PASS track_record: latest verdict as of, open and overdue, hit rate, on record before vs a cited source vs the writer's word, ids and speaker, baseline (always up, following the calls), CLI, scan hint, cramer 426/353")
+print("PASS track_record: latest verdict as of, open and overdue, hit rate, on record before vs a cited source vs the writer's word, who vouches for each before count, ids and speaker, baseline (always up, following the calls), CLI, scan hint, cramer 426/353")

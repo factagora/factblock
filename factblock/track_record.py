@@ -4,6 +4,7 @@ and which of them were on record before they were resolved.
     r = factblock.track_record("brain/", as_of="2026-07-01", by="speaker")
     r["groups"]      # per speaker: judged, right, wrong, mixed, open, overdue, hit_rate
     r["record"]      # before it was resolved: written then, written later from a cited source, written later on the writer's word
+    r["record_vouched_by"]   # who vouches for the "before" count: {ledger or batch declared_by: n} (SPEC 3.4)
 
 Baseline, when verdicts carry a numeric `return` in their value (a price-horizon resolver writes {return,
 excess_over_spy, direction}): always_up_hit_rate is how often saying "up" every time would have been right on the same
@@ -18,7 +19,9 @@ On record before it was resolved: a row is written when its batch was captured (
 ledger stamped it live. Written by the verdict's decided_at, the statement was on record before it was judged.
 Written later, it was backfilled after the fact: a cited source (a dated recording, an article) can still show it
 was said first, and anyone can check it; with no source it rests on the writer's word, and hindsight is not ruled
-out. A verdict can come after the outcome itself, so this is the floor of what a track record can show, not more."""
+out. A verdict can come after the outcome itself, so this is the floor of what a track record can show, not more.
+"Written then" is only as good as whoever vouches for when the row was written (SPEC 3.4): the ledger that stamped it,
+or the writer that declared its batch. Each item names that actor as vouched_by."""
 from __future__ import annotations
 
 import json
@@ -52,7 +55,9 @@ def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, i
     kind) how many were judged right, wrong or mixed, how many are open or overdue, and the hit rate; plus how many were
     on record before they were resolved. Pass `ids` (say, what a search found) to count only those statements: the
     record of calls like the one in front of you, rather than of everything. `speaker` keeps one speaker's.
-    Returns {"as_of", "by", "groups", "total", "record", "left_out", "items", "certificate"}; left_out counts picked
+    Returns {"as_of", "by", "groups", "total", "record", "record_vouched_by", "left_out", "items", "certificate"};
+    record_vouched_by counts the statements on record before their verdict by who vouches for when they were written
+    (a ledger, or a batch's declared_by), so a reader can tell a hosted ledger's stamp from a writer's word. left_out counts picked
     statements that are neither judged nor a prediction or commitment (a claim nobody has judged)."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
     t = _as_of(as_of)
@@ -78,7 +83,9 @@ def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, i
         due = n.get("valid_to") if n["kind"] in OPEN_KINDS else None
         status = ("overdue" if due and due < t else "open") if not v else "undecidable" if o == "undecidable" else _outcome(o)
         written = n["known_at"]
-        cap = captured.get((n.get("attestation") or {}).get("batch"))
+        att = n.get("attestation") or {}
+        vouched_by = b.backfills.get(att["batch"], {}).get("declared_by") if att.get("batch") else att.get("ledger")
+        cap = captured.get(att.get("batch"))
         if cap is not None:
             written = max(written, cap)
         record = None
@@ -89,7 +96,7 @@ def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, i
                       "direction": p.get("direction") or f.get("direction"), "return": _number(f, "return"), "excess": _number(f, "excess_over_spy"),
                       "group": str(p.get(by, n.get(by)) or "other") if by else None, "status": status,
                       "verdict": o or None, "decided": _day(v["decided_at"]) if v else None, "written": _day(written),
-                      "record": record, "source": _url(p)})
+                      "record": record, "vouched_by": vouched_by, "source": _url(p)})
     items.sort(key=lambda i: (i["said"], i["id"]))
 
     def tally(rows):
@@ -110,7 +117,11 @@ def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, i
     for i in items:
         groups.setdefault(i["group"], []).append(i)
     record = {k: sum(1 for i in items if i["record"] == k) for k in ("before", "sourced", "writer")}
+    vouched = {}
+    for i in items:
+        if i["record"] == "before":
+            vouched[str(i["vouched_by"])] = vouched.get(str(i["vouched_by"]), 0) + 1
     return {"as_of": t.isoformat(), "by": by,
             "groups": [{"group": g, **tally(rows)} for g, rows in sorted(groups.items(), key=lambda x: str(x[0]))] if by else [],
-            "total": tally(items), "record": record, "left_out": left_out, "items": items,
+            "total": tally(items), "record": record, "record_vouched_by": vouched, "left_out": left_out, "items": items,
             "certificate": recall(b, "", as_of, limit=0)["certificate"]}

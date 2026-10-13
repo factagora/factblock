@@ -91,6 +91,8 @@ Attestation = { ledger: actor, batch: string | null }
 
 `ledger` is the actor that stamped `known_at` (a service, a process, a person). When `batch` is set it names an entry in `declarations.backfills`, and `known_at` is that batch's `declared_known_at`; the ledger's own stamp for the row is kept as `captured_at` in the batch record. A reader that shows a backfilled block MUST report it in the certificate.
 
+**Who vouches.** A file cannot prove when its rows were learned; every `known_at` rests on one actor's word. That actor is the row's *voucher*: `attestation.ledger` when the ledger stamped the row (`batch` null), else the `declared_by` of the row's batch. A reader that reports a result resting on `known_at` against another clock, such as how many statements were on record before they were resolved, SHOULD say who vouches for it, so that its reader can weigh each count by that name (a hosted ledger's stamp, a collector's, or a writer's declaration).
+
 ### 3.5 Actors
 
 Actor strings follow one of four shapes. Three are taken from OKF v0.2 so the two formats agree on who did what:
