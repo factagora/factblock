@@ -87,9 +87,8 @@ def latest_facts(manifest: dict) -> dict[str, dict]:
     return {f["fact_key"]: f for f in sorted(facts, key=lambda f: _instant(f["declared_at"]) if f.get("declared_at") else "")}
 
 
-def _same_rule(a, b):
-    return (list(a.get("key_fields") or []), a.get("policy") or "latest_valid", a.get("source_order")) == \
-           (list(b.get("key_fields") or []), b.get("policy") or "latest_valid", b.get("source_order"))
+def _rule(f):
+    return {"key_fields": list(f.get("key_fields") or []), "policy": f.get("policy") or "latest_valid", "source_order": f.get("source_order")}
 
 
 class TckgStore:
@@ -178,7 +177,8 @@ def sync(bundle, store: Store, as_of=None, push=True, pull=True) -> dict:
         out["pushed"] = store.push(manifest, only_local["nodes"], only_local["edges"]) if only_local["nodes"] or only_local["edges"] or new_facts \
             else {"accepted": 0, "skipped": [], "refused": [], "batches": 0}
         out["pushed"].setdefault("facts", 0)
-        out["pushed"]["facts_differ"] = sorted(k for k, f in mine.items() if k in theirs and not _same_rule(f, theirs[k]))
+        out["pushed"]["facts_differ"] = [{"fact_key": k, "local": _rule(mine[k]), "store": _rule(theirs[k])}
+                                         for k in sorted(mine) if k in theirs and _rule(mine[k]) != _rule(theirs[k])]
         out["pushed"]["resolutions_not_pushed"] = len(only_local["resolutions"])   # verdicts are the store's to make
     if pull:
         only_remote = {t: [r for r in remote.get(t, []) if KEYS[t](r) not in have_local[t]] for t in KEYS}

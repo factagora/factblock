@@ -127,7 +127,9 @@ r = factblock.sync(work, t, push=True, pull=False)
 posts = [(p, b) for m, p, b in t.calls if m == "POST"]
 assert [b["fact_key"] for p, b in posts if p == "/v1/facts"] == ["belief:tsla:direction", "belief:nvda:direction"], posts
 assert posts[0][0] == "/v1/facts" and posts[0][1] == {"fact_key": "belief:tsla:direction", "key_fields": ["subject"], "policy": "latest_valid"}, posts[0]
-assert r["pushed"]["facts"] == 1 and r["pushed"]["facts_differ"] == ["belief:fed:direction"], r["pushed"]
+assert r["pushed"]["facts"] == 1 and r["pushed"]["facts_differ"] == [{"fact_key": "belief:fed:direction",
+    "local": {"key_fields": ["subject"], "policy": "latest_valid", "source_order": None},
+    "store": {"key_fields": ["subject"], "policy": "strict", "source_order": None}}], r["pushed"]
 assert [x["fact_key"] for x in r["pushed"]["refused"]] == ["belief:nvda:direction"], r["pushed"]["refused"]
 assert r["store"] == {"namespace": "acme/brain", "rows": 0}, r["store"]
 
@@ -135,7 +137,7 @@ assert r["store"] == {"namespace": "acme/brain", "rows": 0}, r["store"]
 later = {**fed, "key_fields": ["subject", "other"], "policy": "latest_valid", "declared_at": "2026-10-01T00:00:00Z"}
 t = FakeTckg("acme/brain", facts=[later])
 r = factblock.sync(work, t, as_of="2025-01-01", pull=False)
-assert r["pushed"]["facts_differ"] == ["belief:fed:direction"], r["pushed"]
+assert [d["fact_key"] for d in r["pushed"]["facts_differ"]] == ["belief:fed:direction"], r["pushed"]
 assert "belief:fed:direction" not in [b["fact_key"] for m, p, b in t.calls if p == "/v1/facts"] and t.facts == [later], t.calls
 
 # 5c. a folder that does not exist yet, synced both ways with an empty store: nothing to push, an empty clone
@@ -153,5 +155,19 @@ with contextlib.redirect_stdout(out):
         assert e.code in (0, None), e.code
 text = out.getvalue()
 assert "(tenant acme, space other)" in text and "pulled 0 nodes" in text and "had no rows for tenant acme, space other" in text, text
+
+# 6b. CLI push: the summary says what was declared, and a differing rule shows both sides and what to do
+fbmain.TckgStore = lambda url, token, space: FakeTckg(f"acme/{space}", facts=[fed])
+out = io.StringIO()
+sys.argv = ["factblock", "sync", str(work), "https://ledger.test", "--space", "brain", "--token", "k", "--push-only"]
+with contextlib.redirect_stdout(out):
+    try:
+        fbmain.main()
+    except SystemExit as e:
+        assert e.code in (0, None), e.code
+text = out.getvalue()
+assert "declared 2 fact rules (fact_key)" in text, text
+assert ("fact belief:fed:direction: the ledger has key_fields ['subject'], policy strict; the folder has key_fields ['subject'], policy latest_valid. "
+        "Kept the ledger's rule; to use the folder's, declare it again on the ledger (POST /v1/facts).") in text, text
 print("PASS sync: push 9, no-op, pull verdict + store-stamped row, folder valid, re-push declares known_at as a batch, "
       "facts declared once and never redeclared over the ledger's, tenant and space in the CLI line, empty pull explained")
