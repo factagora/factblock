@@ -27,7 +27,7 @@ irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 7
 
 irs-2026-07  claim       2026-07-13  The IRS business standard mileage rate is 76 cents per mile.
 irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 72.5 cents per mile.
-                           replaced 2026-07-01 by irs-2026-07: The IRS business standard mileage rate is 76 cents per mile.
+                           replaced by irs-2026-07 (announced 2026-07-13, in force from 2026-07-01): The IRS business standard mileage rate is 76 cents per mile.
 2 of 7 matching   as of 2026-07-20  hidden: nothing
 ```
 
@@ -40,7 +40,7 @@ import factblock
 factblock.context("brain/", "mileage rate", as_of="2026-07-20", valid_at="2026-07-05", limit=2)
 # - 2026-07-13: The IRS business standard mileage rate is 76 cents per mile. (in force from 2026-07-01; source: https://www.irs.gov/irb/2026-29_irb)
 # - 2025-12-29: The IRS business standard mileage rate is 72.5 cents per mile. (in force from 2026-01-01; source: https://www.irs.gov/newsroom/irs-sets-2026-business-standard-mileage-rate-at-725-cents-per-mile-up-25-cents)
-#   replaced 2026-07-01 by: The IRS business standard mileage rate is 76 cents per mile. (announced 2026-07-13)
+#   replaced by (announced 2026-07-13, in force from 2026-07-01): The IRS business standard mileage rate is 76 cents per mile.
 ```
 
 Asked on July 10 with the same `valid_at` and `limit=1`, you get 72.5 cents and nothing replacing it. Every rate links to the IRS release it came from.
@@ -75,7 +75,7 @@ p2,2026-02-20,2026-03-15,,The Team plan costs $36 per user per month.,p1
 
 `factblock import plans.csv --backfill -o kb/` writes them. `--backfill` reads a row without `known_at` as known when it was said; without it, as known today, so a read of an earlier day does not see it. Your own column names: `--map Claim=text,Date=said_at`.
 
-`said_at` (or `asserted_at`) is when it was said, `effective_from` (or `valid_from`, default `said_at`) when it takes effect, `known_at` when you learned it, `replaces` the id it supersedes. A row with `target`, `outcome` and `decided_at` is a verdict. Any other column goes into the payload. In Python, any dicts with the format's own names will do:
+`said_at` (or `asserted_at`) is when it was said, `effective_from` (or `valid_from`, default `said_at`) when it takes effect, `known_at` when you learned it, `replaces` the id it supersedes, `based_on` the id it rests on (recall then says when that basis was replaced). A row with `target`, `outcome` and `decided_at` is a verdict. Any other column goes into the payload. In Python, any dicts with the format's own names will do:
 
 ```python
 factblock.write_bundle({"nodes": [{"id": "r1", "kind": "claim", "statement": "Annual plans refund within 30 days.",

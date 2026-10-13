@@ -162,6 +162,7 @@ def main():
     rc.add_argument("query", help="words to look for in statements, quotes and speakers; \"\" for every block, newest first")
     rc.add_argument("--verdict", help="only blocks whose latest verdict is this outcome (did_not for a prediction, broken for a commitment), or open (none yet), resolved (any), overdue (past due, no verdict)")
     rc.add_argument("--limit", type=int, default=10)
+    rc.add_argument("--fact-key", action="append", help="only blocks carrying this fact_key (SPEC 3.7); repeat for several")
     rc.add_argument("--embed", choices=["gemini", "openai"], help="also match by meaning, through this embedding model (factblock[gemini] or factblock[openai]); vectors are cached beside the bundle")
     rc.add_argument("--all-kinds", action="store_true", help="also the things statements are about (entity, factor, timeseries, episode); every kind of statement is in by default")
     w = cmd("why", "the chain behind one block as of an instant: causes, effects, successors, contradictions")
@@ -259,12 +260,14 @@ def main():
             p.error("--map takes YOURS=OURS pairs, e.g. --map Claim=statement,Date=said_at")
         r = from_records(read_records(a.source), known_at=a.known_at, backfill=a.backfill, namespace=a.namespace,
                          columns={k.strip(): v.strip() for k, v in pairs})
-        count = lambda: (lambda b: (len(b.nodes), len(b.edges), len(b.resolutions)))(Bundle(a.out)) if (pathlib.Path(a.out) / "factblock.json").exists() else (0, 0, 0)  # noqa: E731
+        # replaced counts SUPERSEDES only; based_on edges (DERIVED_FROM) count toward "already there" but are not replacements
+        count = lambda: (lambda b: (len(b.nodes), sum(e["edge_type"] == "SUPERSEDES" for e in b.edges), len(b.resolutions), len(b.edges)))(Bundle(a.out)) if (pathlib.Path(a.out) / "factblock.json").exists() else (0, 0, 0, 0)  # noqa: E731
         before = count()
         write_bundle(r, a.out, append=True, reason=a.reason)
         added = [x - y for x, y in zip(count(), before)]
-        same = len(r["nodes"]) + len(r["edges"]) + len(r["resolutions"]) - sum(added)
-        print(f"{a.out}: +{added[0]} blocks, +{added[1]} replaced, +{added[2]} verdicts" + (f", {same} already there" if same else ""))
+        same = len(r["nodes"]) + len(r["edges"]) + len(r["resolutions"]) - added[0] - added[2] - added[3]
+        links = added[3] - added[1]   # edges that are not replacements (based_on)
+        print(f"{a.out}: +{added[0]} blocks, +{added[1]} replaced, +{added[2]} verdicts" + (f", +{links} links" if links else "") + (f", {same} already there" if same else ""))
         # rows with no known_at of their own got the manifest's exported_as_of (now); say so, or a read of the past finds nothing
         now = r["manifest"]["exported_as_of"]
         stamped = sum(1 for x in r["nodes"] + r["resolutions"] if not a.backfill and not a.known_at and x["known_at"] == now)
@@ -285,15 +288,20 @@ def main():
     elif a.cmd == "recall":
         b = Bundle(a.bundle)
         r = recall(b, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else None, verdict=a.verdict,
-                   embed=embedder(a.embed) if a.embed else None)
+                   embed=embedder(a.embed) if a.embed else None, fact_key=a.fact_key)
         if a.json:
             out_json(r)
         else:
             for i in r["items"]:
                 print(f"{i['id']:<12} {i['kind']:<11} {_day(i['asserted_at'])}  {i['statement']}" + (f"   ({i['speaker']})" if i.get("speaker") else "")
                       + (f"   due {_day(i['due'])}" if i.get("due") else "") + (f"   ended {_day(i['ended'])}" + ("" if i.get("verdict") else ", no verdict") if i.get("ended") else ""))
+                # announced first when it differs from in force, as context() writes it
+                rep = lambda by, s: (f"replaced by {by} (announced {_day(s['asserted_at'])}, in force from {_day(s['since'])}): " if s.get("asserted_at")  # noqa: E731
+                                     and _day(s["asserted_at"]) != _day(s["since"]) else f"replaced {_day(s['since'])} by {by}: ") + str(s.get("statement"))
                 if i.get("superseded_by"):
-                    print(f"{'':<25}  replaced {_day(i['superseded_by']['since'])} by {i['superseded_by']['id']}: {i['superseded_by'].get('statement')}")
+                    print(f"{'':<25}  " + rep(i["superseded_by"]["id"], i["superseded_by"]))
+                for s in i.get("basis_replaced", ()):
+                    print(f"{'':<25}  rests on {s['id']}, " + rep(s["by"], s))
                 if i.get("verdict"):
                     print(f"{'':<25}  verdict: {i['verdict']['outcome']} ({_day(i['verdict']['decided_at'])})")
                 if i.get("upcoming"):

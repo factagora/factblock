@@ -3,6 +3,7 @@ and context() is prompt-ready lines. Run: uv run python tests/test_recall.py"""
 import pathlib
 import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import factblock  # noqa: E402
@@ -33,4 +34,29 @@ assert "  replaced 2024-09-18 by: The Fed cuts interest rates" in ctx and "  ver
 assert "verdict" not in factblock.context(RATES, "interest rates", "2024-05-01")
 out = subprocess.run([sys.executable, "-m", "factblock", "recall", str(RATES), "rates", "--as-of", "2024-10-01"], capture_output=True, text=True, check=True).stdout
 assert out.startswith("c4") and "of 3 matching" in out, out
-print("PASS recall: ranked by hits and recency, masked by as_of, limit, context lines, replaced/verdict/learned as known at as_of, CLI")
+# fact_key: only blocks carrying that key, whatever words they share with the query
+fk = factblock.recall(RATES, "", "2024-10-01", fact_key="belief:tsla:direction")
+assert sorted(ids(fk)) == ["t1", "t2"], ids(fk)
+assert sorted(ids(factblock.recall(RATES, "", "2024-10-01", fact_key=["belief:tsla:direction", "belief:fed:direction"]))) == ["c1", "c4", "t1", "t2"]
+assert "TSLA" not in factblock.context(RATES, "goes", "2024-10-01", fact_key="belief:fed:direction")
+out = subprocess.run([sys.executable, "-m", "factblock", "recall", str(RATES), "", "--as-of", "2024-10-01", "--fact-key", "belief:tsla:direction"], capture_output=True, text=True, check=True).stdout
+assert "2 of 2 matching" in out, out
+
+# a note resting on a rule (based_on, a DERIVED_FROM edge) says when the rule was replaced, as known at as_of; one hop
+rows = [{"id": "r1", "said_at": "2025-01-01", "text": "The rate is 40%."},
+        {"id": "r2", "said_at": "2025-07-04", "effective_from": "2025-01-20", "text": "The rate is 100%.", "replaces": "r1"},
+        {"id": "m1", "said_at": "2025-03-15", "text": "Your equipment gets the 40% rate.", "based_on": "r1"},
+        {"id": "m2", "said_at": "2025-03-16", "text": "As the note said, 40% rate.", "based_on": "m1"}]
+with tempfile.TemporaryDirectory() as d:
+    factblock.write_bundle(factblock.from_records(rows, backfill=True), d)
+    m = lambda t: next(i for i in factblock.recall(d, "rate", t, valid_at="2025-03-20")["items"] if i["id"] == "m1")  # noqa: E731
+    assert "basis_replaced" not in m("2025-06-01")                                      # the new law was not known yet
+    br = m("2026-01-01")["basis_replaced"]
+    assert [(x["id"], x["by"], x["since"].date().isoformat()) for x in br] == [("r1", "r2", "2025-01-20")], br
+    ctx = factblock.context(d, "rate", "2026-01-01", valid_at="2025-03-20")
+    assert "  rests on r1, replaced by (announced 2025-07-04, in force from 2025-01-20): The rate is 100%." in ctx, ctx
+    assert ctx.count("rests on") == 1, ctx                                              # m2 rests on m1, not replaced: no mark
+    out = subprocess.run([sys.executable, "-m", "factblock", "recall", d, "rate", "--as-of", "2026-01-01", "--valid-at", "2025-03-20"],
+                         capture_output=True, text=True, check=True).stdout
+    assert "rests on r1, replaced by r2 (announced 2025-07-04, in force from 2025-01-20): The rate is 100%." in out, out   # CLI says it as context does
+print("PASS recall: ranked by hits and recency, masked by as_of, limit, context lines, replaced/verdict/learned as known at as_of, CLI, fact_key, basis replaced")

@@ -44,7 +44,8 @@ def _hits(terms, n):
 
 
 def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10,
-           kinds: tuple[str, ...] | None = None, verdict: str | None = None, embed=None) -> dict:
+           kinds: tuple[str, ...] | None = None, verdict: str | None = None, embed=None,
+           fact_key: str | list[str] | None = None) -> dict:
     """Use before an agent answers: the blocks matching `query` as known at `as_of`, ranked, each with what
     replaced it, its verdict, source and known_at. Returns {"items", "matched", "excluded", "certificate", ...}.
     `kinds` None means every kind of statement (claims, predictions, commitments, any kind you use) but not
@@ -55,13 +56,16 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
     horizon or deadline with no verdict). `embed` (factblock.embedder(...), or any fn(list[str]) -> list[list[float]])
     adds meaning to the words: blocks close to the query in meaning match too, and the two rankings are fused
     (reciprocal rank), so "price" finds a block about costs. Vectors are cached beside the bundle (embed.py).
+    `fact_key` (one key or a list, SPEC 3.7) keeps only blocks carrying that key, so a question about one fact is
+    not crowded by blocks that share its words but answer another.
 
     Each item: id, kind, statement, asserted_at, known_at, in_force_from, speaker, source, score, and when they
     apply: superseded_by {id, statement, asserted_at, since}, upcoming {id, statement, asserted_at, from},
-    verdict {outcome, decided_at, resolver}, due (a prediction's or commitment's valid_to, still ahead) or
+    verdict {outcome, decided_at, resolver}, basis_replaced [{id, by, statement, asserted_at, since}] (a block it
+    rests on, by a DERIVED_FROM edge, was replaced as known at as_of), due (a prediction's or commitment's valid_to, still ahead) or
     ended (it has passed). Keys that do not apply are absent."""
     b = bundle if isinstance(bundle, Bundle) else Bundle(bundle)
-    nodes, _, res, cert = visible(b, as_of, valid_at)
+    nodes, edges, res, cert = visible(b, as_of, valid_at)
     terms = _terms(query)
     by_id = {n["id"]: n for n in nodes}
     raw = None
@@ -74,6 +78,23 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
              and n.get("valid_to") is not None and n["valid_to"] <= va]
     wanted = lambda n: n["kind"] not in THINGS if kinds is None else not kinds or n["kind"] in kinds   # noqa: E731
     nodes = nodes + [{**n, "superseded_by": None, "_ended": True} for n in ended]
+    keys = None if fact_key is None else {fact_key} if isinstance(fact_key, str) else set(fact_key)
+    if keys is not None:
+        nodes = [n for n in nodes if n.get("fact_key") in keys]
+    # what each block rests on (DERIVED_FROM edges visible at as_of, valid_at)
+    basis = {}
+    for e in edges:
+        if e["edge_type"] == "DERIVED_FROM":
+            basis.setdefault(e["source_id"], []).append(e["target_id"])
+
+    def replaced(n):
+        """n's successor as an item field; the successor block may not be in force at valid_at, the edge is."""
+        nonlocal raw
+        succ = by_id.get(n["superseded_by"])
+        if succ is None:
+            raw = raw or {x["id"]: x for x in b.nodes}
+            succ = raw.get(n["superseded_by"], {"id": n["superseded_by"]})
+        return {"id": succ["id"], "statement": succ.get("statement"), "asserted_at": succ.get("asserted_at"), "since": n["_replaced_at"]}
     items, excluded = [], {}
     near = {}   # id -> (rank, similarity) for the blocks closest in meaning, when embed is given
     if embed is not None and terms:
@@ -108,12 +129,13 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
             elif n["kind"] in SETTLED and n.get("valid_to"):
                 item["due"] = n["valid_to"]
             if n.get("superseded_by"):
-                succ = by_id.get(n["superseded_by"])
-                if succ is None:   # the replacing edge is visible; its block may not be in force at valid_at
-                    raw = raw or {x["id"]: x for x in b.nodes}
-                    succ = raw.get(n["superseded_by"], {"id": n["superseded_by"]})
-                item["superseded_by"] = {"id": succ["id"], "statement": succ.get("statement"), "asserted_at": succ.get("asserted_at"),
-                                         "since": n["_replaced_at"]}
+                item["superseded_by"] = replaced(n)
+            # Later: basis chain beyond one hop (a note resting on a note whose basis was replaced).
+            # shortcut: a basis not in force at valid_at is not checked; read at its valid_at to see it.
+            gone = [by_id[x] for x in basis.get(n["id"], ()) if by_id.get(x, {}).get("superseded_by")]
+            if gone:
+                item["basis_replaced"] = [{"id": x["id"], "by": (s := replaced(x))["id"], "statement": s["statement"],
+                                           "asserted_at": s["asserted_at"], "since": s["since"]} for x in gone]
             if v:
                 item["verdict"] = {"outcome": v.get("outcome") or v.get("value"), "decided_at": v["decided_at"], "resolver": v.get("resolver")}
             items.append(item)
@@ -138,7 +160,8 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
                 shown[e["target_id"]]["upcoming"] = {"id": s["id"], "statement": s.get("statement"), "asserted_at": s["asserted_at"], "from": e["valid_from"]}
                 attached.add(s["id"])
         upcoming = sorted(({"id": n["id"], "kind": n["kind"], "statement": n.get("statement"), "asserted_at": n["asserted_at"], "from": n["valid_from"]}
-                           for n in pending.values() if n["id"] not in attached and wanted(n) and (_hits(terms, n) if terms else 1)),
+                           for n in pending.values() if n["id"] not in attached and wanted(n)
+                           and (keys is None or n.get("fact_key") in keys) and (_hits(terms, n) if terms else 1)),
                           key=lambda x: x["from"])
     return {"query": query, "as_of": cert["as_of"], "items": items, "matched": matched, "upcoming": upcoming,
             "excluded": excluded, "certificate": cert}
@@ -151,12 +174,13 @@ def _source(s):
 
 
 def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | None = None, limit: int = 10,
-            kinds: tuple[str, ...] | None = None, verdict: str | None = None, ids: bool = False, embed=None) -> str:
+            kinds: tuple[str, ...] | None = None, verdict: str | None = None, ids: bool = False, embed=None,
+            fact_key: str | list[str] | None = None) -> str:
     """Use to put memory into a prompt. The recall as lines: one dated statement per line, indented lines for what happened
     to it since (replaced, about to change, verdict), announced changes not in force yet, then the as-of date. Learned-later and source go on the first line. Never empty:
     when nothing matches it says so, so the model is told it has no memory of this rather than nothing at all.
     ids=True starts each line with its block id in brackets, so a model can cite [id] and you can check the source."""
-    r = recall(bundle, query, as_of, valid_at, limit, kinds, verdict, embed)
+    r = recall(bundle, query, as_of, valid_at, limit, kinds, verdict, embed, fact_key)
     lines = [] if r["items"] or r["upcoming"] else [f"(nothing about {query!r} known as of {r['as_of'][:10]})"]
     for i in r["items"]:
         head = (f"- [{i['id']}] " if ids else "- ") + i["asserted_at"].date().isoformat() + (f" {i['speaker']}:" if i.get("speaker") else ":") + f" {i['statement']}"
@@ -176,7 +200,14 @@ def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | 
             s = i["superseded_by"]
             said = s["asserted_at"].date().isoformat() if s.get("asserted_at") else None
             when = s["since"].date().isoformat()
-            lines.append(f"  replaced {when} by: {s.get('statement') or s['id']}" + (f" (announced {said})" if said and said != when else ""))
+            # announced first: a change said after it took effect (retroactive) reads as the old rule still holding otherwise
+            lines.append(f"  replaced by (announced {said}, in force from {when}): " if said and said != when else f"  replaced {when} by: ")
+            lines[-1] += s.get("statement") or s["id"]
+        for s in i.get("basis_replaced", ()):
+            said = s["asserted_at"].date().isoformat() if s.get("asserted_at") else None
+            when = s["since"].date().isoformat()
+            lines.append(f"  rests on {s['id']}, " + (f"replaced by (announced {said}, in force from {when}): " if said and said != when else f"replaced {when} by: ")
+                         + (s.get("statement") or s["by"]))
         if i.get("upcoming"):
             u = i["upcoming"]
             lines.append(f"  changes {u['from'].date().isoformat()} to: {u['statement'] or u['id']} (announced {u['asserted_at'].date().isoformat()})")

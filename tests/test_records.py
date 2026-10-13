@@ -49,7 +49,7 @@ with tempfile.TemporaryDirectory() as d:
                                        "valid_from": "2026-04-01", "known_at": "2026-02-25"}]}, d / "brain", append=True)
     assert "- 2026-02-25: The Team plan adds audit logs. (takes effect 2026-04-01)" in factblock.context(d / "brain", "audit", "2026-03-01")
     ctx = factblock.context(d / "brain", "costs", "2026-03-20")
-    assert "replaced 2026-03-15 by: The Team plan costs $36 per user per month. (announced 2026-02-20)" in ctx, ctx
+    assert "replaced by (announced 2026-02-20, in force from 2026-03-15): The Team plan costs $36 per user per month." in ctx, ctx
     # a kind of your own is a statement too: recall and context show it; things are left out and counted
     factblock.write_bundle(factblock.from_records([{"id": "c1", "kind": "commitment", "text": "Globex gets audit export by April",
                                                     "said_at": "2026-02-01"}, {"id": "e1", "kind": "entity", "text": "Globex",
@@ -168,4 +168,15 @@ with tempfile.TemporaryDirectory() as d:   # the README's rows, imported without
     assert "demo" not in h and "Start here: factblock sample --policies irs/" in h, h
     p = subprocess.run([sys.executable, "-m", "factblock", "track-record", "samples/cramer", "--as-of", "2026-10-01"], cwd=d, capture_output=True, text=True)
     assert p.returncode != 0 and "git clone https://github.com/factagora/factblock" in p.stderr, p.stderr   # outside a checkout: where to get it
-print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, same input same bytes (captured_at, reason) and a re-run append changes nothing, scan shows batch reasons, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies (IRS mileage) imports and reads as the README shows, retroactive change included; an import without known_at and an empty recall say why (learned later, or no such words), a missing model extra prints its fix without a traceback; samples/cramer outside a checkout says to clone; --help groups the commands")
+# based_on writes DERIVED_FROM edges (and stays in payload); the import line counts only SUPERSEDES as replaced
+with tempfile.TemporaryDirectory() as d:
+    d = pathlib.Path(d)
+    (d / "n.csv").write_text("id,said_at,text,replaces,based_on\nr1,2025-01-01,Rule one.,,\nr2,2025-02-01,Rule two.,r1,\nn1,2025-03-01,A note.,,r1;r2\n")
+    p = subprocess.run([sys.executable, "-m", "factblock", "import", str(d / "n.csv"), "-o", str(d / "b"), "--backfill"], capture_output=True, text=True)
+    assert p.returncode == 0 and "+3 blocks, +1 replaced, +0 verdicts, +2 links" in p.stdout and "already there" not in p.stdout, p.stdout + p.stderr
+    b = factblock.Bundle(d / "b")
+    assert sorted((e["source_id"], e["target_id"], e["edge_type"]) for e in b.edges) == [("n1", "r1", "DERIVED_FROM"), ("n1", "r2", "DERIVED_FROM"), ("r2", "r1", "SUPERSEDES")]
+    assert next(n for n in b.nodes if n["id"] == "n1")["payload"]["based_on"] == "r1;r2"
+    p = subprocess.run([sys.executable, "-m", "factblock", "import", str(d / "n.csv"), "-o", str(d / "b"), "--backfill"], capture_output=True, text=True)
+    assert "+0 blocks, +0 replaced, +0 verdicts, 6 already there" in p.stdout and "links" not in p.stdout, p.stdout + p.stderr
+print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, same input same bytes (captured_at, reason) and a re-run append changes nothing, scan shows batch reasons, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies (IRS mileage) imports and reads as the README shows, retroactive change included; an import without known_at and an empty recall say why (learned later, or no such words), a missing model extra prints its fix without a traceback; samples/cramer outside a checkout says to clone; --help groups the commands; based_on writes DERIVED_FROM")
