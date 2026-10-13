@@ -78,4 +78,32 @@ with tempfile.TemporaryDirectory() as d:
         got = con.execute("SELECT id, superseded_by FROM factblock_nodes(?, ?) ORDER BY id", [str(pq_dir), when]).fetchall()
         assert got == want, (when, len(got), len(want))
         assert con.execute("SELECT masked_nodes FROM factblock_certificate(?, ?)", [str(pq_dir), when]).fetchone()[0] == lib.certificate.get("masked", {}).get("node", 0)
-print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants and under valid_at; verdicts match the library's latest visible verdict; SQL on top; bounded row groups in known_at order read the same")
+# SPEC 3.1, 3.2 namespace: a real Parquet column, the same in scan and the macros on nodes and edges; a file written
+# before the column existed still reads, with namespace null
+TWO = ROOT / "conformance" / "bundles" / "two-namespaces"
+with tempfile.TemporaryDirectory() as d:
+    pq_dir = factblock.write_parquet(TWO, pathlib.Path(d) / "new")
+    assert pq.read_schema(pq_dir / "nodes.parquet").field("namespace").type == "string"
+    assert pq.read_table(pq_dir / "edges.parquet").column("namespace").to_pylist() == ["federalreserve.gov"]
+    con = duckdb.connect()
+    con.execute(factblock.duckdb_sql().read_text())
+    lib = factblock.scan(pq_dir, "2024-10-31")
+    for table in ("nodes", "edges"):
+        key = "id" if table == "nodes" else "source_id"
+        want = sorted((r[key], r.get("namespace")) for r in lib.to_dicts(table))
+        got = sorted(con.execute(f"SELECT {key}, namespace FROM factblock_{table}(?, factblock_day('2024-10-31'))", [str(pq_dir)]).fetchall(), key=str)
+        assert got == sorted(want, key=str), (table, got, want)
+    assert "namespace" in lib.nodes.column_names and lib.nodes.num_rows == 3
+    old = pathlib.Path(d) / "old"
+    old.mkdir()
+    (old / "factblock.json").write_text((pq_dir / "factblock.json").read_text())
+    for table in ("nodes", "edges"):   # the profile as written before namespace: same file, no column
+        t = pq.read_table(pq_dir / f"{table}.parquet")
+        pq.write_table(t.drop_columns(["namespace"]), old / f"{table}.parquet")
+    for table, key in (("nodes", "id"), ("edges", "source_id")):
+        rows = con.execute(f"SELECT {key}, namespace FROM factblock_{table}(?, factblock_day('2024-10-31'))", [str(old)]).fetchall()
+        assert len(rows) == (3 if table == "nodes" else 1) and all(r[1] is None for r in rows), (table, rows)
+    assert all("namespace" not in r for r in factblock.scan(old, "2024-10-31").to_dicts("nodes"))
+    cert = con.execute("SELECT masked_nodes, backfill_rows FROM factblock_certificate(?, factblock_day('2024-09-30'))", [str(old)]).fetchone()
+    assert cert == (1, 0), cert
+print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants and under valid_at; verdicts match the library's latest visible verdict; SQL on top; bounded row groups in known_at order read the same; namespace column on nodes and edges, null in files written before it")

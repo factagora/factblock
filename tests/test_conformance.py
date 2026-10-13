@@ -25,6 +25,9 @@ with tempfile.TemporaryDirectory() as tmp:
         for v in sorted(s.to_dicts("resolutions"), key=lambda v: (v["decided_at"], v["known_at"])):
             latest[v["target_id"]] = v["outcome"]
         assert latest == c["verdicts"], ("python verdicts", why, latest)
+        if "namespaces" in c:
+            got = {r["id"]: r["namespace"] for r in s.to_dicts("nodes") if r.get("namespace") is not None}
+            assert got == c["namespaces"], ("python namespaces", why, got)
 
         pq = parquet.get(c["bundle"]) or str(factblock.write_parquet(bundle, pathlib.Path(tmp) / str(len(parquet))))
         parquet[c["bundle"]] = pq
@@ -34,9 +37,12 @@ with tempfile.TemporaryDirectory() as tmp:
         else:
             rows = con.execute(f"SELECT id, superseded_by FROM factblock_nodes(?, {at})", [pq, c["as_of"]]).fetchall()
         assert sorted([i, s_] for i, s_ in rows) == c["nodes"], ("duckdb", why, sorted(rows))
+        if "namespaces" in c:
+            got = dict(con.execute(f"SELECT id, namespace FROM factblock_nodes(?, {at}) WHERE namespace IS NOT NULL", [pq, c["as_of"]]).fetchall())
+            assert got == c["namespaces"], ("duckdb namespaces", why, got)
         if (pathlib.Path(pq) / "resolutions.parquet").exists():
             got = dict(con.execute(f"SELECT target_id, outcome FROM factblock_verdicts(?, {at})", [pq, c["as_of"]]).fetchall())
         else:
             got = {}
         assert got == c["verdicts"], ("duckdb verdicts", why, got)
-print(f"PASS conformance: python and duckdb agree with {len(cases)} cases (replacement announced before it takes effect, learned late, replaced twice, verdicts)")
+print(f"PASS conformance: python and duckdb agree with {len(cases)} cases (replacement announced before it takes effect, learned late, replaced twice, verdicts, namespace set and absent)")
