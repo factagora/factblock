@@ -7,6 +7,7 @@
 
 ### Changed
 - `factblock leak` and `leak()` count hindsight apart from timing: the result has `known_later_questions` (questions citing a block learned after they were asked), and the CLI summary splits the leaking questions into learned later and only not in force when both occur.
+- Reproducible writes: `write_bundle(..., captured_at=, reason=)` sets the batch record's capture instant and reason, so the same input writes the same bytes, and `factblock import --reason "..."` records where the rows' known_at came from (default still `known_at given by the writer`). `factblock scan` prints the reasons of the batches it read under the certificate line. Appending to a bundle whose manifest has no `exported_as_of` no longer adds `"exported_as_of": null`, so re-running an append changes no byte.
 - `factblock import` says when rows without `known_at` were recorded as known now, which hides them from reads of an earlier day, and points to `--backfill` for past material.
 - `factblock recall` with nothing found says why in one line: matching blocks said by then but recorded later (with the `--backfill` hint), or no block with those words (try other words or `--embed`).
 - Reading `samples/cramer` outside a checkout fails with the `git clone` line to get it, instead of suggesting `factblock sample` (the package does not carry it).
