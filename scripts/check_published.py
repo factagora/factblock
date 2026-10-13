@@ -74,5 +74,5 @@ with tempfile.TemporaryDirectory() as d:
         if line.startswith("factblock "):
             run([cli, *line.split("#")[0].split()[1:]], work / "agents")
     out = run([py, "-I", "-c", code], work / "agents")
-    assert "replaced 2026-07-01 by" in out, out
+    assert "replaced by (announced 2026-07-13, in force from 2026-07-01)" in out, out
 print(f"PASS published: factblock {version} from PyPI runs the README's first screen, both examples, the DuckDB macros and the coding-agents block as shown")

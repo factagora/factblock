@@ -49,7 +49,7 @@ with tempfile.TemporaryDirectory() as d:
                                        "valid_from": "2026-04-01", "known_at": "2026-02-25"}]}, d / "brain", append=True)
     assert "- 2026-02-25: The Team plan adds audit logs. (takes effect 2026-04-01)" in factblock.context(d / "brain", "audit", "2026-03-01")
     ctx = factblock.context(d / "brain", "costs", "2026-03-20")
-    assert "replaced 2026-03-15 by: The Team plan costs $36 per user per month. (announced 2026-02-20)" in ctx, ctx
+    assert "replaced by (announced 2026-02-20, in force from 2026-03-15): The Team plan costs $36 per user per month." in ctx, ctx
     # a kind of your own is a statement too: recall and context show it; things are left out and counted
     factblock.write_bundle(factblock.from_records([{"id": "c1", "kind": "commitment", "text": "Globex gets audit export by April",
                                                     "said_at": "2026-02-01"}, {"id": "e1", "kind": "entity", "text": "Globex",

@@ -54,6 +54,6 @@ with tempfile.TemporaryDirectory() as d:
     br = m("2026-01-01")["basis_replaced"]
     assert [(x["id"], x["by"], x["since"].date().isoformat()) for x in br] == [("r1", "r2", "2025-01-20")], br
     ctx = factblock.context(d, "rate", "2026-01-01", valid_at="2025-03-20")
-    assert "  rests on r1, replaced 2025-01-20 by: The rate is 100%. (announced 2025-07-04)" in ctx, ctx
+    assert "  rests on r1, replaced by (announced 2025-07-04, in force from 2025-01-20): The rate is 100%." in ctx, ctx
     assert ctx.count("rests on") == 1, ctx                                              # m2 rests on m1, not replaced: no mark
 print("PASS recall: ranked by hits and recency, masked by as_of, limit, context lines, replaced/verdict/learned as known at as_of, CLI, fact_key, basis replaced")

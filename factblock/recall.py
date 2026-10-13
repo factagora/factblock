@@ -200,11 +200,14 @@ def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | 
             s = i["superseded_by"]
             said = s["asserted_at"].date().isoformat() if s.get("asserted_at") else None
             when = s["since"].date().isoformat()
-            lines.append(f"  replaced {when} by: {s.get('statement') or s['id']}" + (f" (announced {said})" if said and said != when else ""))
+            # announced first: a change said after it took effect (retroactive) reads as the old rule still holding otherwise
+            lines.append(f"  replaced by (announced {said}, in force from {when}): " if said and said != when else f"  replaced {when} by: ")
+            lines[-1] += s.get("statement") or s["id"]
         for s in i.get("basis_replaced", ()):
             said = s["asserted_at"].date().isoformat() if s.get("asserted_at") else None
             when = s["since"].date().isoformat()
-            lines.append(f"  rests on {s['id']}, replaced {when} by: {s.get('statement') or s['by']}" + (f" (announced {said})" if said and said != when else ""))
+            lines.append(f"  rests on {s['id']}, " + (f"replaced by (announced {said}, in force from {when}): " if said and said != when else f"replaced {when} by: ")
+                         + (s.get("statement") or s["by"]))
         if i.get("upcoming"):
             u = i["upcoming"]
             lines.append(f"  changes {u['from'].date().isoformat()} to: {u['statement'] or u['id']} (announced {u['asserted_at'].date().isoformat()})")

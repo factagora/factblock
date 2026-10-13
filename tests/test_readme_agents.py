@@ -17,5 +17,5 @@ with tempfile.TemporaryDirectory() as d:
         if line.startswith("factblock "):
             subprocess.run([sys.executable, "-m", "factblock", *line.split("#")[0].split()[1:]], cwd=d, check=True, capture_output=True, env=ENV)
     out = subprocess.run([sys.executable, "-c", code], cwd=d, check=True, capture_output=True, text=True, env=ENV).stdout
-assert "replaced 2026-07-01 by" in out and out.strip().endswith("-> The IRS business standard mileage rate is 76 cents per mile."), out
+assert "replaced by (announced 2026-07-13, in force from 2026-07-01)" in out and out.strip().endswith("-> The IRS business standard mileage rate is 76 cents per mile."), out
 print("PASS README for-coding-agents block runs as written")
