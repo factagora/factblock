@@ -4,6 +4,7 @@
 
 ### Added
 - `docs/guides/`: three guides titled by the problem a developer searches for (a RAG answering with a rate that changed, what an AI answer rested on and what changed since, evaluating an agent only on what was known), each on the IRS mileage data with code, expected output and what it does not do. `tests/test_guides.py` runs them as written.
+- The wheel carries the DuckDB macros (`duckdb/factblock.sql`), and `factblock.duckdb_sql()` returns their path, so `pip install factblock` is enough to read a Parquet bundle in DuckDB: `con.execute(factblock.duckdb_sql().read_text())`. `scripts/check_published.py` checks them against `scan` after a release.
 
 ### Changed
 - `factblock leak` and `leak()` count hindsight apart from timing: the result has `known_later_questions` (questions citing a block learned after they were asked), and the CLI summary splits the leaking questions into learned later and only not in force when both occur.

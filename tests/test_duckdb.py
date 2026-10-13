@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory() as d:
     pq = str(factblock.write_parquet(ROOT / "samples" / "rates", d))
     con = duckdb.connect()
-    con.execute((ROOT / "duckdb" / "factblock.sql").read_text())
+    con.execute(factblock.duckdb_sql().read_text())
     for day in ("2024-05-01", "2024-08-01", "2024-10-01"):
         lib = factblock.scan(pq, day)
         rows = con.execute("SELECT id, superseded_by FROM factblock_nodes(?, factblock_day(?)) ORDER BY id", [pq, day]).fetchall()
@@ -40,7 +40,7 @@ for name, days in (("rates", ("2024-06-01", "2024-12-31", "2025-06-01")), ("cram
     with tempfile.TemporaryDirectory() as d:
         pq = str(factblock.write_parquet(ROOT / "samples" / name, d))
         con = duckdb.connect()
-        con.execute((ROOT / "duckdb" / "factblock.sql").read_text())
+        con.execute(factblock.duckdb_sql().read_text())
         for day in days:
             want = {}
             for r in sorted(factblock.scan(pq, day).to_dicts("resolutions"), key=lambda r: (r["decided_at"], r["known_at"])):

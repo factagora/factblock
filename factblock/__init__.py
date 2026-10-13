@@ -4,6 +4,7 @@
     validate(bundle) -> list[Check]              # one row per check id in SPEC section 2
     resolve(bundle, fact_key, as_of, valid_at=None, rules_as_of=None) -> dict   # SPEC 4.4
     write_parquet(bundle, out) -> Path          # JSONL bundle to the Parquet profile, SPEC 5.3
+    duckdb_sql() -> Path                         # the DuckDB macros that read a Parquet bundle as of an instant
     extract(text, observed_at, ...) -> dict      # the claims profile through a model you choose (extract.py)
     from_records(rows, known_at=None, backfill=False) -> dict   # CSV/JSONL rows you already have, no model (records.py)
     write_bundle(result, out, append=False)      # dicts to a JSONL bundle, validated first, growing one batch at a time
@@ -25,7 +26,7 @@ from .claimreview import to_claimreview
 from .okf import to_okf
 from .extract import extract, load_profile
 from .leak import leak
-from .parquet import write_parquet
+from .parquet import duckdb_sql, write_parquet
 from .recall import context, recall
 from .records import from_records, read_records
 from .resolve import resolve
@@ -43,4 +44,4 @@ try:
 except PackageNotFoundError:   # a checkout on sys.path, not installed
     __version__ = "0+unknown"
 
-__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore", "to_claimreview", "to_okf", "recall", "context", "from_records", "read_records", "timeline", "Timeline", "read_series", "mcp_app_html", "graph", "Graph", "track_record", "embedder"]
+__all__ = ["Bundle", "Scan", "scan", "Check", "validate", "resolve", "write_parquet", "duckdb_sql", "extract", "load_profile", "write_bundle", "why", "leak", "sync", "Store", "TckgStore", "to_claimreview", "to_okf", "recall", "context", "from_records", "read_records", "timeline", "Timeline", "read_series", "mcp_app_html", "graph", "Graph", "track_record", "embedder"]
