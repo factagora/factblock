@@ -108,10 +108,11 @@ class FakeTckg(factblock.TckgStore):
     def _call(self, method, path, body=None, params=None):
         self.calls.append((method, path, body))
         if path == "/v1/export":
+            facts = [f for f in self.facts if f["declared_at"] <= params["as_of"]]   # a ledger exports the rules declared by as_of
             buf = io.BytesIO()
             with tarfile.open(fileobj=buf, mode="w:gz") as tar:
                 data = json.dumps({"factblock_version": "1.0-draft.1", "namespace": self.namespace, "source": "tckg/test",
-                                   "declarations": {"facts": self.facts, "backfills": [], "edge_types": []}}).encode()
+                                   "declarations": {"facts": facts, "backfills": [], "edge_types": []}}).encode()
                 info = tarfile.TarInfo("factblock/factblock.json"); info.size = len(data)
                 tar.addfile(info, io.BytesIO(data))
             return buf.getvalue()
@@ -129,6 +130,17 @@ assert posts[0][0] == "/v1/facts" and posts[0][1] == {"fact_key": "belief:tsla:d
 assert r["pushed"]["facts"] == 1 and r["pushed"]["facts_differ"] == ["belief:fed:direction"], r["pushed"]
 assert [x["fact_key"] for x in r["pushed"]["refused"]] == ["belief:nvda:direction"], r["pushed"]["refused"]
 assert r["store"] == {"namespace": "acme/brain", "rows": 0}, r["store"]
+
+# 5b. a past as_of still compares against the ledger's rules now: a rule declared after as_of is not overwritten
+later = {**fed, "key_fields": ["subject", "other"], "policy": "latest_valid", "declared_at": "2026-10-01T00:00:00Z"}
+t = FakeTckg("acme/brain", facts=[later])
+r = factblock.sync(work, t, as_of="2025-01-01", pull=False)
+assert r["pushed"]["facts_differ"] == ["belief:fed:direction"], r["pushed"]
+assert "belief:fed:direction" not in [b["fact_key"] for m, p, b in t.calls if p == "/v1/facts"] and t.facts == [later], t.calls
+
+# 5c. a folder that does not exist yet, synced both ways with an empty store: nothing to push, an empty clone
+r = factblock.sync(work.parent / "new", DictStore())
+assert r["pushed"]["accepted"] == 0 and r["pushed"]["facts"] == 0 and (work.parent / "new" / "factblock.json").exists(), r
 
 # 6. CLI: the summary names tenant and space, and an empty pull says whose space was empty
 fbmain.TckgStore = lambda url, token, space: FakeTckg(f"acme/{space}")

@@ -157,8 +157,9 @@ def sync(bundle, store: Store, as_of=None, push=True, pull=True) -> dict:
     path = Path(bundle.path if isinstance(bundle, Bundle) else bundle)
     exists = (path / "factblock.json").exists()
     b = bundle if isinstance(bundle, Bundle) else (Bundle(path) if exists else None)   # no folder yet: a pull clones it
-    as_of = as_of or datetime.now(timezone.utc).isoformat()
-    remote = store.pull(as_of)
+    now = datetime.now(timezone.utc).isoformat()
+    remote = store.pull(as_of or now)
+    as_of = as_of or now
     local = {"nodes": b.nodes, "edges": b.edges, "resolutions": b.resolutions} if b else {"nodes": [], "edges": [], "resolutions": []}
     have_remote = {t: {KEYS[t](r) for r in remote.get(t, [])} for t in KEYS}
     have_local = {t: {KEYS[t](r) for r in local[t]} for t in KEYS}
@@ -168,10 +169,12 @@ def sync(bundle, store: Store, as_of=None, push=True, pull=True) -> dict:
     if push:
         only_local = {t: [r for r in local[t] if KEYS[t](r) not in have_remote[t]] for t in KEYS}
         # A fact the store declared differently stays as the store has it: sync never changes a rule in place.
-        # shortcut: compares against the store's declarations as of as_of; a past --as-of can miss a later one.
-        mine, theirs = latest_facts(b.manifest), latest_facts(remote["manifest"])
+        # Compared with the store's rules as of now, not as_of: a rule the store declared after a past
+        # as_of is still the one a POST would replace.
+        rules = remote if as_of == now else store.pull(now)
+        mine, theirs = latest_facts(b.manifest) if b else {}, latest_facts(rules["manifest"])
         new_facts = [f for k, f in mine.items() if k not in theirs]
-        manifest = {**b.manifest, "declarations": {**b.manifest.get("declarations", {}), "facts": new_facts}}
+        manifest = {**b.manifest, "declarations": {**b.manifest.get("declarations", {}), "facts": new_facts}} if b else {}
         out["pushed"] = store.push(manifest, only_local["nodes"], only_local["edges"]) if only_local["nodes"] or only_local["edges"] or new_facts \
             else {"accepted": 0, "skipped": [], "refused": [], "batches": 0}
         out["pushed"].setdefault("facts", 0)
