@@ -360,11 +360,23 @@ def main():
         pu, pl = r["pushed"], r["pulled"]
         parts = []
         if pu is not None:
-            parts.append(f"pushed {pu['accepted']} rows in {pu['batches']} batches" + (f", {len(pu['skipped'])} already there" if pu["skipped"] else "")
+            parts.append(f"pushed {pu['accepted']} rows in {pu['batches']} batches" + (f", declared {pu['facts']} facts" if pu["facts"] else "")
+                         + (f", {len(pu['skipped'])} already there" if pu["skipped"] else "")
                          + (f", {len(pu['refused'])} refused" if pu["refused"] else "") + (f", {pu['resolutions_not_pushed']} resolutions kept local" if pu["resolutions_not_pushed"] else ""))
         if pl is not None:
             parts.append(f"pulled {pl['nodes']} nodes, {pl['edges']} edges, {pl['resolutions']} resolutions")
-        print(f"{a.bundle} <-> {a.url}: " + "; ".join(parts) + f" (as of {r['as_of'][:19]})")
+        # Later: take the tenant from an explicit /v1/export field once tckg sends one (tax-rules plan Stage 6e);
+        # today it is the manifest namespace, "<tenant>/<space>#<category>".
+        tenant = (r["store"]["namespace"] or "").split("#")[0]
+        if a.space and tenant.endswith("/" + a.space):
+            tenant = tenant[:-len(a.space) - 1]
+        where = f"tenant {tenant or 'unknown'}, " + (f"space {a.space}" if a.space else "all spaces")
+        print(f"{a.bundle} <-> {a.url} ({where}): " + "; ".join(parts) + f" (as of {r['as_of'][:19]})")
+        if pl is not None and r["store"]["rows"] == 0 and not (pu and pu["accepted"]):
+            print(f"  the ledger had no rows for {where} as of {r['as_of'][:19]}: the token's tenant has nothing there. "
+                  "Check --space, and that the token is the one the rows were pushed with.")
+        for k in (pu or {}).get("facts_differ", []):
+            print(f"  fact {k}: the ledger declares it differently; kept the ledger's rule")
         for x in (pu or {}).get("refused", []):
             print(f"  refused {x}")
         sys.exit(1 if pu and pu["refused"] else 0)

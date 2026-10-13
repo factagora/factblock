@@ -13,6 +13,7 @@ import gzip
 import io
 import json
 import tarfile
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections import defaultdict
@@ -60,7 +61,8 @@ class Store(Protocol):
         """{"manifest", "nodes", "edges", "resolutions"}: the store as a bundle, rows known at or before as_of."""
 
     def push(self, manifest: dict, nodes: list[dict], edges: list[dict]) -> dict:
-        """Write rows under the batches `manifest["declarations"]["backfills"]` declares.
+        """Write rows under the batches `manifest["declarations"]["backfills"]` declares, after the facts
+        `manifest["declarations"]["facts"]` declares (only the ones the store lacks; a store may ignore them).
         Returns {"accepted": int, "skipped": [..], "refused": [..]}."""
 
 
@@ -77,6 +79,17 @@ def batches_of(manifest: dict, rows: list[dict]) -> dict[str, dict]:
             r["attestation"] = {**a, "batch": name}
             out.setdefault(name, {"declared_known_at": _iso(r["known_at"]), "reason": f"imported rows that {a.get('ledger', 'another ledger')} stamped known at {_iso(r['known_at'])}"})
     return out
+
+
+def latest_facts(manifest: dict) -> dict[str, dict]:
+    """fact_key -> its latest declaration (SPEC 3.7)."""
+    facts = manifest.get("declarations", {}).get("facts", [])
+    return {f["fact_key"]: f for f in sorted(facts, key=lambda f: _instant(f["declared_at"]) if f.get("declared_at") else "")}
+
+
+def _same_rule(a, b):
+    return (list(a.get("key_fields") or []), a.get("policy") or "latest_valid", a.get("source_order")) == \
+           (list(b.get("key_fields") or []), b.get("policy") or "latest_valid", b.get("source_order"))
 
 
 class TckgStore:
@@ -112,7 +125,16 @@ class TckgStore:
             groups[(n["attestation"]["batch"], n.get("space") or self.space)]["nodes"].append(n)
         for e in edges:
             groups[(e["attestation"]["batch"], e.get("space") or self.space)]["edges"].append(e)
-        report = {"accepted": 0, "skipped": [], "refused": [], "batches": 0}
+        report = {"accepted": 0, "skipped": [], "refused": [], "batches": 0, "facts": 0}
+        # Facts first, so the rows that carry a fact_key arrive declared. tckg stamps declared_at itself.
+        # shortcut: declared_at on the ledger is the sync instant, so resolve at an earlier as_of says
+        # undeclared_fact unless rules_as_of is passed; upgrade when tckg takes a declared instant for facts.
+        for f in _json(manifest.get("declarations", {}).get("facts", [])):
+            try:
+                self._call("POST", "/v1/facts", {k: f[k] for k in ("fact_key", "key_fields", "policy", "source_order") if f.get(k) is not None})
+                report["facts"] += 1
+            except urllib.error.HTTPError as e:
+                report["refused"].append({"fact_key": f["fact_key"], "status": e.code, "error": e.read().decode(errors="replace")[:300]})
         # ponytail: one POST per (batch, space), ordered by knowledge time so an edge never arrives before its endpoints.
         for (batch, space), g in sorted(groups.items(), key=lambda kv: batches[kv[0][0]]["declared_known_at"]):
             if space is None:
@@ -140,10 +162,20 @@ def sync(bundle, store: Store, as_of=None, push=True, pull=True) -> dict:
     local = {"nodes": b.nodes, "edges": b.edges, "resolutions": b.resolutions} if b else {"nodes": [], "edges": [], "resolutions": []}
     have_remote = {t: {KEYS[t](r) for r in remote.get(t, [])} for t in KEYS}
     have_local = {t: {KEYS[t](r) for r in local[t]} for t in KEYS}
-    out = {"as_of": as_of, "pushed": None, "pulled": None}
+    # the store's namespace (tckg: "<tenant>/<space>") and how many rows it had, so an empty pull can say whose store was empty
+    out = {"as_of": as_of, "pushed": None, "pulled": None,
+           "store": {"namespace": remote["manifest"].get("namespace"), "rows": sum(len(remote.get(t, [])) for t in KEYS)}}
     if push:
         only_local = {t: [r for r in local[t] if KEYS[t](r) not in have_remote[t]] for t in KEYS}
-        out["pushed"] = store.push(b.manifest, only_local["nodes"], only_local["edges"]) if only_local["nodes"] or only_local["edges"] else {"accepted": 0, "skipped": [], "refused": [], "batches": 0}
+        # A fact the store declared differently stays as the store has it: sync never changes a rule in place.
+        # shortcut: compares against the store's declarations as of as_of; a past --as-of can miss a later one.
+        mine, theirs = latest_facts(b.manifest), latest_facts(remote["manifest"])
+        new_facts = [f for k, f in mine.items() if k not in theirs]
+        manifest = {**b.manifest, "declarations": {**b.manifest.get("declarations", {}), "facts": new_facts}}
+        out["pushed"] = store.push(manifest, only_local["nodes"], only_local["edges"]) if only_local["nodes"] or only_local["edges"] or new_facts \
+            else {"accepted": 0, "skipped": [], "refused": [], "batches": 0}
+        out["pushed"].setdefault("facts", 0)
+        out["pushed"]["facts_differ"] = sorted(k for k, f in mine.items() if k in theirs and not _same_rule(f, theirs[k]))
         out["pushed"]["resolutions_not_pushed"] = len(only_local["resolutions"])   # verdicts are the store's to make
     if pull:
         only_remote = {t: [r for r in remote.get(t, []) if KEYS[t](r) not in have_local[t]] for t in KEYS}

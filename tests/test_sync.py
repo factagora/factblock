@@ -1,14 +1,19 @@
 """The one check that fails if sync breaks, against an in-memory store that is also the smallest
 example of bringing your own store: two methods, and known_at travels as batches (SPEC 6).
 Run: uv run python tests/test_sync.py"""
+import contextlib
+import io
 import json
 import pathlib
 import shutil
 import sys
+import tarfile
 import tempfile
+import urllib.error
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import factblock  # noqa: E402
+import factblock.__main__ as fbmain  # noqa: E402
 from factblock.sync import KEYS, batches_of  # noqa: E402
 
 RATES = pathlib.Path(__file__).resolve().parents[1] / "samples" / "rates"
@@ -19,11 +24,11 @@ class DictStore:
     carry known_at themselves and stamps each row with its batch's declared instant, like a ledger."""
 
     def __init__(self):
-        self.batches, self.rows = {}, {"nodes": [], "edges": [], "resolutions": []}
+        self.batches, self.rows, self.facts = {}, {"nodes": [], "edges": [], "resolutions": []}, []
 
     def pull(self, as_of):
         manifest = {"factblock_version": "1.0-draft.1", "namespace": "dictstore", "source": "dictstore/0",
-                    "declarations": {"facts": [], "edge_types": [],
+                    "declarations": {"facts": self.facts, "edge_types": [],
                                      "backfills": [{"batch": k, "declared_known_at": v["declared_known_at"], "reason": v["reason"],
                                                     "declared_by": "process:dictstore", "captured_at": "2026-10-05T00:00:00+00:00"} for k, v in self.batches.items()]}}
         vis = lambda t: [r for r in self.rows[t] if r["known_at"] <= as_of]  # noqa: E731
@@ -31,6 +36,7 @@ class DictStore:
 
     def push(self, manifest, nodes, edges):
         rows = json.loads(json.dumps(nodes + edges, default=lambda d: d.isoformat()))
+        self.facts += json.loads(json.dumps(manifest["declarations"]["facts"], default=lambda d: d.isoformat()))
         self.batches.update(batches_of(manifest, rows))
         have = {KEYS[t](r) for t in ("nodes", "edges") for r in self.rows[t]}
         n = 0
@@ -52,11 +58,13 @@ store = DictStore()
 # 1. first sync: the whole folder goes up, nothing comes down
 r = factblock.sync(work, store)
 assert r["pushed"]["accepted"] == 9 and r["pulled"] == {"nodes": 0, "edges": 0, "resolutions": 0}, r
+assert r["pushed"]["facts"] == 0 and {f["fact_key"] for f in store.facts} == {"belief:fed:direction", "belief:tsla:direction", "belief:nvda:direction"}, r
 assert set(store.batches) == {"b1", "b2", "b3"} and store.rows["nodes"][0]["known_at"] == "2024-04-15T00:00:00+00:00"
 
 # 2. second sync is a no-op: identity, not attestation, decides what is new
 r = factblock.sync(work, store)
 assert r["pushed"]["accepted"] == 0 and r["pulled"] == {"nodes": 0, "edges": 0, "resolutions": 0}, r
+assert len(store.facts) == 3, store.facts   # facts the store already declares are not sent again
 
 # 2b. a ledger may spell an instant differently ("Z", trimmed microseconds); same edge, still a no-op
 for e in store.rows["edges"]:
@@ -89,4 +97,49 @@ r = factblock.sync(work, second, pull=False)
 assert r["pushed"]["accepted"] == 10 and r["pushed"]["resolutions_not_pushed"] == 4, r
 assert any(k.startswith("dictstore/0@2024-11-02") for k in second.batches), second.batches
 assert factblock.sync(work, second)["pulled"] == {"nodes": 0, "edges": 0, "resolutions": 0}
-print("PASS sync: push 9, no-op, pull verdict + store-stamped row, folder valid, re-push declares known_at as a batch")
+
+# 5. TckgStore over a fake ledger: facts go to POST /v1/facts before the rows, a fact the ledger declares
+#    differently is left alone, and the result names the ledger's namespace (tckg: tenant/space)
+class FakeTckg(factblock.TckgStore):
+    def __init__(self, namespace, facts=(), refuse=()):
+        super().__init__("https://ledger.test", "key", "brain")
+        self.namespace, self.facts, self.refuse, self.calls = namespace, list(facts), set(refuse), []
+
+    def _call(self, method, path, body=None, params=None):
+        self.calls.append((method, path, body))
+        if path == "/v1/export":
+            buf = io.BytesIO()
+            with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+                data = json.dumps({"factblock_version": "1.0-draft.1", "namespace": self.namespace, "source": "tckg/test",
+                                   "declarations": {"facts": self.facts, "backfills": [], "edge_types": []}}).encode()
+                info = tarfile.TarInfo("factblock/factblock.json"); info.size = len(data)
+                tar.addfile(info, io.BytesIO(data))
+            return buf.getvalue()
+        if path == "/v1/facts" and body["fact_key"] in self.refuse:
+            raise urllib.error.HTTPError(self.url + path, 400, "Bad Request", {}, io.BytesIO(b'{"error": "TCKG_SOURCE_ORDER_REQUIRED"}'))
+        return json.dumps({"accepted": len(body.get("nodes", [])) + len(body.get("edges", []))} if path == "/v1/memories" else {}).encode()
+
+
+fed = {"fact_key": "belief:fed:direction", "key_fields": ["subject"], "policy": "strict", "source_order": None, "declared_at": "2026-01-01T00:00:00Z"}
+t = FakeTckg("acme/brain", facts=[fed], refuse={"belief:nvda:direction"})
+r = factblock.sync(work, t, push=True, pull=False)
+posts = [(p, b) for m, p, b in t.calls if m == "POST"]
+assert [b["fact_key"] for p, b in posts if p == "/v1/facts"] == ["belief:tsla:direction", "belief:nvda:direction"], posts
+assert posts[0][0] == "/v1/facts" and posts[0][1] == {"fact_key": "belief:tsla:direction", "key_fields": ["subject"], "policy": "latest_valid"}, posts[0]
+assert r["pushed"]["facts"] == 1 and r["pushed"]["facts_differ"] == ["belief:fed:direction"], r["pushed"]
+assert [x["fact_key"] for x in r["pushed"]["refused"]] == ["belief:nvda:direction"], r["pushed"]["refused"]
+assert r["store"] == {"namespace": "acme/brain", "rows": 0}, r["store"]
+
+# 6. CLI: the summary names tenant and space, and an empty pull says whose space was empty
+fbmain.TckgStore = lambda url, token, space: FakeTckg(f"acme/{space}")
+out = io.StringIO()
+sys.argv = ["factblock", "sync", str(work.parent / "clone"), "https://ledger.test", "--space", "other", "--token", "k", "--pull-only"]
+with contextlib.redirect_stdout(out):
+    try:
+        fbmain.main()
+    except SystemExit as e:
+        assert e.code in (0, None), e.code
+text = out.getvalue()
+assert "(tenant acme, space other)" in text and "pulled 0 nodes" in text and "had no rows for tenant acme, space other" in text, text
+print("PASS sync: push 9, no-op, pull verdict + store-stamped row, folder valid, re-push declares known_at as a batch, "
+      "facts declared once and never redeclared over the ledger's, tenant and space in the CLI line, empty pull explained")
