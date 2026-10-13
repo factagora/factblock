@@ -1,0 +1,1 @@
+{"source_id": "fomc-2024-09", "target_id": "fomc", "edge_type": "MENTIONS", "asserted_at": "2024-09-18T18:00:00Z", "valid_from": "2024-09-18T18:00:00Z", "valid_to": null, "known_at": "2024-09-18T18:05:00Z", "attestation": {"ledger": "conformance"}, "namespace": "federalreserve.gov"}

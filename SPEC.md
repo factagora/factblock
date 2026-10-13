@@ -58,6 +58,7 @@ A bundle is a FactBlock bundle only if all six hold. The validator (section 8) c
 | `embedding` | float[] | no | Producer's vector. `declarations.embedding` names the model |
 | `author` | actor | no | Who said it. Actor syntax in 3.5 |
 | `space` | string | no | Whose memory this is: a user, an agent, a worldview. A filter axis, distinct from `author` |
+| `namespace` | string | no | Where this block came from: the feed, archive or bundle that published it (`bls.gov`, `federalreserve.gov`). The manifest `namespace` (section 5) names the bundle as a whole; this field names the origin of one row, so that rows from many bundles read as one table keep it, and an engine can filter or group by it without parsing `payload`. `payload.source.id` names one document inside it, so `(namespace, payload.source.id)` names the document across bundles. Null by default. A reader returns it as written and does not copy the manifest `namespace` into it. A writer that merges bundles can set it to each bundle's manifest `namespace` |
 
 ### 3.2 Edge
 
@@ -71,6 +72,7 @@ A bundle is a FactBlock bundle only if all six hold. The validator (section 8) c
 | `properties` | object | no | Free form |
 | `asserted_at`, `valid_from`, `valid_to`, `known_at`, `attestation` | | as for nodes | I1, I2 |
 | `author` | actor | no | |
+| `namespace` | string | no | As for nodes: where the edge came from, null by default |
 
 ### 3.3 Edge types and families
 

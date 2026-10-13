@@ -4,6 +4,7 @@
 
 ### Added
 - `bench/scale/run.py`: a reproducible scale baseline on synthetic rows. It writes one bundle in both Parquet layouts, times the DuckDB as-of reads, and checks each answer against `scan`. Results in `bench/scale/README.md`.
+- `namespace` on nodes and edges (SPEC 3.1, 3.2): where a block came from (`bls.gov`, `federalreserve.gov`), optional and null by default. The manifest `namespace` names the whole bundle; readers do not copy it into the row field. `payload.source.id` names a document inside it. `to-parquet` writes it as its own column, `scan` returns it, and `factblock_nodes` and `factblock_edges` always have it (null for Parquet files written before), so an engine can group or filter by origin without parsing `payload`. Conformance cases cover it set and absent (`conformance/bundles/two-namespaces`).
 - Who vouches (SPEC 3.4): every `known_at` rests on one actor's word, the ledger that stamped the row or the `declared_by` of its batch. `track_record` names it per item (`vouched_by`) and counts the statements on record before their verdict by it (`record_vouched_by`), and `factblock track-record` prints that breakdown under the "on record before" line when the count is not zero. Existing keys and output lines are unchanged.
 - `docs/guides/`: three guides titled by the problem a developer searches for (a RAG answering with a rate that changed, what an AI answer rested on and what changed since, evaluating an agent only on what was known), each on the IRS mileage data with code, expected output and what it does not do. `tests/test_guides.py` runs them as written.
 - The wheel carries the DuckDB macros (`duckdb/factblock.sql`), and `factblock.duckdb_sql()` returns their path, so `pip install factblock` is enough to read a Parquet bundle in DuckDB: `con.execute(factblock.duckdb_sql().read_text())`. `scripts/check_published.py` checks them against `scan` after a release.
@@ -24,6 +25,7 @@
 - The agent skill covers what agents had to find in `--help` or the source: `factblock sample --policies`, `recall(..., valid_at=)` for the trip day apart from the filing day, recording what an answer rested on with `SUPPORTS` edges and reading it back with `why`, and the two leak reasons.
 
 ### Fixed
+- `scan` dropped a column when the first visible row lacked it (pyarrow takes columns from the first row), so an optional field such as `space` or `category` could vanish from the result, most often on a Parquet bundle. Every key any row has is now a column.
 - `write_bundle(..., append=True)` and `factblock import` into a Parquet bundle (made by `to-parquet`) wrote JSON lines onto the end of `nodes.parquet` and reported success; the next read failed with `Parquet magic bytes not found`. They now refuse with a message, and the folder is left as it was. Append to the JSONL bundle and convert again.
 
 ## 1.0.0a14 (2026-10-11)

@@ -9,7 +9,8 @@
 -- selects, SUPERSEDES edges visible as of as_of (known, and in force at valid_at) flag the row they replace. The bundle
 -- must be the Parquet profile (factblock to-parquet). A date-only as_of means the
 -- end of that day: pass factblock_day(DATE '2024-08-01').
--- Table macros, so this is one file to load, no build, no extension install.
+-- Table macros, so this is one file to load, no build, no extension install. factblock_nodes and factblock_edges always
+-- have a `namespace` column (SPEC 3.1), null for files written before it existed.
 
 CREATE OR REPLACE MACRO factblock_day(d) AS CAST(d AS DATE) + INTERVAL 1 DAY - INTERVAL 1 MICROSECOND;
 
@@ -21,7 +22,7 @@ CREATE OR REPLACE MACRO factblock_nodes(bundle, as_of, valid_at := NULL) AS TABL
            WHERE e.target_id = n.id AND e.edge_type = 'SUPERSEDES' AND e.known_at <= t.a
              AND e.valid_from <= t.v AND (e.valid_to IS NULL OR t.v < e.valid_to)
            ORDER BY e.asserted_at DESC, e.source_id DESC LIMIT 1) AS superseded_by
-    FROM read_parquet(bundle || '/nodes.parquet') n, t
+    FROM (FROM read_parquet(bundle || '/nodes.parquet') UNION ALL BY NAME SELECT NULL::VARCHAR AS namespace WHERE false) n, t
    WHERE n.known_at <= t.a
      AND n.valid_from <= t.v
      AND (n.valid_to IS NULL OR t.v < n.valid_to);
@@ -29,7 +30,7 @@ CREATE OR REPLACE MACRO factblock_nodes(bundle, as_of, valid_at := NULL) AS TABL
 CREATE OR REPLACE MACRO factblock_edges(bundle, as_of, valid_at := NULL) AS TABLE
   WITH t AS (SELECT CAST(as_of AS TIMESTAMPTZ) AS a, CAST(COALESCE(valid_at, as_of) AS TIMESTAMPTZ) AS v)
   SELECT e.*
-    FROM read_parquet(bundle || '/edges.parquet') e, t
+    FROM (FROM read_parquet(bundle || '/edges.parquet') UNION ALL BY NAME SELECT NULL::VARCHAR AS namespace WHERE false) e, t
    WHERE e.known_at <= t.a
      AND e.valid_from <= t.v
      AND (e.valid_to IS NULL OR t.v < e.valid_to);

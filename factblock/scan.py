@@ -32,7 +32,8 @@ def _visible(r, as_of, valid_at):
 def _table(rows):
     """pyarrow infers poorly on free-form dicts, so JSON columns go out as strings."""
     rows = [{**{k: v for k, v in r.items() if not k.startswith("_")}, **{k: json.dumps(r[k]) for k in JSON_COLS if k in r and r[k] is not None}} for r in rows]
-    return pa.Table.from_pylist(rows)
+    cols = list(dict.fromkeys(k for r in rows for k in r))   # from_pylist takes its columns from the first row only
+    return pa.Table.from_pylist([{k: r.get(k) for k in cols} for r in rows])
 
 
 @dataclass

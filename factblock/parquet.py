@@ -22,13 +22,13 @@ SCHEMAS = {
         ("category", pa.string()), ("payload", pa.string()),
         ("asserted_at", TS), ("valid_from", TS), ("valid_to", TS), ("known_at", TS),
         ("attestation", ATTESTATION), ("fact_key", pa.string()), ("fact_value", pa.string()),
-        ("embedding", pa.list_(pa.float32())), ("author", pa.string()), ("extra", pa.string()),
+        ("embedding", pa.list_(pa.float32())), ("author", pa.string()), ("namespace", pa.string()), ("extra", pa.string()),
     ]),
     "edges": pa.schema([
         ("source_id", pa.string()), ("target_id", pa.string()), ("edge_type", pa.string()),
         ("confidence", pa.float64()), ("lag", pa.string()), ("mechanism", pa.string()), ("properties", pa.string()),
         ("asserted_at", TS), ("valid_from", TS), ("valid_to", TS), ("known_at", TS),
-        ("attestation", ATTESTATION), ("author", pa.string()), ("extra", pa.string()),
+        ("attestation", ATTESTATION), ("author", pa.string()), ("namespace", pa.string()), ("extra", pa.string()),
     ]),
     "resolutions": pa.schema([
         ("target_id", pa.string()), ("value", pa.string()), ("decided_at", TS), ("known_at", TS),
