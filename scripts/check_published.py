@@ -58,6 +58,13 @@ with tempfile.TemporaryDirectory() as d:
     for line in out.splitlines()[:4]:
         assert line in readme, f"README lacks the track-record line: {line}"
 
+    # DuckDB reads the same folder through the macros the wheel carries
+    run(["uv", "pip", "install", "-q", "--python", str(py), "duckdb"], d)
+    run([cli, "to-parquet", "brain/", "brain-pq/"], work)
+    run([py, "-I", "-c", "import duckdb, factblock; con = duckdb.connect(); con.execute(factblock.duckdb_sql().read_text()); "
+         "n = con.execute(\"SELECT count(*) FROM factblock_nodes('brain-pq', factblock_day('2026-07-20'))\").fetchone()[0]; "
+         "assert n == factblock.scan('brain-pq', '2026-07-20').nodes.num_rows > 0, n"], work)
+
     # the block written for coding agents (tests/test_readme_agents.py runs it against the checkout)
     section = readme.split("## For coding agents", 1)[1].split("\n## ", 1)[0]
     setup = section.split("```bash\n", 1)[1].split("```", 1)[0]
@@ -68,4 +75,4 @@ with tempfile.TemporaryDirectory() as d:
             run([cli, *line.split("#")[0].split()[1:]], work / "agents")
     out = run([py, "-I", "-c", code], work / "agents")
     assert "replaced 2026-07-01 by" in out, out
-print(f"PASS published: factblock {version} from PyPI runs the README's first screen, both examples and the coding-agents block as shown")
+print(f"PASS published: factblock {version} from PyPI runs the README's first screen, both examples, the DuckDB macros and the coding-agents block as shown")

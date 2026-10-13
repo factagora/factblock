@@ -50,3 +50,4 @@ packages = ["factblock"]
 [tool.hatch.build.targets.wheel.force-include]
 "samples/rates" = "factblock/samples/rates"   # `factblock sample` copies it; the repo keeps one copy at samples/
 "samples/policies" = "factblock/samples/policies"   # `factblock sample --policies`
+"duckdb/factblock.sql" = "factblock/duckdb/factblock.sql"   # factblock.duckdb_sql(); the repo keeps one copy at duckdb/

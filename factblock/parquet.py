@@ -70,6 +70,13 @@ def write_parquet(bundle, out) -> Path:
     return out
 
 
+def duckdb_sql() -> Path:
+    """The DuckDB macros for the Parquet profile (factblock_nodes, factblock_edges, factblock_certificate,
+    factblock_verdicts), as installed: con.execute(factblock.duckdb_sql().read_text()), or `duckdb -init <path>`."""
+    p = Path(__file__).parent / "duckdb" / "factblock.sql"   # in the wheel (pyproject force-include)
+    return p if p.exists() else Path(__file__).resolve().parents[1] / "duckdb" / "factblock.sql"   # a checkout
+
+
 def decode_parquet_row(r: dict) -> dict:
     """Undo _row: JSON strings back to values, extra merged back, absent fields dropped."""
     extra = r.pop("extra", None)

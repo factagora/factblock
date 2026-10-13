@@ -134,7 +134,7 @@ Over a numeric series, inside a chat answer (MCP Apps), and what one statement r
 - [Evaluate an agent only on what was known at the time](https://github.com/factagora/factblock/blob/main/docs/guides/evaluate-as-of.md): `leak` checks an eval set's evidence against each question's date. On [StreamingQA](https://github.com/factagora/factblock/tree/main/bench/streamingqa), a recall that ignores time cites a block learned after the question for **79.7% of questions**.
 - [`examples/promises`](https://github.com/factagora/factblock/tree/main/examples/promises): sales promises from one CSV; open, past due, broken, kept as of any date.
 - [`examples/analysis`](https://github.com/factagora/factblock/tree/main/examples/analysis): DuckDB and Jupyter over `samples/cramer`.
-- DuckDB without Python: `to-parquet`, then [`duckdb/factblock.sql`](https://github.com/factagora/factblock/blob/main/duckdb/factblock.sql) (`factblock_nodes(bundle, as_of)`, `factblock_edges`, `factblock_certificate`). Spark and Databricks read the same files.
+- DuckDB: `to-parquet`, then load [`duckdb/factblock.sql`](https://github.com/factagora/factblock/blob/main/duckdb/factblock.sql) (`factblock_nodes(bundle, as_of)`, `factblock_edges`, `factblock_certificate`). The package carries it: `factblock.duckdb_sql()` is its path. Spark and Databricks read the same files.
 - Standards: `to-claimreview` (schema.org ClaimReview), `to-okf` (Open Knowledge Format), `from-factcheck` (Google Fact Check Tools). None of them is the storage format; they are doors.
 - From an existing graph: [`factblock/adapters/graphiti.py`](https://github.com/factagora/factblock/blob/main/factblock/adapters/graphiti.py) turns a Graphiti graph into a bundle, its timestamps as declared backfill batches.
 
