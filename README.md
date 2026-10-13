@@ -86,6 +86,8 @@ factblock.write_bundle({"nodes": [{"id": "r1", "kind": "claim", "statement": "An
 
 Prose instead of rows: `factblock extract notes.txt --observed-at 2024-03-20 --backfill -o brain/` through your model key (`--provider gemini` with `GEMINI_API_KEY` after `pip install --pre 'factblock[gemini]'`, or `openai`), or `--provider fake` to see the files without a model.
 
+Dates are UTC days: `--as-of 2026-07-10` reads to the end of July 10 in UTC, and a date-only `said_at` or `known_at` is midnight UTC. For a local day give the offset, as in `--as-of 2026-07-10T23:59:59-07:00`. `--pre` applies to every package on its `pip install` line, so install DuckDB and other tools in a command of their own.
+
 ## For coding agents
 
 The whole API in one block. It runs as is; `tests/test_readme_agents.py` keeps it that way.

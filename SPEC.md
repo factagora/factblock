@@ -47,7 +47,7 @@ A bundle is a FactBlock bundle only if all six hold. The validator (section 8) c
 | `kind` | string | yes | Core: `claim` `prediction` `commitment` `entity` `factor` `timeseries` `episode`. Others preserved (section 7) |
 | `statement` | string | no | The text. Required for `claim`, `prediction` and `commitment` |
 | `category` | string | no | |
-| `payload` | object | no | Free form. Conventions: `about` (the period the content refers to), `speaker` (who said it, as written), `quote` (the words), `source` (`{url, title, published_at}`, where it appeared), `factblock_id` |
+| `payload` | object | no | Free form. Conventions: `about` (the period the content refers to), `speaker` (who said it, as written), `quote` (the words), `source` (`{url, title, published_at, id}`, where it appeared; `id` is the source's own identifier for the document, such as a docket or filing number), `asserted_at_precision` (`second`, `minute`, `hour` or `day`: how much of `asserted_at` the source gave, when it gave less than an instant; a day-only date is stored as midnight UTC), `factblock_id` |
 | `asserted_at` | instant | yes | I1 |
 | `valid_from` | instant | yes | I1 |
 | `valid_to` | instant or null | no | I1. For a `prediction` its horizon, for a `commitment` its deadline: the instant by which it should have happened |
@@ -174,7 +174,7 @@ The three tables can be Iceberg tables. An as-of read applies `WHERE known_at <=
 
 ## 6. Writing
 
-A writer that is not a ledger (an export tool, an adapter) MUST NOT invent `known_at`. It either copies `known_at` and `attestation` from the ledger it reads, or declares a backfill batch and sets `attestation.batch`. Writers MUST NOT emit `captured_at` on blocks; that field belongs to batch records.
+A writer that records each row the moment it first sees it, and stamps that moment as `known_at` (a live collector), is a ledger for those rows: it sets `attestation.ledger` to its own actor and `batch` to null. Readers decide how far to trust a stamp by that actor's name (3.4). A writer that is not a ledger (an export tool, an adapter, an import of past material) MUST NOT invent `known_at`. It either copies `known_at` and `attestation` from the ledger it reads, or declares a backfill batch and sets `attestation.batch`. Writers MUST NOT emit `captured_at` on blocks; that field belongs to batch records.
 
 **6.1 Importing a bundle into a store.** A store that takes a bundle in MUST keep every row's `known_at`. It does so by declaring the bundle's backfill batches as its own backfill batches (same `declared_known_at`, the reason carried over) and writing each row under its batch. A row the bundle's ledger stamped itself (`attestation.batch` null) is written under a batch declared at that row's `known_at`, named after that ledger. A store MUST NOT adopt an imported row as learned at import time: that would move knowledge forward and make the row visible to as-of reads that the source would have hidden. Re-importing a bundle MUST be a no-op: rows are identified by `id` (nodes), `(source_id, target_id, edge_type, asserted_at)` (edges), and `(target_id, decided_at)` (resolutions), not by their attestation. Resolutions are the store's own to make and are not imported by the reference implementation.
 

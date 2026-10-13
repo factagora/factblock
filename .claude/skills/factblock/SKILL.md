@@ -5,7 +5,7 @@ description: Agent memory read as of a point in time, with the factblock Python 
 
 # factblock
 
-Install: `pip install --pre factblock` (alpha; `--pre` is required). Extraction with a model: `pip install --pre 'factblock[gemini]'` or `'factblock[openai]'`.
+Install: `pip install --pre factblock` (alpha; `--pre` is required). Extraction with a model: `pip install --pre 'factblock[gemini]'` or `'factblock[openai]'`. Install anything else (duckdb, pandas) in a separate `pip install`: `--pre` applies to every package on the line and pulls their development builds too.
 
 A **bundle** is a folder: `factblock.json` plus `nodes.jsonl`, `edges.jsonl`, `resolutions.jsonl`. Every function takes the folder path or a `factblock.Bundle`.
 
@@ -21,7 +21,7 @@ factblock sample --policies irs/                                                
 
 `--provider fake` needs no model (one block per sentence). `--backfill` means "known when it was said", for past material; without it the blocks are known now.
 
-`import` columns: `id`, `statement` (or `text`), `asserted_at` (or `said_at`), `valid_from` (or `effective_from`, default `asserted_at`), `valid_to`, `known_at`, `kind`, `replaces` (`id;id`, writes `SUPERSEDES`); a row with `target`, `outcome`, `decided_at` is a verdict; other columns go to `payload`. From Python: `factblock.write_bundle(factblock.from_records(rows), "brain/", append=True)`, or pass `{"nodes": [...], "edges": [...], "resolutions": [...]}` with the format's own field names. `write_bundle` declares batches and validates before writing; an invalid bundle raises `ValueError` and nothing is written.
+`import` columns: `id`, `statement` (or `text`), `asserted_at` (or `said_at`), `valid_from` (or `effective_from`, default `asserted_at`), `valid_to`, `known_at`, `kind`, `replaces` (`id;id`, writes `SUPERSEDES`); a row with `target`, `outcome`, `decided_at` is a verdict; other columns go to `payload`. Payload conventions (SPEC 3.1): `speaker`; `source` as `{url, title, published_at, id}` (`id`: the source's own document number); `asserted_at_precision` (`day`, `hour`, `minute`, `second`) when the source gave only a date or a time to the minute. From Python: `factblock.write_bundle(factblock.from_records(rows), "brain/", append=True)`, or pass `{"nodes": [...], "edges": [...], "resolutions": [...]}` with the format's own field names. `write_bundle` declares batches and validates before writing; an invalid bundle raises `ValueError` and nothing is written.
 
 Verdict, resolution: the same thing, a row in `resolutions.jsonl` (`outcome` is its value). `resolve` is different: one value for a declared `fact_key`.
 
@@ -47,7 +47,7 @@ factblock.write_bundle({"nodes": [{"id": "answer-1", "kind": "claim", "statement
                         "edges": [{"source_id": "irs-2026-01", "target_id": "answer-1", "edge_type": "SUPPORTS", "asserted_at": at, "known_at": at}]}, "brain/", append=True)
 ```
 
-`as_of` accepts `'2026-04-10'` (the end of that day, UTC), an ISO timestamp, a `date` or a `datetime`. Every result carries a `certificate`: what the read hid because it was learned later (`masked`) or not in force (`not_in_force`).
+`as_of` accepts `'2026-04-10'` (the end of that day, UTC), an ISO timestamp, a `date` or a `datetime`. Dates are UTC days, on reads and writes alike (a date-only `said_at` or `known_at` is midnight UTC). For a local day pass the offset: `as_of='2026-04-10T23:59:59-07:00'` is the end of April 10 in California, `said_at` `2026-04-10T09:00:00+09:00` is 9am in Seoul. Every result carries a `certificate`: what the read hid because it was learned later (`masked`) or not in force (`not_in_force`).
 
 ## Show it over time
 
@@ -64,7 +64,7 @@ t.save("out.html")                                                             #
 
 1. Every read takes `as_of`. There is no default; pass the moment the question was asked.
 2. Never edit or delete a block. A change is a new block plus a `SUPERSEDES` edge from new to old; a verdict is a row in `resolutions.jsonl`. Old blocks come back marked `superseded_by`.
-3. `known_at` is when you learned a row. Give it honestly (default now; `--backfill` = when it was said) and let `import`, `extract` or `write_bundle` declare the batch that attests it. Never write `attestation.ledger` yourself; only a ledger stamps its own.
+3. `known_at` is when you learned a row. Give it honestly (default now; `--backfill` = when it was said) and let `import`, `extract` or `write_bundle` declare the batch that attests it. Set `attestation.ledger` only for rows you stamp yourself the moment you first see them (a live collector, SPEC 6), with your own actor name, such as `process:my-collector`; readers trust that stamp as far as they trust the name. Past material, imports and copies always go through a declared batch.
 
 ## Check, convert, share
 
