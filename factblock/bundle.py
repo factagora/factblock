@@ -114,7 +114,7 @@ def write_bundle(result: dict, out, append: bool = False, *, declared_by: str = 
     (SPEC 6: the writer declares when it learned the row, it never claims to be a ledger); a row without
     `known_at` is an error. With append=True a row the folder already has (same identity, SPEC 6.1) is skipped,
     so re-running an import adds nothing; the same identity with different content is an error, because blocks
-    are never edited. append=False replaces the folder's tables. The whole bundle is validated before anything
+    are never edited. A Parquet bundle cannot be appended to (ValueError): append to its JSONL source and convert again. append=False replaces the folder's tables. The whole bundle is validated before anything
     is written: a failing check raises ValueError and leaves the folder as it was. `result` is not modified.
     Returns the folder path."""
     from .validate import validate   # validate imports this module
@@ -129,6 +129,10 @@ def write_bundle(result: dict, out, append: bool = False, *, declared_by: str = 
         decl.setdefault(key, [])
     decl.setdefault("embedding", None)
     declared = {b["batch"] for b in decl["backfills"]} | set(old.backfills if old else ())
+    parquet = [f for f in (old.manifest.get("tables") or {}).values() if str(f).endswith(".parquet")] if old else []
+    if parquet:   # appending writes JSON lines; added to a .parquet file they corrupt it
+        raise ValueError(f"not written to {out}: its tables are Parquet ({', '.join(parquet)}), and rows can only be appended to a JSONL bundle. "
+                         f"Append to the JSONL bundle it was made from, then run `factblock to-parquet` again")
 
     # SPEC 6.1 identity: writing a row the folder already has is a no-op, so re-running an import is safe
     have = {n: {IDENTITY[n](x): x for x in getattr(old, n)} for n in IDENTITY} if old else {n: {} for n in IDENTITY}
