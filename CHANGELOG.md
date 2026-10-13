@@ -17,6 +17,9 @@
 - A missing model extra (`extract`, `recall --embed`) prints its install line and exits 1, without a traceback.
 - The agent skill covers what agents had to find in `--help` or the source: `factblock sample --policies`, `recall(..., valid_at=)` for the trip day apart from the filing day, recording what an answer rested on with `SUPPORTS` edges and reading it back with `why`, and the two leak reasons.
 
+### Fixed
+- `write_bundle(..., append=True)` and `factblock import` into a Parquet bundle (made by `to-parquet`) wrote JSON lines onto the end of `nodes.parquet` and reported success; the next read failed with `Parquet magic bytes not found`. They now refuse with a message, and the folder is left as it was. Append to the JSONL bundle and convert again.
+
 ## 1.0.0a14 (2026-10-11)
 
 The first screen is the developer's flow on official data: import the IRS mileage rate, add a change, read as of a day, draw it.
