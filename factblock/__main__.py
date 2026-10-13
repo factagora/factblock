@@ -77,6 +77,8 @@ def _print_track_record(r):
     print(f"on record before it was resolved: {rec['before']} of {judged}"
           + (f"; {rec['sourced']} written later from a cited source (checkable)" if rec["sourced"] else "")
           + (f"; {rec['writer']} written later on the writer's word (hindsight not ruled out)" if rec["writer"] else ""))
+    if r["record_vouched_by"]:   # SPEC 3.4: "before" is only as good as whoever vouches for when the row was written
+        print("  on whose word it was written then: " + ", ".join(f"{k} {n}" for k, n in sorted(r["record_vouched_by"].items())))
     bl = r["total"].get("baseline")
     if bl:
         pct = lambda x: f"{x:+.1%}" if x is not None else "-"  # noqa: E731
