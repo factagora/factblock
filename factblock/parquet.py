@@ -1,7 +1,8 @@
 """SPEC 5.3: the Parquet profile. One file per table, one explicit Arrow schema per
 table, rows sorted by known_at so an as-of read is a prefix scan. Free-form
 columns (payload, properties, fact_value, evidence) are JSON strings; fields the
-schema does not know go to `extra` as JSON, so nothing is dropped (SPEC 7)."""
+schema does not know go to `extra` as JSON, so nothing is dropped (SPEC 7). Row groups hold at most
+ROW_GROUP_ROWS rows, and each file records its sort order (Parquet sorting_columns)."""
 import json
 import shutil
 from pathlib import Path
@@ -35,6 +36,7 @@ SCHEMAS = {
         ("criteria", pa.string()), ("outcome", pa.string()), ("evidence", pa.string()), ("extra", pa.string()),
     ]),
 }
+ROW_GROUP_ROWS = 65536   # SPEC 5.3: bounded row groups, so known_at min/max per group lets an engine skip and split the scan
 SORT = {"nodes": ("known_at", "id"), "edges": ("known_at", "source_id", "target_id", "edge_type"), "resolutions": ("known_at", "target_id")}
 
 
@@ -64,7 +66,9 @@ def write_parquet(bundle, out) -> Path:
     for name, rows in (("nodes", b.nodes), ("edges", b.edges), ("resolutions", b.resolutions)):
         if not rows and name == "resolutions":
             continue
-        pq.write_table(to_table(rows, name), out / f"{name}.parquet", compression="zstd")
+        # Later: multi-file tables partitioned by known_at, when one file per table outgrows a single writer
+        pq.write_table(to_table(rows, name), out / f"{name}.parquet", compression="zstd", row_group_size=ROW_GROUP_ROWS,
+                       sorting_columns=pq.SortingColumn.from_ordering(SCHEMAS[name], [(k, "ascending") for k in SORT[name]]))
         manifest["tables"][name] = f"{name}.parquet"
     (out / "factblock.json").write_text(json.dumps(manifest, indent=1, default=str) + "\n")
     return out
