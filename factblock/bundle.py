@@ -104,7 +104,8 @@ def _content(r):
     return {k: parse_instant(v) if k in INSTANT_KEYS else v for k, v in r.items() if k not in ("known_at", "attestation") and v is not None}
 
 
-def write_bundle(result: dict, out, append: bool = False, *, declared_by: str = "process:factblock-write") -> Path:
+def write_bundle(result: dict, out, append: bool = False, *, declared_by: str = "process:factblock-write",
+                 captured_at: Optional[Instant] = None, reason: str = "known_at given by the writer") -> Path:
     """Put {"manifest"?, "nodes", "edges", "resolutions"?} on disk as a JSONL bundle. With append=True and a bundle
     already at `out`, rows are added and the manifest's declarations are merged, so a folder grows
     one batch at a time and stays valid.
@@ -116,12 +117,16 @@ def write_bundle(result: dict, out, append: bool = False, *, declared_by: str = 
     so re-running an import adds nothing; the same identity with different content is an error, because blocks
     are never edited. A Parquet bundle cannot be appended to (ValueError): append to its JSONL source and convert again. append=False replaces the folder's tables. The whole bundle is validated before anything
     is written: a failing check raises ValueError and leaves the folder as it was. `result` is not modified.
-    Returns the folder path."""
+    Returns the folder path.
+
+    The batches it declares carry `reason` (where the known_at came from, e.g. "dates from the publisher's archive")
+    and `captured_at` (when the writer took the rows; default now): give captured_at and the same input writes the
+    same bytes."""
     from .validate import validate   # validate imports this module
     out = Path(out)
     mpath = out / "factblock.json"
     old = Bundle(out) if append and mpath.exists() else None
-    now = datetime.now(timezone.utc)
+    now = parse_instant(captured_at) if captured_at is not None else datetime.now(timezone.utc)
     manifest = copy.deepcopy(result.get("manifest") or {})
     manifest.setdefault("factblock_version", "1.0-draft.1"); manifest.setdefault("namespace", "local")
     decl = manifest.setdefault("declarations", {})
@@ -161,7 +166,7 @@ def write_bundle(result: dict, out, append: bool = False, *, declared_by: str = 
                 r["attestation"] = {"batch": batch}
                 if batch not in declared:
                     declared.add(batch)
-                    decl["backfills"].append({"batch": batch, "declared_known_at": r["known_at"], "reason": "known_at given by the writer",
+                    decl["backfills"].append({"batch": batch, "declared_known_at": r["known_at"], "reason": reason,
                                               "declared_by": declared_by, "captured_at": _iso(now)})
             rows[name].append(r)
 
@@ -170,7 +175,8 @@ def write_bundle(result: dict, out, append: bool = False, *, declared_by: str = 
         for key in ("facts", "backfills", "edge_types"):
             have = {json.dumps(x, sort_keys=True, default=_iso) for x in merged["declarations"].get(key, [])}
             merged["declarations"][key] = merged["declarations"].get(key, []) + [x for x in decl[key] if json.dumps(x, sort_keys=True, default=_iso) not in have]
-        merged["exported_as_of"] = manifest.get("exported_as_of", merged.get("exported_as_of"))
+        if manifest.get("exported_as_of") is not None:   # absent stays absent, so re-running an append changes no byte
+            merged["exported_as_of"] = manifest["exported_as_of"]
         manifest = json.loads(json.dumps(merged, default=_iso))
     tables = manifest.setdefault("tables", {})
     tables.setdefault("nodes", "nodes.jsonl"); tables.setdefault("edges", "edges.jsonl")

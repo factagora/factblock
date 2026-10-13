@@ -34,8 +34,18 @@ def _cert(c, backfill=True):
     return "  ".join(parts)
 
 
-def _print_scan(r):
+def _print_scan(r, b):
     print(_cert(r.certificate))
+    reasons = {}   # why the visible rows' known_at is what it is, by the batches they came in
+    for t in ("nodes", "edges", "resolutions"):
+        for x in r.to_dicts(t):
+            reason = b.backfills.get((x.get("attestation") or {}).get("batch"), {}).get("reason")
+            if reason:
+                reasons[reason] = reasons.get(reason, 0) + 1
+    if reasons:
+        top = sorted(reasons.items(), key=lambda x: (-x[1], x[0]))
+        print("backfill reasons: " + "; ".join(f"{k} ({n} row{'s' if n != 1 else ''})" for k, n in top[:3])
+              + (f"; {len(top) - 3} other reasons" if len(top) > 3 else ""))
     nodes = r.nodes.to_pylist()
     for n in sorted(nodes, key=lambda n: (n["asserted_at"], n["id"])):
         tail = f"   [superseded by {n['superseded_by']}]" if n.get("superseded_by") else ""
@@ -143,6 +153,7 @@ def main():
     im.add_argument("--known-at", help="when you learned rows that have no known_at of their own; default now")
     im.add_argument("--map", action="append", metavar="YOURS=OURS", help="rename your columns, e.g. --map Claim=statement,Date=said_at,Customer=customer")
     im.add_argument("--backfill", action="store_true", help="rows without known_at are known when said (or decided): material from the past")
+    im.add_argument("--reason", default="known_at given by the writer", help="where the rows' known_at came from, kept with their batches and shown by scan, e.g. \"dates from the IRS newsroom archive\"")
     im.add_argument("--namespace", default="local")
     cmd("scan", "what the folder knew as of an instant: blocks, edges, verdicts, and what was hidden")
     rc = cmd("recall", "the blocks about something as of an instant, ranked; the read an agent makes before it answers")
@@ -248,7 +259,7 @@ def main():
                          columns={k.strip(): v.strip() for k, v in pairs})
         count = lambda: (lambda b: (len(b.nodes), len(b.edges), len(b.resolutions)))(Bundle(a.out)) if (pathlib.Path(a.out) / "factblock.json").exists() else (0, 0, 0)  # noqa: E731
         before = count()
-        write_bundle(r, a.out, append=True)
+        write_bundle(r, a.out, append=True, reason=a.reason)
         added = [x - y for x, y in zip(count(), before)]
         same = len(r["nodes"]) + len(r["edges"]) + len(r["resolutions"]) - sum(added)
         print(f"{a.out}: +{added[0]} blocks, +{added[1]} replaced, +{added[2]} verdicts" + (f", {same} already there" if same else ""))
@@ -260,14 +271,15 @@ def main():
             print(f"{stamped} row{'s' if stamped != 1 else ''} without known_at recorded as known now ({now[:10]}), reads as of an earlier day do not see "
                   f"{'them' if stamped != 1 else 'it'}. Past material? Import into a new folder with --backfill.")
     elif a.cmd == "scan":
-        r = scan(a.bundle, a.as_of, a.valid_at)
+        b = Bundle(a.bundle)
+        r = scan(b, a.as_of, a.valid_at)
         if a.json:
             out_json({"certificate": r.certificate,
                       "nodes": r.nodes.select([c for c in ("id", "kind", "statement", "asserted_at", "superseded_by") if c in r.nodes.column_names]).to_pylist(),
                       "edges": r.edges.select(["source_id", "target_id", "edge_type", "asserted_at"]).to_pylist() if r.edges.num_rows else [],
                       "resolutions": r.to_dicts("resolutions")})
         else:
-            _print_scan(r)
+            _print_scan(r, b)
     elif a.cmd == "recall":
         b = Bundle(a.bundle)
         r = recall(b, a.query, a.as_of, a.valid_at, a.limit, kinds=() if a.all_kinds else None, verdict=a.verdict,

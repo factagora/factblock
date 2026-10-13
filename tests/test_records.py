@@ -103,6 +103,22 @@ with tempfile.TemporaryDirectory() as d:
         factblock.from_records([{"text": "no date"}]); raise AssertionError
     except ValueError as e:
         assert "needs asserted_at" in str(e)
+with tempfile.TemporaryDirectory() as d:   # reproducible writes: same input, captured_at and reason give the same bytes; a re-run append changes nothing
+    d = pathlib.Path(d)
+    rows = {"nodes": [{"id": "a", "kind": "claim", "statement": "x", "asserted_at": "2025-01-01", "known_at": "2025-01-02"}]}
+    files = lambda p: {f.name: f.read_bytes() for f in p.iterdir()}  # noqa: E731
+    for out in ("one", "two"):
+        factblock.write_bundle(rows, d / out, captured_at="2025-03-01T00:00:00Z", reason="dates from the publisher's archive")
+    assert files(d / "one") == files(d / "two")
+    b = factblock.Bundle(d / "one").manifest["declarations"]["backfills"][0]
+    assert (b["reason"], b["captured_at"]) == ("dates from the publisher's archive", "2025-03-01T00:00:00Z"), b
+    before = files(d / "one")
+    factblock.write_bundle(rows, d / "one", append=True)
+    assert files(d / "one") == before and "exported_as_of" not in factblock.Bundle(d / "one").manifest
+    (d / "r.csv").write_text("id,said_at,text\nr1,2025-01-01,The fee is $5.\n")
+    cli = lambda *a: subprocess.run([sys.executable, "-m", "factblock", *a], cwd=d, check=True, capture_output=True, text=True).stdout  # noqa: E731
+    cli("import", "r.csv", "--backfill", "--reason", "dates from the fee schedule archive", "-o", "fees")
+    assert "backfill reasons: dates from the fee schedule archive (1 row)" in cli("scan", "fees", "--as-of", "2025-02-01")
 # your column names, mapped on the way in (library and CLI)
 r = factblock.from_records([{"Claim": "Audit log export by April 30.", "Date": "2026-02-01", "Customer": "Globex", "Ref": "c1"}],
                            backfill=True, columns={"Claim": "statement", "Date": "said_at", "Ref": "id", "Customer": "customer"})
@@ -152,4 +168,4 @@ with tempfile.TemporaryDirectory() as d:   # the README's rows, imported without
     assert "demo" not in h and "Start here: factblock sample --policies irs/" in h, h
     p = subprocess.run([sys.executable, "-m", "factblock", "track-record", "samples/cramer", "--as-of", "2026-10-01"], cwd=d, capture_output=True, text=True)
     assert p.returncode != 0 and "git clone https://github.com/factagora/factblock" in p.stderr, p.stderr   # outside a checkout: where to get it
-print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies (IRS mileage) imports and reads as the README shows, retroactive change included; an import without known_at and an empty recall say why (learned later, or no such words), a missing model extra prints its fix without a traceback; samples/cramer outside a checkout says to clone; --help groups the commands")
+print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, same input same bytes (captured_at, reason) and a re-run append changes nothing, scan shows batch reasons, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies (IRS mileage) imports and reads as the README shows, retroactive change included; an import without known_at and an empty recall say why (learned later, or no such words), a missing model extra prints its fix without a traceback; samples/cramer outside a checkout says to clone; --help groups the commands")
