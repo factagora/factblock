@@ -56,4 +56,7 @@ with tempfile.TemporaryDirectory() as d:
     ctx = factblock.context(d, "rate", "2026-01-01", valid_at="2025-03-20")
     assert "  rests on r1, replaced by (announced 2025-07-04, in force from 2025-01-20): The rate is 100%." in ctx, ctx
     assert ctx.count("rests on") == 1, ctx                                              # m2 rests on m1, not replaced: no mark
+    out = subprocess.run([sys.executable, "-m", "factblock", "recall", d, "rate", "--as-of", "2026-01-01", "--valid-at", "2025-03-20"],
+                         capture_output=True, text=True, check=True).stdout
+    assert "rests on r1, replaced by r2 (announced 2025-07-04, in force from 2025-01-20): The rate is 100%." in out, out   # CLI says it as context does
 print("PASS recall: ranked by hits and recency, masked by as_of, limit, context lines, replaced/verdict/learned as known at as_of, CLI, fact_key, basis replaced")

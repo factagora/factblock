@@ -27,7 +27,7 @@ irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 7
 
 irs-2026-07  claim       2026-07-13  The IRS business standard mileage rate is 76 cents per mile.
 irs-2026-01  claim       2025-12-29  The IRS business standard mileage rate is 72.5 cents per mile.
-                           replaced 2026-07-01 by irs-2026-07: The IRS business standard mileage rate is 76 cents per mile.
+                           replaced by irs-2026-07 (announced 2026-07-13, in force from 2026-07-01): The IRS business standard mileage rate is 76 cents per mile.
 2 of 7 matching   as of 2026-07-20  hidden: nothing
 ```
 

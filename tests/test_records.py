@@ -173,10 +173,10 @@ with tempfile.TemporaryDirectory() as d:
     d = pathlib.Path(d)
     (d / "n.csv").write_text("id,said_at,text,replaces,based_on\nr1,2025-01-01,Rule one.,,\nr2,2025-02-01,Rule two.,r1,\nn1,2025-03-01,A note.,,r1;r2\n")
     p = subprocess.run([sys.executable, "-m", "factblock", "import", str(d / "n.csv"), "-o", str(d / "b"), "--backfill"], capture_output=True, text=True)
-    assert p.returncode == 0 and "+3 blocks, +1 replaced, +0 verdicts" in p.stdout and "already there" not in p.stdout, p.stdout + p.stderr
+    assert p.returncode == 0 and "+3 blocks, +1 replaced, +0 verdicts, +2 links" in p.stdout and "already there" not in p.stdout, p.stdout + p.stderr
     b = factblock.Bundle(d / "b")
     assert sorted((e["source_id"], e["target_id"], e["edge_type"]) for e in b.edges) == [("n1", "r1", "DERIVED_FROM"), ("n1", "r2", "DERIVED_FROM"), ("r2", "r1", "SUPERSEDES")]
     assert next(n for n in b.nodes if n["id"] == "n1")["payload"]["based_on"] == "r1;r2"
     p = subprocess.run([sys.executable, "-m", "factblock", "import", str(d / "n.csv"), "-o", str(d / "b"), "--backfill"], capture_output=True, text=True)
-    assert "+0 blocks, +0 replaced, +0 verdicts, 6 already there" in p.stdout, p.stdout + p.stderr
+    assert "+0 blocks, +0 replaced, +0 verdicts, 6 already there" in p.stdout and "links" not in p.stdout, p.stdout + p.stderr
 print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, same input same bytes (captured_at, reason) and a re-run append changes nothing, scan shows batch reasons, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies (IRS mileage) imports and reads as the README shows, retroactive change included; an import without known_at and an empty recall say why (learned later, or no such words), a missing model extra prints its fix without a traceback; samples/cramer outside a checkout says to clone; --help groups the commands; based_on writes DERIVED_FROM")
