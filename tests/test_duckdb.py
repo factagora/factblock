@@ -47,4 +47,35 @@ for name, days in (("rates", ("2024-06-01", "2024-12-31", "2025-06-01")), ("cram
                 want[r["target_id"]] = r["outcome"]
             got = dict(con.execute("SELECT target_id, outcome FROM factblock_verdicts(?, factblock_day(?))", [pq, day]).fetchall())
             assert got == want, (name, day, len(got), len(want))
-print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants and under valid_at; verdicts match the library's latest visible verdict; SQL on top")
+# SPEC 5.3 row groups: a table past ROW_GROUP_ROWS splits into bounded groups in known_at order, the file records
+# that order, and an as-of read across groups (a replacement in a later group) gives the same answer
+import datetime as dt  # noqa: E402
+import pyarrow.parquet as pq  # noqa: E402
+from factblock.parquet import ROW_GROUP_ROWS  # noqa: E402
+day0 = dt.datetime(2020, 1, 1, tzinfo=dt.timezone.utc)
+at = lambda i: day0 + dt.timedelta(minutes=i)  # noqa: E731
+n = ROW_GROUP_ROWS + 100
+big = factblock.Bundle.__new__(factblock.Bundle)
+big._load({"factblock_version": "1.0-draft.1", "namespace": "rowgroups", "declarations": {}},
+          [{"id": f"n{i}", "kind": "claim", "statement": f"s{i}", "asserted_at": at(i), "valid_from": at(i), "known_at": at(i),
+            "attestation": {"ledger": "process:test"}} for i in range(n)],
+          [{"source_id": f"n{n - 1 - i}", "target_id": f"n{i}", "edge_type": "SUPERSEDES", "asserted_at": at(n - 1 - i),
+            "valid_from": at(n - 1 - i), "known_at": at(n - 1 - i), "attestation": {"ledger": "process:test"}} for i in range(0, n, 997)], [])
+with tempfile.TemporaryDirectory() as d:
+    pq_dir = factblock.write_parquet(big, d)
+    meta = pq.ParquetFile(pq_dir / "nodes.parquet").metadata
+    sizes = [meta.row_group(g).num_rows for g in range(meta.num_row_groups)]
+    assert sizes == [ROW_GROUP_ROWS, 100], sizes
+    k = meta.schema.names.index("known_at")
+    stats = [(meta.row_group(g).column(k).statistics.min, meta.row_group(g).column(k).statistics.max) for g in range(meta.num_row_groups)]
+    assert stats[0][1] < stats[1][0], stats   # sorted by known_at: the groups do not overlap, so a reader can skip one
+    assert [c.column_index for c in meta.row_group(0).sorting_columns][:2] == [k, meta.schema.names.index("id")]
+    con = duckdb.connect()
+    con.execute(factblock.duckdb_sql().read_text())
+    for when in (at(1000), at(ROW_GROUP_ROWS + 50), at(n)):
+        lib = factblock.scan(big, when)
+        want = sorted(zip(lib.nodes.column("id").to_pylist(), lib.nodes.column("superseded_by").to_pylist()))
+        got = con.execute("SELECT id, superseded_by FROM factblock_nodes(?, ?) ORDER BY id", [str(pq_dir), when]).fetchall()
+        assert got == want, (when, len(got), len(want))
+        assert con.execute("SELECT masked_nodes FROM factblock_certificate(?, ?)", [str(pq_dir), when]).fetchone()[0] == lib.certificate.get("masked", {}).get("node", 0)
+print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants and under valid_at; verdicts match the library's latest visible verdict; SQL on top; bounded row groups in known_at order read the same")

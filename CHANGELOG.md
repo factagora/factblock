@@ -3,11 +3,13 @@
 ## Unreleased
 
 ### Added
+- `bench/scale/run.py`: a reproducible scale baseline on synthetic rows. It writes one bundle in both Parquet layouts, times the DuckDB as-of reads, and checks each answer against `scan`. Results in `bench/scale/README.md`.
 - Who vouches (SPEC 3.4): every `known_at` rests on one actor's word, the ledger that stamped the row or the `declared_by` of its batch. `track_record` names it per item (`vouched_by`) and counts the statements on record before their verdict by it (`record_vouched_by`), and `factblock track-record` prints that breakdown under the "on record before" line when the count is not zero. Existing keys and output lines are unchanged.
 - `docs/guides/`: three guides titled by the problem a developer searches for (a RAG answering with a rate that changed, what an AI answer rested on and what changed since, evaluating an agent only on what was known), each on the IRS mileage data with code, expected output and what it does not do. `tests/test_guides.py` runs them as written.
 - The wheel carries the DuckDB macros (`duckdb/factblock.sql`), and `factblock.duckdb_sql()` returns their path, so `pip install factblock` is enough to read a Parquet bundle in DuckDB: `con.execute(factblock.duckdb_sql().read_text())`. `scripts/check_published.py` checks them against `scan` after a release.
 
 ### Changed
+- `write_parquet` and `factblock to-parquet` write row groups of at most 65,536 rows (SPEC 5.3), sorted by `known_at` as before, and record the sort in the file's Parquet `sorting_columns`. Files above that size split into several groups, so DuckDB reads them in parallel: on 1M synthetic nodes the as-of read takes 0.30 s instead of 0.87 s (4 cores). Answers are unchanged, and files written before still read.
 - `factblock leak` and `leak()` count hindsight apart from timing: the result has `known_later_questions` (questions citing a block learned after they were asked), and the CLI summary splits the leaking questions into learned later and only not in force when both occur.
 - Reproducible writes: `write_bundle(..., captured_at=, reason=)` sets the batch record's capture instant and reason, so the same input writes the same bytes, and `factblock import --reason "..."` records where the rows' known_at came from (default still `known_at given by the writer`). `factblock scan` prints the reasons of the batches it read under the certificate line. Appending to a bundle whose manifest has no `exported_as_of` no longer adds `"exported_as_of": null`, so re-running an append changes no byte.
 - `factblock import` says when rows without `known_at` were recorded as known now, which hides them from reads of an earlier day, and points to `--backfill` for past material.
