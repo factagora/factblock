@@ -81,7 +81,7 @@ A bundle is a FactBlock bundle only if all six hold. The validator (section 8) c
 | `causal` | `CAUSES` `CONTRIBUTING_FACTOR` `TRIGGERS` `PREVENTS` | Expanded and scored as causation |
 | `temporal` | `SUPERSEDES` `CONCURRENT_SIGNAL` `RESTATES` | `SUPERSEDES` drives supersession; `CONCURRENT_SIGNAL` is co-occurrence and is never scored as a cause; `RESTATES` is the same statement said again |
 | `argumentative` | `SUPPORTS` `CONTRADICTS` `QUALIFIES` | Evidence for and against |
-| `general` | `DEPENDS_ON` `DERIVED_FROM` `MENTIONS` | Structure. `MENTIONS` targets an entity |
+| `general` | `DEPENDS_ON` `DERIVED_FROM` `MENTIONS` | Structure. `MENTIONS` targets an entity. `DERIVED_FROM`: the source rests on the target, so a reader MAY say the source's basis was replaced when the target is (informative) |
 
 A producer may add types by listing them in `declarations.edge_types` with a family. Consumers MUST preserve unknown types and MAY treat them as `general`.
 

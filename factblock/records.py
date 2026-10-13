@@ -7,12 +7,13 @@ from your columns, so the dates are exactly the ones you gave.
 A row is a statement or a verdict.
 
   statement  id?, statement (or text), asserted_at (or said_at), valid_from (or effective_from)?,
-             valid_to (or effective_to, or due)?, known_at?, kind?, replaces?, speaker?, source?, author?
+             valid_to (or effective_to, or due)?, known_at?, kind?, replaces?, based_on?, speaker?, source?, author?
   verdict    target, outcome, decided_at, known_at?, value?, resolver?, method?, evidence?
 
 `due` is a deadline (kind commitment) or horizon (prediction); a date means through the end of that day.
 `replaces` names the id (or ids, separated by ";") this statement replaces: a SUPERSEDES edge, said and
-in force when the new statement is. Any other column goes into payload. Empty cells count as absent.
+in force when the new statement is. `based_on` names what it rests on the same way: a DERIVED_FROM edge
+(it also stays in payload). Any other column goes into payload. Empty cells count as absent.
 known_at is when you learned the row: its own column, else `known_at=`, else the day it was said or
 decided with `backfill=True`, else now. write_bundle declares one batch per known_at (SPEC 6)."""
 from __future__ import annotations
@@ -48,7 +49,8 @@ def from_records(rows: Iterable[dict], *, known_at: Instant | None = None, backf
     reads a .csv or .jsonl into rows. `factblock import` on the command line does both.
 
     statement  id?, statement|text, asserted_at|said_at, valid_from|effective_from?, valid_to|effective_to|due?,
-               known_at?, kind? (default claim), replaces? (id;id, writes SUPERSEDES); other columns go to payload
+               known_at?, kind? (default claim), replaces? (id;id, writes SUPERSEDES), based_on? (id;id, writes DERIVED_FROM,
+               kept in payload too); other columns go to payload
     verdict    target, outcome, decided_at, known_at?, value?, resolver?, method?, evidence? (url;url)
 
     known_at, when missing on a row: `known_at=` if given, else the row's asserted_at (or decided_at) with
@@ -91,11 +93,12 @@ def from_records(rows: Iterable[dict], *, known_at: Instant | None = None, backf
         if payload:
             n["payload"] = payload
         nodes.append(n)
-        for old in str(r.get("replaces", "")).split(";"):
-            if old.strip():
-                edges.append({"source_id": n["id"], "target_id": old.strip(), "edge_type": "SUPERSEDES",
-                              "asserted_at": n["asserted_at"], "valid_from": n["valid_from"], "valid_to": None, "known_at": n["known_at"]})
+        for col, etype in (("replaces", "SUPERSEDES"), ("based_on", "DERIVED_FROM")):
+            for old in str(r.get(col, "")).split(";"):
+                if old.strip():
+                    edges.append({"source_id": n["id"], "target_id": old.strip(), "edge_type": etype,
+                                  "asserted_at": n["asserted_at"], "valid_from": n["valid_from"], "valid_to": None, "known_at": n["known_at"]})
 
     manifest = {"factblock_version": "1.0-draft.1", "namespace": namespace, "exported_as_of": _iso(now)}
     return {"manifest": manifest, "nodes": nodes, "edges": edges, "resolutions": resolutions,
-            "summary": {"blocks": len(nodes), "replaced": len(edges), "verdicts": len(resolutions)}}
+            "summary": {"blocks": len(nodes), "replaced": sum(e["edge_type"] == "SUPERSEDES" for e in edges), "verdicts": len(resolutions)}}

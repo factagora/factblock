@@ -75,7 +75,7 @@ p2,2026-02-20,2026-03-15,,The Team plan costs $36 per user per month.,p1
 
 `factblock import plans.csv --backfill -o kb/` writes them. `--backfill` reads a row without `known_at` as known when it was said; without it, as known today, so a read of an earlier day does not see it. Your own column names: `--map Claim=text,Date=said_at`.
 
-`said_at` (or `asserted_at`) is when it was said, `effective_from` (or `valid_from`, default `said_at`) when it takes effect, `known_at` when you learned it, `replaces` the id it supersedes. A row with `target`, `outcome` and `decided_at` is a verdict. Any other column goes into the payload. In Python, any dicts with the format's own names will do:
+`said_at` (or `asserted_at`) is when it was said, `effective_from` (or `valid_from`, default `said_at`) when it takes effect, `known_at` when you learned it, `replaces` the id it supersedes, `based_on` the id it rests on (recall then says when that basis was replaced). A row with `target`, `outcome` and `decided_at` is a verdict. Any other column goes into the payload. In Python, any dicts with the format's own names will do:
 
 ```python
 factblock.write_bundle({"nodes": [{"id": "r1", "kind": "claim", "statement": "Annual plans refund within 30 days.",
