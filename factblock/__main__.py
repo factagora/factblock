@@ -389,6 +389,8 @@ def main():
         for d in (pu or {}).get("facts_differ", []):
             print(f"  fact {d['fact_key']}: the ledger has {rule(d['store'])}; the folder has {rule(d['local'])}. "
                   "Kept the ledger's rule; to use the folder's, declare it again on the ledger (POST /v1/facts).")
+        if (pu or {}).get("applies_if"):   # Later: drop once tckg stores applies_if (tax-rules plan Stage 6a)
+            print(f"  {pu['applies_if']} rows carry applies_if; the store drops it until tckg supports conditions, so they will read as unconditional there")
         for x in (pu or {}).get("refused", []):
             print(f"  refused {x}")
         sys.exit(1 if pu and pu["refused"] else 0)

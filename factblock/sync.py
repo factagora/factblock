@@ -180,6 +180,8 @@ def sync(bundle, store: Store, as_of=None, push=True, pull=True) -> dict:
         out["pushed"]["facts_differ"] = [{"fact_key": k, "local": _rule(mine[k]), "store": _rule(theirs[k])}
                                          for k in sorted(mine) if k in theirs and _rule(mine[k]) != _rule(theirs[k])]
         out["pushed"]["resolutions_not_pushed"] = len(only_local["resolutions"])   # verdicts are the store's to make
+        # rows carrying SPEC 3.1 conditions: tckg keeps only the columns it knows, so they arrive unconditional there
+        out["pushed"]["applies_if"] = sum(1 for n in only_local["nodes"] if n.get("applies_if"))
     if pull:
         only_remote = {t: [r for r in remote.get(t, []) if KEYS[t](r) not in have_local[t]] for t in KEYS}
         if any(only_remote.values()) or not exists:
