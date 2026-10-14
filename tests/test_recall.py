@@ -59,4 +59,14 @@ with tempfile.TemporaryDirectory() as d:
     out = subprocess.run([sys.executable, "-m", "factblock", "recall", d, "rate", "--as-of", "2026-01-01", "--valid-at", "2025-03-20"],
                          capture_output=True, text=True, check=True).stdout
     assert "rests on r1, replaced by r2 (announced 2025-07-04, in force from 2025-01-20): The rate is 100%." in out, out   # CLI says it as context does
-print("PASS recall: ranked by hits and recency, masked by as_of, limit, context lines, replaced/verdict/learned as known at as_of, CLI, fact_key, basis replaced")
+# a replacement for some cases only (SPEC 4.3): the old rule stays live, marked with who the new one is for
+COND = pathlib.Path(__file__).resolve().parents[1] / "conformance" / "bundles" / "conditional"
+i = next(i for i in factblock.recall(COND, "bonus depreciation", "2025-07-10")["items"] if i["id"] == "bonus-40")
+assert "superseded_by" not in i and [(x["id"], x["since"].date().isoformat()) for x in i["superseded_for"]] == [("bonus-100", "2025-01-20")], i
+ctx = factblock.context(COND, "bonus depreciation", "2025-07-10")
+assert "  replaced for acquired after 2025-01-19 by (announced 2025-07-04, in force from 2025-01-20): Bonus depreciation is 100%" in ctx, ctx
+ctx = factblock.context(COND, "elect", "2025-07-10")   # a total replacement keeps its line
+out = subprocess.run([sys.executable, "-m", "factblock", "recall", str(COND), "bonus", "--as-of", "2025-07-10"], capture_output=True, text=True, check=True).stdout
+assert "for acquired after 2025-01-19, replaced by bonus-100 (announced 2025-07-04, in force from 2025-01-20)" in out, out
+assert "  replaced 2024-09-01 by: Partnerships and S corporations elect by April 15." in ctx and "replaced for" not in ctx, ctx
+print("PASS recall: ranked by hits and recency, masked by as_of, limit, context lines, replaced/verdict/learned as known at as_of, CLI, fact_key, basis replaced, replaced for some cases")

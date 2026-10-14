@@ -60,7 +60,8 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
     not crowded by blocks that share its words but answer another.
 
     Each item: id, kind, statement, asserted_at, known_at, in_force_from, speaker, source, score, and when they
-    apply: superseded_by {id, statement, asserted_at, since}, upcoming {id, statement, asserted_at, from},
+    apply: superseded_by {id, statement, asserted_at, since}, superseded_for [{id, statement, asserted_at, since,
+    applies_if}] (replaced only for the cases the successor's applies_if names, SPEC 4.3), upcoming {id, statement, asserted_at, from},
     verdict {outcome, decided_at, resolver}, basis_replaced [{id, by, statement, asserted_at, since}] (a block it
     rests on, by a DERIVED_FROM edge, was replaced as known at as_of), due (a prediction's or commitment's valid_to, still ahead) or
     ended (it has passed). Keys that do not apply are absent."""
@@ -87,14 +88,15 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
         if e["edge_type"] == "DERIVED_FROM":
             basis.setdefault(e["source_id"], []).append(e["target_id"])
 
-    def replaced(n):
+    def replaced(n, sid=None, since=None):
         """n's successor as an item field; the successor block may not be in force at valid_at, the edge is."""
         nonlocal raw
-        succ = by_id.get(n["superseded_by"])
+        sid, since = sid or n["superseded_by"], since or n["_replaced_at"]
+        succ = by_id.get(sid)
         if succ is None:
             raw = raw or {x["id"]: x for x in b.nodes}
-            succ = raw.get(n["superseded_by"], {"id": n["superseded_by"]})
-        return {"id": succ["id"], "statement": succ.get("statement"), "asserted_at": succ.get("asserted_at"), "since": n["_replaced_at"]}
+            succ = raw.get(sid, {"id": sid})
+        return {"id": succ["id"], "statement": succ.get("statement"), "asserted_at": succ.get("asserted_at"), "since": since}
     items, excluded = [], {}
     near = {}   # id -> (rank, similarity) for the blocks closest in meaning, when embed is given
     if embed is not None and terms:
@@ -130,6 +132,9 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
                 item["due"] = n["valid_to"]
             if n.get("superseded_by"):
                 item["superseded_by"] = replaced(n)
+            if n.get("superseded_for"):   # replaced only for the cases its successor applies to (SPEC 4.3)
+                item["superseded_for"] = [{**replaced(n, e["source_id"], e["valid_from"]), "applies_if": f["applies_if"]}
+                                          for e, f in zip(n["_replaced_for"], n["superseded_for"])]
             # Later: basis chain beyond one hop (a note resting on a note whose basis was replaced).
             # shortcut: a basis not in force at valid_at is not checked; read at its valid_at to see it.
             gone = [by_id[x] for x in basis.get(n["id"], ()) if by_id.get(x, {}).get("superseded_by")]
@@ -165,6 +170,12 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
                           key=lambda x: x["from"])
     return {"query": query, "as_of": cert["as_of"], "items": items, "matched": matched, "upcoming": upcoming,
             "excluded": excluded, "certificate": cert}
+
+
+def _conditions(conds):
+    """applies_if as words: state=CA and acquired after 2025-01-19."""
+    return " and ".join(f"{c['key']}=" + ("|".join(c["value"]) if isinstance(c["value"], list) else c["value"]) if c["op"] == "eq"
+                        else f"{c['key']} {c['op']} {c['value']}" for c in conds or ()) or "some cases"
 
 
 def _source(s):
@@ -203,6 +214,12 @@ def context(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | 
             # announced first: a change said after it took effect (retroactive) reads as the old rule still holding otherwise
             lines.append(f"  replaced by (announced {said}, in force from {when}): " if said and said != when else f"  replaced {when} by: ")
             lines[-1] += s.get("statement") or s["id"]
+        for s in i.get("superseded_for", ()):
+            said = s["asserted_at"].date().isoformat() if s.get("asserted_at") else None
+            when = s["since"].date().isoformat()
+            cond = _conditions(s["applies_if"])
+            lines.append((f"  replaced for {cond} by (announced {said}, in force from {when}): " if said and said != when else f"  replaced {when} for {cond} by: ")
+                         + (s.get("statement") or s["id"]))
         for s in i.get("basis_replaced", ()):
             said = s["asserted_at"].date().isoformat() if s.get("asserted_at") else None
             when = s["since"].date().isoformat()

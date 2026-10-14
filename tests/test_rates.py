@@ -12,7 +12,7 @@ RATES = pathlib.Path(__file__).resolve().parents[1] / "samples" / "rates"
 
 checks = factblock.validate(RATES)
 assert all(c.ok for c in checks), [c for c in checks if not c.ok]
-assert len(checks) == 13
+assert len(checks) == 14
 
 ids = lambda s: sorted(s.nodes.column("id").to_pylist())  # noqa: E731
 may = factblock.scan(RATES, "2024-05-01")
@@ -55,6 +55,20 @@ ok.nodes[0]["attestation"] = {"batch": ok.nodes[0]["attestation"]["batch"]}
 assert all(c.ok for c in factblock.validate(ok)), [c for c in factblock.validate(ok) if not c.ok]
 ok.nodes[0]["attestation"] = {}
 assert {c.check_id for c in factblock.validate(ok) if not c.ok} == {"I2.attested"}
+# SPEC 3.1 applies_if: a malformed condition fails S3.applies_if alone; well-formed ones pass, and resolve will not
+# pick among conditional candidates without facts about the case (SPEC 4.4 needs_facts)
+cond = copy.deepcopy(factblock.Bundle(RATES))
+for n in cond.nodes:
+    if n.get("fact_key") == "belief:fed:direction":
+        n["applies_if"] = [{"key": "state", "op": "eq", "value": ["CA", "NY"]}, {"key": "acquired", "op": "after", "value": "2025-01-19"}]
+assert all(c.ok for c in factblock.validate(cond)), [c for c in factblock.validate(cond) if not c.ok]
+c = factblock.resolve(cond, "belief:fed:direction", "2024-10-01")
+assert c["status"] == "no_answer" and c["reason"] == "needs_facts" and c["candidates"], c
+for broken in ("state=CA", [{"key": "state", "op": "in", "value": "CA"}], [{"key": "acquired", "op": "after", "value": "soon"}],
+               [{"key": "state", "op": "eq", "value": []}], [{"op": "eq", "value": "CA"}]):
+    bad = copy.deepcopy(cond)
+    bad.nodes[0]["applies_if"] = broken
+    assert {c.check_id for c in factblock.validate(bad) if not c.ok} == {"S3.applies_if"}, broken
 
 for f in (lambda: factblock.scan(RATES, None), lambda: factblock.resolve(RATES, "x", None)):
     try:
@@ -63,7 +77,7 @@ for f in (lambda: factblock.scan(RATES, None), lambda: factblock.resolve(RATES, 
     except ValueError:
         pass
 assert factblock.scan(RATES, "2024-10-01").resolutions.num_rows == 2 and factblock.scan(RATES, "2025-01-01").resolutions.num_rows == 3
-print("PASS factblock: validate 13/13, scan at three instants, supersession, certificate, valid_at, resolve 10 cases, verdict rows masked by known_at")
+print("PASS factblock: validate 14/14, scan at three instants, supersession, certificate, valid_at, resolve 10 cases, verdict rows masked by known_at, applies_if shape and needs_facts")
 
 # Parquet profile: the same bundle written as Parquet validates and answers identically (SPEC 5.3)
 import tempfile  # noqa: E402

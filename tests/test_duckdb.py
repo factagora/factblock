@@ -97,13 +97,15 @@ with tempfile.TemporaryDirectory() as d:
     old = pathlib.Path(d) / "old"
     old.mkdir()
     (old / "factblock.json").write_text((pq_dir / "factblock.json").read_text())
-    for table in ("nodes", "edges"):   # the profile as written before namespace: same file, no column
+    for table in ("nodes", "edges"):   # the profile as written before namespace and applies_if: same file, no columns
         t = pq.read_table(pq_dir / f"{table}.parquet")
-        pq.write_table(t.drop_columns(["namespace"]), old / f"{table}.parquet")
+        pq.write_table(t.drop_columns(["namespace"] + (["applies_if"] if table == "nodes" else [])), old / f"{table}.parquet")
     for table, key in (("nodes", "id"), ("edges", "source_id")):
         rows = con.execute(f"SELECT {key}, namespace FROM factblock_{table}(?, factblock_day('2024-10-31'))", [str(old)]).fetchall()
         assert len(rows) == (3 if table == "nodes" else 1) and all(r[1] is None for r in rows), (table, rows)
     assert all("namespace" not in r for r in factblock.scan(old, "2024-10-31").to_dicts("nodes"))
+    rows = con.execute("SELECT applies_if, superseded_for FROM factblock_nodes(?, factblock_day('2024-10-31'))", [str(old)]).fetchall()
+    assert rows and all(r == (None, None) for r in rows), rows
     cert = con.execute("SELECT masked_nodes, backfill_rows FROM factblock_certificate(?, factblock_day('2024-09-30'))", [str(old)]).fetchone()
     assert cert == (1, 0), cert
-print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants and under valid_at; verdicts match the library's latest visible verdict; SQL on top; bounded row groups in known_at order read the same; namespace column on nodes and edges, null in files written before it")
+print("PASS duckdb macros: nodes + superseded_by + certificate match factblock.scan at three instants and under valid_at; verdicts match the library's latest visible verdict; SQL on top; bounded row groups in known_at order read the same; namespace column on nodes and edges, applies_if on nodes, null in files written before them")

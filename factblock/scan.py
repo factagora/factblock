@@ -1,4 +1,4 @@
-"""SPEC section 4: as-of read with certificate and superseded_by. Arrow tables out."""
+"""SPEC section 4: as-of read with certificate, superseded_by and superseded_for. Arrow tables out."""
 import json
 import re
 from dataclasses import dataclass
@@ -8,7 +8,7 @@ import pyarrow as pa
 
 from .bundle import Bundle, BundleLike, Instant, parse_instant
 
-JSON_COLS = ("payload", "properties", "fact_value", "attestation", "value", "evidence")   # free-form or mixed-type: out as JSON strings
+JSON_COLS = ("payload", "properties", "fact_value", "attestation", "value", "evidence", "applies_if", "superseded_for")   # free-form or mixed-type: out as JSON strings
 
 
 def _as_of(v):
@@ -18,6 +18,12 @@ def _as_of(v):
     if isinstance(v, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
         return parse_instant(v + "T23:59:59.999999+00:00")
     return parse_instant(v)
+
+
+def conditions(r):
+    """A row's applies_if as comparable conditions (SPEC 3.1, 4.3): (key, op, values), an eq list as a set."""
+    return {(c["key"], c["op"], tuple(sorted(set(c["value"]))) if isinstance(c["value"], list) else (c["value"],))
+            for c in r.get("applies_if") or ()}
 
 
 def _visible(r, as_of, valid_at):
@@ -61,11 +67,29 @@ def visible(bundle: BundleLike, as_of: Instant, valid_at: Instant | None = None)
     edges = [r for r in b.edges if _visible(r, t, v)]
     res = [r for r in b.resolutions if _visible(r, t, v)]
 
-    # SPEC 4.3: when several visible edges replace one block, the latest asserted wins (ties by source id)
-    superseded = {e["target_id"]: e for e in sorted(edges, key=lambda e: (e["asserted_at"], e["source_id"])) if e["edge_type"] == "SUPERSEDES"}
-    # _replaced_at: when the replacement took effect (the edge's valid_from), not when the successor was said
-    nodes = [{**r, "superseded_by": superseded[r["id"]]["source_id"], "_replaced_at": superseded[r["id"]]["valid_from"]}
-             if r["id"] in superseded else {**r, "superseded_by": None} for r in nodes]
+    # SPEC 4.3: when several visible edges replace one block, the latest asserted wins (ties by source id).
+    # A successor whose applies_if is not among the block's own replaces it only for some cases: superseded_for.
+    into = {}
+    for e in sorted(edges, key=lambda e: (e["asserted_at"], e["source_id"])):
+        if e["edge_type"] == "SUPERSEDES":
+            into.setdefault(e["target_id"], []).append(e)
+    succ = {e["source_id"] for es in into.values() for e in es}
+    src = {}   # the successor's row: the latest known by as_of (known_at, then valid_from)
+    for r in sorted((r for r in b.nodes if r["known_at"] <= t and r["id"] in succ),
+                    key=lambda r: (r["known_at"], r["valid_from"])):
+        src[r["id"]] = r
+    out = []
+    for r in nodes:
+        mine = conditions(r)
+        whole = [e for e in into.get(r["id"], ()) if conditions(src.get(e["source_id"], {})) <= mine]
+        part = [e for e in into.get(r["id"], ()) if e not in whole]
+        # _replaced_at: when the replacement took effect (the edge's valid_from), not when the successor was said
+        row = {**r, "superseded_by": whole[-1]["source_id"], "_replaced_at": whole[-1]["valid_from"]} if whole else {**r, "superseded_by": None}
+        if part:
+            row["superseded_for"] = [{"by": e["source_id"], "applies_if": src.get(e["source_id"], {}).get("applies_if")} for e in part]
+            row["_replaced_for"] = part
+        out.append(row)
+    nodes = out
 
     # SPEC 4.2: masked = learned after as_of (hindsight blocked); not_in_force = known by then but not in force at valid_at
     masked, not_in_force = {}, {}

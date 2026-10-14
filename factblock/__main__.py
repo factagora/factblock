@@ -11,7 +11,7 @@ import sys
 from . import __version__, Bundle, embedder, TckgStore, extract, from_records, graph, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, track_record, validate, why, write_bundle, write_parquet
 from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
 from .bundle import parse_instant
-from .recall import THINGS, _hits, _terms
+from .recall import THINGS, _conditions, _hits, _terms
 
 # the wheel carries samples/rates at factblock/samples/rates (pyproject force-include); a checkout has it at the repo root
 SAMPLES = next((d for d in (pathlib.Path(__file__).parent / "samples", pathlib.Path(__file__).resolve().parents[1] / "samples") if (d / "rates").exists()), None)
@@ -300,6 +300,8 @@ def main():
                                      and _day(s["asserted_at"]) != _day(s["since"]) else f"replaced {_day(s['since'])} by {by}: ") + str(s.get("statement"))
                 if i.get("superseded_by"):
                     print(f"{'':<25}  " + rep(i["superseded_by"]["id"], i["superseded_by"]))
+                for s in i.get("superseded_for", ()):   # replaced only for the cases the successor applies to (SPEC 4.3)
+                    print(f"{'':<25}  for {_conditions(s['applies_if'])}, " + rep(s["id"], s))
                 for s in i.get("basis_replaced", ()):
                     print(f"{'':<25}  rests on {s['id']}, " + rep(s["by"], s))
                 if i.get("verdict"):

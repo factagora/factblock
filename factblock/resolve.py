@@ -56,6 +56,8 @@ def resolve(bundle: BundleLike, fact_key: str, as_of: Instant, valid_at: Instant
     if not cands:
         reason = "no_data" if not all_rows else "not_yet" if not shown else "no_value_at"
         return answer("no_answer", reason=reason, policy=policy)
+    if any(n.get("applies_if") for n in cands):   # SPEC 4.4: which conditional row applies depends on facts this read lacks
+        return answer("no_answer", reason="needs_facts", cands=cands, policy=policy)
     if len(cands) == 1:
         return answer("answered", value=cands[0].get("fact_value"), cands=cands, policy=policy)
 

@@ -1,8 +1,8 @@
-"""SPEC section 2: the six invariants, one check id each. No engine, no network."""
+"""SPEC section 2: the six invariants, one check id each, plus the field shapes of section 8. No engine, no network."""
 from dataclasses import dataclass
 from datetime import datetime
 
-from .bundle import Bundle, BundleLike
+from .bundle import Bundle, BundleLike, parse_instant
 
 CORE_FAMILY = {
     "CAUSES": "causal", "CONTRIBUTING_FACTOR": "causal", "TRIGGERS": "causal", "PREVENTS": "causal",
@@ -12,6 +12,20 @@ CORE_FAMILY = {
 }
 FAMILIES = {"causal", "temporal", "argumentative", "general"}
 POLICIES = {"latest_valid", "latest_observed", "source_priority", "strict"}
+OPS = {"eq", "after", "before"}   # SPEC 3.1 applies_if
+
+
+def _bad_condition(c):
+    """Why one applies_if condition is malformed (SPEC 3.1), or None."""
+    if not isinstance(c, dict) or not isinstance(c.get("key"), str) or not c["key"] or c.get("op") not in OPS:
+        return "needs key and op (eq, after, before)"
+    v = c.get("value")
+    if c["op"] == "eq":
+        return None if isinstance(v, str) or (isinstance(v, list) and v and all(isinstance(x, str) for x in v)) else "eq takes a string or a list of strings"
+    try:
+        return None if isinstance(v, str) and parse_instant(v) else f"{c['op']} takes a date or instant"
+    except ValueError:
+        return f"{c['op']} takes a date or instant"
 
 
 @dataclass
@@ -96,6 +110,15 @@ def validate(bundle: "BundleLike") -> list[Check]:
     badpol = [k for k, fs in b.facts.items() if any(f.get("policy", "latest_valid") not in POLICIES for f in fs)]
     check("I5.declared", undeclared, "fact_keys used but not declared")
     check("I5.policy_known", badpol, "facts with an unknown policy")
+
+    # S3 the shape of applies_if, which a read depends on (SPEC 3.1, 4.3)
+    badif = []
+    for r in b.nodes:
+        a = r.get("applies_if")
+        why = None if a is None else "not a list" if not isinstance(a, list) else next(filter(None, map(_bad_condition, a)), None)
+        if why:
+            badif.append(f'{r.get("id")} ({why})')
+    check("S3.applies_if", badif, "nodes with a malformed applies_if")
 
     # I6 a verdict judges a statement that was made
     said = {}

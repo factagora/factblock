@@ -23,7 +23,7 @@ from typing import Protocol
 
 from .bundle import Bundle, write_bundle
 
-STRIP = ("known_at", "attestation", "captured_at", "superseded_by")   # the store stamps these; a client sending them is refused
+STRIP = ("known_at", "attestation", "captured_at", "superseded_by", "superseded_for")   # the store stamps these; a client sending them is refused
 
 
 def _iso(v):
