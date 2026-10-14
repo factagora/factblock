@@ -69,4 +69,8 @@ ctx = factblock.context(COND, "elect", "2025-07-10")   # a total replacement kee
 out = subprocess.run([sys.executable, "-m", "factblock", "recall", str(COND), "bonus", "--as-of", "2025-07-10"], capture_output=True, text=True, check=True).stdout
 assert "for acquired after 2025-01-19, replaced by bonus-100 (announced 2025-07-04, in force from 2025-01-20)" in out, out
 assert "  replaced 2024-09-01 by: Partnerships and S corporations elect by April 15." in ctx and "replaced for" not in ctx, ctx
-print("PASS recall: ranked by hits and recency, masked by as_of, limit, context lines, replaced/verdict/learned as known at as_of, CLI, fact_key, basis replaced, replaced for some cases")
+# a malformed applies_if does not break a read: its replacement is listed for "some cases", never total
+MAL = COND.parent / "malformed-conditions"
+ctx = factblock.context(MAL, "", "2026-03-01", limit=20)
+assert ctx.count("for some cases by:") == 5 and ctx.count("replaced 2026-02-01 by:") == 3, ctx
+print("PASS recall: ranked by hits and recency, masked by as_of, limit, context lines, replaced/verdict/learned as known at as_of, CLI, fact_key, basis replaced, replaced for some cases, malformed applies_if")

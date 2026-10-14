@@ -16,6 +16,7 @@ same files. `cases.jsonl` has one case per line:
 The cases cover a replacement announced before it takes effect, a statement learned after it was said, a block
 replaced twice on the same day (`bundles/replaced-twice`), a re-resolved verdict, `valid_at` apart from `as_of`, the optional `namespace` column set on some blocks and absent on others (`bundles/two-namespaces`), and
 `applies_if` (`bundles/conditional`): a narrower successor listed under `superseded_for`, a broader one replacing totally,
-an `eq` list compared as a set, and a block replaced both ways.
+an `eq` list compared as a set, and a block replaced both ways. A malformed `applies_if` (`bundles/malformed-conditions`) is not comparable, so its replacement is listed under
+`superseded_for`, never total; readers must not fail on it.
 `tests/test_conformance.py` runs the Python reader and the DuckDB macros (`duckdb/factblock.sql`) against them.
 A new reader passes when it gives the same rows for every case.

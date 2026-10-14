@@ -17,7 +17,7 @@ is set and a bundle with vectors shows up."""
 import re
 
 from .bundle import Bundle, BundleLike, Instant, parse_instant
-from .scan import visible
+from .scan import conditions, visible
 
 THINGS = ("entity", "factor", "timeseries", "episode")   # core kinds that are not statements someone made
 SETTLED = ("prediction", "commitment")                   # kinds whose valid_to is a horizon or deadline, settled by a verdict
@@ -175,7 +175,7 @@ def recall(bundle: BundleLike, query: str, as_of: Instant, valid_at: Instant | N
 def _conditions(conds):
     """applies_if as words: state=CA and acquired after 2025-01-19."""
     return " and ".join(f"{c['key']}=" + ("|".join(c["value"]) if isinstance(c["value"], list) else c["value"]) if c["op"] == "eq"
-                        else f"{c['key']} {c['op']} {c['value']}" for c in conds or ()) or "some cases"
+                        else f"{c['key']} {c['op']} {c['value']}" for c in conds or ()) if conditions({"applies_if": conds}) else "some cases"
 
 
 def _source(s):

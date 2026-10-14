@@ -20,10 +20,22 @@ def _as_of(v):
     return parse_instant(v)
 
 
+def _comparable(c):
+    """One condition has the SPEC 3.1 shape: key, op, and a string value (or, for eq, a non-empty list of strings)."""
+    v = c.get("value") if isinstance(c, dict) else None
+    return (isinstance(c, dict) and isinstance(c.get("key"), str) and c["key"] != "" and c.get("op") in ("eq", "after", "before")
+            and (isinstance(v, str) or c["op"] == "eq" and isinstance(v, list) and v != [] and all(isinstance(x, str) for x in v)))
+
+
 def conditions(r):
-    """A row's applies_if as comparable conditions (SPEC 3.1, 4.3): (key, op, values), an eq list as a set."""
-    return {(c["key"], c["op"], tuple(sorted(set(c["value"]))) if isinstance(c["value"], list) else (c["value"],))
-            for c in r.get("applies_if") or ()}
+    """A row's applies_if as comparable conditions (SPEC 3.1, 4.3): (key, op, values), an eq list as a set. Absent
+    or null is none; a malformed applies_if is None, not comparable, so no replacement into or from it is total."""
+    a = r.get("applies_if")
+    if a is None:
+        return set()
+    if not isinstance(a, list) or not all(map(_comparable, a)):
+        return None
+    return {(c["key"], c["op"], tuple(sorted(set(c["value"]))) if isinstance(c["value"], list) else (c["value"],)) for c in a}
 
 
 def _visible(r, as_of, valid_at):
@@ -81,7 +93,7 @@ def visible(bundle: BundleLike, as_of: Instant, valid_at: Instant | None = None)
     out = []
     for r in nodes:
         mine = conditions(r)
-        whole = [e for e in into.get(r["id"], ()) if conditions(src.get(e["source_id"], {})) <= mine]
+        whole = [e for e in into.get(r["id"], ()) if mine is not None and (s := conditions(src.get(e["source_id"], {}))) is not None and s <= mine]
         part = [e for e in into.get(r["id"], ()) if e not in whole]
         # _replaced_at: when the replacement took effect (the edge's valid_from), not when the successor was said
         row = {**r, "superseded_by": whole[-1]["source_id"], "_replaced_at": whole[-1]["valid_from"]} if whole else {**r, "superseded_by": None}

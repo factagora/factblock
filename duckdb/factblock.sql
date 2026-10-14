@@ -15,11 +15,23 @@
 
 CREATE OR REPLACE MACRO factblock_day(d) AS CAST(d AS DATE) + INTERVAL 1 DAY - INTERVAL 1 MICROSECOND;
 
+-- One applies_if condition has the SPEC 3.1 shape: key, op, and a string value (or, for eq, a non-empty list of strings).
+CREATE OR REPLACE MACRO factblock_cond_ok(c) AS COALESCE(
+  json_type(c) = 'OBJECT' AND json_type(c, '$.key') = 'VARCHAR' AND (c ->> '$.key') <> ''
+  AND CASE WHEN (c ->> '$.op') IN ('after', 'before') THEN json_type(c, '$.value') = 'VARCHAR'
+           WHEN (c ->> '$.op') = 'eq' THEN json_type(c, '$.value') = 'VARCHAR'
+                OR (json_type(c, '$.value') = 'ARRAY' AND json_array_length(c, '$.value') > 0
+                    AND list_bool_and(list_transform(json_extract(c, '$.value[*]'), x -> json_type(x) = 'VARCHAR')))
+           ELSE false END, false);
+
 -- A node's applies_if (a JSON string) as comparable conditions, key/op/values with an eq list as a set (SPEC 3.1, 4.3).
+-- Null is none ([]); a malformed applies_if is NULL, not comparable, so no replacement into or from it is total.
 CREATE OR REPLACE MACRO factblock_conds(j) AS
-  list_transform(COALESCE(from_json(j, '[{"key":"VARCHAR","op":"VARCHAR","value":"JSON"}]'), []),
-    c -> c.key || chr(31) || c.op || chr(31) || array_to_string(list_sort(list_distinct(
-           CASE WHEN json_type(c.value) = 'ARRAY' THEN from_json(c.value, '["VARCHAR"]') ELSE [c.value ->> '$'] END)), chr(31)));
+  CASE WHEN j IS NULL THEN []::VARCHAR[]
+       WHEN json_type(j) <> 'ARRAY' THEN NULL
+       WHEN NOT COALESCE(list_bool_and(list_transform(json_extract(j, '$[*]'), c -> factblock_cond_ok(c))), true) THEN NULL
+       ELSE list_transform(json_extract(j, '$[*]'), c -> (c ->> '$.key') || chr(31) || (c ->> '$.op') || chr(31) || array_to_string(list_sort(list_distinct(
+              CASE WHEN json_type(c, '$.value') = 'ARRAY' THEN json_extract_string(c, '$.value[*]') ELSE [c ->> '$.value'] END)), chr(31))) END;
 
 -- superseded_by: the latest visible SUPERSEDES whose successor's applies_if is among the row's own (a total replacement).
 -- superseded_for: the others, [{by, applies_if}] in asserted order, null when none (a replacement for some cases only).
@@ -34,10 +46,10 @@ CREATE OR REPLACE MACRO factblock_nodes(bundle, as_of, valid_at := NULL) AS TABL
              AND e.valid_from <= t.v AND (e.valid_to IS NULL OR t.v < e.valid_to))
   SELECT n.*,
          (SELECT s.source_id FROM sup s
-           WHERE s.target_id = n.id AND list_has_all(factblock_conds(n.applies_if), factblock_conds(s.src_if))
+           WHERE s.target_id = n.id AND COALESCE(list_has_all(factblock_conds(n.applies_if), factblock_conds(s.src_if)), false)
            ORDER BY s.asserted_at DESC, s.source_id DESC LIMIT 1) AS superseded_by,
          (SELECT list({'by': s.source_id, 'applies_if': s.src_if} ORDER BY s.asserted_at, s.source_id) FROM sup s
-           WHERE s.target_id = n.id AND NOT list_has_all(factblock_conds(n.applies_if), factblock_conds(s.src_if))) AS superseded_for
+           WHERE s.target_id = n.id AND NOT COALESCE(list_has_all(factblock_conds(n.applies_if), factblock_conds(s.src_if)), false)) AS superseded_for
     FROM n_all n, t
    WHERE n.known_at <= t.a
      AND n.valid_from <= t.v
