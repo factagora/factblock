@@ -10,11 +10,12 @@ import sys
 import tarfile
 import tempfile
 import urllib.error
+from datetime import datetime, timezone
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import factblock  # noqa: E402
 import factblock.__main__ as fbmain  # noqa: E402
-from factblock.sync import KEYS, batches_of  # noqa: E402
+from factblock.sync import KEYS, batch_key, batches_of  # noqa: E402
 
 RATES = pathlib.Path(__file__).resolve().parents[1] / "samples" / "rates"
 
@@ -169,5 +170,115 @@ text = out.getvalue()
 assert "declared 2 fact rules (fact_key)" in text, text
 assert ("fact belief:fed:direction: the ledger has key_fields ['subject'], policy strict; the folder has key_fields ['subject'], policy latest_valid. "
         "Kept the ledger's rule; to use the folder's, declare it again on the ledger (POST /v1/facts).") in text, text
+# 6c. an older ledger gets today's requests: GET /v1/version first, then one POST per batch declaring it
+t = FakeTckg("acme/brain")
+factblock.sync(work, t, pull=False)
+mem = [b for m, p, b in t.calls if p == "/v1/memories"]
+assert ("GET", "/v1/version", None) in t.calls and len(mem) == 4 and all("backfill" in b and "backfills" not in b for b in mem), mem
+assert not any("batch" in r for b in mem for r in b["nodes"] + b["edges"]), mem
+
+
+# 7. keyed batches (tckg 0.3.12): a ledger that declares a batch once per key, as the server does
+class Ledger(factblock.TckgStore):
+    def __init__(self, version="0.3.12", lose=0):
+        super().__init__("https://ledger.test", "key", "brain")
+        self.version, self.lose = version, lose        # lose: how many responses to drop after writing
+        self.keys, self.batches, self.rows, self.posts = {}, 0, {"nodes": [], "edges": []}, []
+
+    def _call(self, method, path, body=None, params=None):
+        if path == "/v1/version":
+            if isinstance(self.version, Exception):
+                raise self.version
+            return json.dumps({"version": self.version}).encode()
+        if path == "/v1/export":
+            buf = io.BytesIO()
+            with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+                for name, data in [("factblock.json", {"factblock_version": "1.0-draft.1", "namespace": "acme/brain", "declarations": {"facts": [], "backfills": []}}),
+                                   ("nodes.jsonl", self.rows["nodes"]), ("edges.jsonl", self.rows["edges"])]:
+                    raw = (json.dumps(data) if name.endswith(".json") else "".join(json.dumps(r) + "\n" for r in data)).encode()
+                    info = tarfile.TarInfo("factblock/" + name); info.size = len(raw)
+                    tar.addfile(info, io.BytesIO(raw))
+            return buf.getvalue()
+        if path == "/v1/facts":
+            return b"{}"
+        self.posts.append(body)
+        out = {"accepted": 0, "warned": [], "refused": [], "backfill_batches": {}}
+        for bf in body.get("backfills", []):
+            content = (bf["declared_captured_at"], bf["reason"])
+            if self.keys.setdefault(bf["key"], content) != content:
+                raise urllib.error.HTTPError(self.url + path, 409, "Conflict", {}, io.BytesIO(b'{"detail": {"error": "TCKG_BATCH_KEY_CONFLICT"}}'))
+        for bf in body.get("backfills", []):
+            out["backfill_batches"][bf["key"]] = "id-" + bf["key"]
+        self.batches = len(self.keys) + sum(1 for b in self.posts if b.get("backfill"))
+        have = {KEYS[t](r) for t in self.rows for r in self.rows[t]}
+        for t in ("nodes", "edges"):
+            for r in body[t]:
+                if r.get("batch") is not None and r["batch"] not in self.keys:
+                    out["refused"].append({"id": r.get("id"), "reason": "unknown_batch"})
+                elif KEYS[t](r) in have:
+                    out["warned"].append({"id": r.get("id"), "reason": "already_remembered"})
+                else:
+                    self.rows[t].append(r); out["accepted"] += 1
+        if self.lose:
+            self.lose -= 1
+            raise urllib.error.URLError("connection reset")   # written, response lost
+        return json.dumps(out).encode()
+
+
+rates = factblock.Bundle(work)
+# the key is a pure function of the batch: one spelling per instant, and a name that differs only in content gets its own key
+k = batch_key("b1", {"declared_known_at": "2024-04-15T00:00:00Z", "reason": "r"})
+assert k == batch_key("b1", {"declared_known_at": datetime(2024, 4, 15, tzinfo=timezone.utc), "reason": "r"}) and k.startswith("b1#"), k
+assert k != batch_key("b1", {"declared_known_at": "2024-04-15T00:00:00Z", "reason": "other"})
+assert len(batch_key("x" * 500, {"declared_known_at": "2024-04-15T00:00:00Z", "reason": "r"})) <= 200
+
+# the version gate compares numbers: 0.3.9 is older than 0.3.12, an unreadable or unreachable version is old
+for v, keyed in [("0.3.9", False), ("0.3.11", False), ("0.3.12", True), ("0.3.13", True), ("0.4.0", True), ("1.0.0", True),
+                 ("", False), ("dev", False), (urllib.error.URLError("down"), False)]:
+    led = Ledger(version=v)
+    led.push(rates.manifest, rates.nodes, rates.edges)
+    assert all(("backfills" in b) == keyed and ("backfill" in b) != keyed for b in led.posts), (v, led.posts)
+
+# one request for the whole folder: every batch declared by key, every row naming its batch
+led = Ledger()
+r = led.push(rates.manifest, rates.nodes, rates.edges)
+assert len(led.posts) == 1 and r["batches"] == 4 and r["accepted"] == 10 and not r["refused"], r
+assert {bf["key"].split("#")[0] for bf in led.posts[0]["backfills"]} == {"b1", "b2", "b3", "dictstore/0@2024-11-02T00:00:00+00:00"}, led.posts[0]["backfills"]
+assert {r["batch"] for r in led.posts[0]["nodes"] + led.posts[0]["edges"]} == {bf["key"] for bf in led.posts[0]["backfills"]}, led.posts[0]
+
+# a second push of the same rows declares no new batch and writes nothing (SPEC 6.1: re-import is a no-op)
+before = led.batches
+r = led.push(rates.manifest, rates.nodes, rates.edges)
+assert led.batches == before == 4 and r["accepted"] == 0 and len(r["skipped"]) == 10 and not r["refused"], (led.batches, r)
+
+# a retry after a lost response gets the batches the first try declared
+led = Ledger(lose=1)
+try:
+    led.push(rates.manifest, rates.nodes, rates.edges)
+    raise AssertionError("the lost response should surface")
+except urllib.error.URLError:
+    pass
+r = led.push(rates.manifest, rates.nodes, rates.edges)
+assert led.batches == 4 and r["accepted"] == 0 and len(r["skipped"]) == 10, (led.batches, r)
+
+# sync twice: the second sync sends nothing
+led = Ledger()
+assert factblock.sync(work, led, pull=False)["pushed"]["accepted"] == 10
+assert factblock.sync(work, led, pull=False)["pushed"]["batches"] == 0 and len(led.posts) == 1 and led.batches == 4
+
+# packing: at most 1000 batches per request, in knowledge order, and a request stops near 2000 rows
+many = {"declarations": {"backfills": [{"batch": f"d{i:04d}", "declared_known_at": f"2020-01-01T00:00:{i % 60:02d}Z", "reason": "r"} for i in range(2500)]}}
+nodes = [{"id": f"n{i}", "kind": "claim", "statement": "s", "asserted_at": "2019-01-01T00:00:00Z", "attestation": {"batch": f"d{i:04d}"}} for i in range(2500)]
+led = Ledger()
+r = led.push(many, nodes, [])
+assert [len(b["backfills"]) for b in led.posts] == [1000, 1000, 500] and r["batches"] == 2500 and r["accepted"] == 2500, [len(b["backfills"]) for b in led.posts]
+known = [bf["declared_captured_at"] for b in led.posts for bf in b["backfills"]]
+assert known == sorted(known), "requests go in knowledge order"
+big = [{**n, "id": f"m{i}", "attestation": {"batch": f"d{i % 3:04d}"}} for i, n in enumerate(nodes[:2400])]   # 3 batches of 800 rows
+led = Ledger()
+led.push(many, big, [])
+assert [len(b["nodes"]) for b in led.posts] == [1600, 800], [len(b["nodes"]) for b in led.posts]
+
 print("PASS sync: push 9, no-op, pull verdict + store-stamped row, folder valid, re-push declares known_at as a batch, "
+      "keyed batches from tckg 0.3.12 (one request, re-push and retry declare nothing new, packed by 1000), "
       "facts declared once and never redeclared over the ledger's, tenant and space in the CLI line, empty pull explained")

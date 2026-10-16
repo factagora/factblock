@@ -10,8 +10,10 @@ own backfill batches and never adopts an imported row as learned "now".
     sync(bundle, store, push=False)     # pull only: GET /v1/export appended to the folder, or cloned into a new one
 """
 import gzip
+import hashlib
 import io
 import json
+import re
 import tarfile
 import urllib.error
 import urllib.parse
@@ -24,6 +26,9 @@ from typing import Protocol
 from .bundle import Bundle, write_bundle
 
 STRIP = ("known_at", "attestation", "captured_at", "superseded_by")   # the store stamps these; a client sending them is refused
+KEYED = (0, 3, 12)   # first tckg that takes backfills: [{key, ...}] and batch: <key>; older ones ignore both
+MAX_BACKFILLS = 1000   # tckg's cap per request
+MAX_ROWS = 2000        # rows per keyed request; a batch bigger than this still goes alone, as before keys
 
 
 def _iso(v):
@@ -81,6 +86,14 @@ def batches_of(manifest: dict, rows: list[dict]) -> dict[str, dict]:
     return out
 
 
+def batch_key(name: str, batch: dict) -> str:
+    """The key a store declares a bundle batch under: its name plus a digest of what it declares. A re-push
+    sends the same key with the same content, so the store returns the batch it has; two bundles that both
+    name a batch "b1" but declare it differently get two keys, not a conflict. At most 200 characters."""
+    digest = hashlib.sha256(json.dumps([name, _instant(batch["declared_known_at"]), batch["reason"]]).encode()).hexdigest()[:12]
+    return f"{name[:180]}#{digest}"
+
+
 def latest_facts(manifest: dict) -> dict[str, dict]:
     """fact_key -> its latest declaration (SPEC 3.7)."""
     facts = manifest.get("declarations", {}).get("facts", [])
@@ -92,8 +105,10 @@ def _rule(f):
 
 
 class TckgStore:
-    """A tckg ledger: pull is GET /v1/export, push is one POST /v1/memories per (batch, space), each
-    declaring that batch as a backfill. Needs the API key of the tenant and, for rows that carry no
+    """A tckg ledger: pull is GET /v1/export, push is POST /v1/memories. From tckg 0.3.12 a push packs
+    several batches into one request per space, each declared by a key the bundle fixes (`batch_key`), so a
+    retry or a re-push returns the batches already declared; an older ledger gets one request per (batch,
+    space) declaring that batch, as before. Needs the API key of the tenant and, for rows that carry no
     `space`, a default space."""
 
     def __init__(self, url: str, token: str, space: str | None = None, timeout: int = 300):
@@ -116,6 +131,20 @@ class TckgStore:
         rows = lambda name: [json.loads(l) for l in files.get(name, "").splitlines() if l.strip()]  # noqa: E731
         return {"manifest": json.loads(files["factblock.json"]), "nodes": rows("nodes.jsonl"), "edges": rows("edges.jsonl"), "resolutions": rows("resolutions.jsonl")}
 
+    def _keyed(self):
+        """Whether the ledger takes keyed batches: GET /v1/version compared as numbers ("0.3.12" > "0.3.9")."""
+        try:
+            m = re.match(r"(\d+)\.(\d+)\.(\d+)", json.loads(self._call("GET", "/v1/version")).get("version") or "")
+        except (urllib.error.URLError, ValueError, AttributeError):
+            return False
+        return bool(m) and tuple(map(int, m.groups())) >= KEYED
+
+    def _post(self, body, report):
+        r = json.loads(self._call("POST", "/v1/memories", body))
+        report["accepted"] += r.get("accepted", 0)
+        report["skipped"] += [w for w in r.get("warned", []) if w.get("reason") == "already_remembered"]
+        report["refused"] += r.get("refused", [])
+
     def push(self, manifest, nodes, edges):
         nodes, edges = _json(nodes), _json(edges)
         batches = batches_of(manifest, nodes + edges)
@@ -134,17 +163,34 @@ class TckgStore:
                 report["facts"] += 1
             except urllib.error.HTTPError as e:
                 report["refused"].append({"fact_key": f["fact_key"], "status": e.code, "error": e.read().decode(errors="replace")[:300]})
-        # ponytail: one POST per (batch, space), ordered by knowledge time so an edge never arrives before its endpoints.
-        for (batch, space), g in sorted(groups.items(), key=lambda kv: batches[kv[0][0]]["declared_known_at"]):
-            if space is None:
-                raise ValueError("rows without a space: pass space= to TckgStore (whose memory this is)")
+        order = sorted(groups, key=lambda k: batches[k[0]]["declared_known_at"])   # an edge never arrives before its endpoints
+        if any(space is None for _, space in order):
+            raise ValueError("rows without a space: pass space= to TckgStore (whose memory this is)")
+        strip = lambda r, **extra: {**{k: v for k, v in r.items() if k not in STRIP}, **extra}  # noqa: E731
+        if self._keyed():
+            requests = []   # (space, [batch]) in knowledge order, at most MAX_BACKFILLS batches and about MAX_ROWS rows each
+            for batch, space in order:
+                n = len(groups[(batch, space)]["nodes"]) + len(groups[(batch, space)]["edges"])
+                last = requests[-1] if requests else None
+                if last and last[0] == space and len(last[1]) < MAX_BACKFILLS and last[2] + n <= MAX_ROWS:
+                    last[1].append(batch); last[2] += n
+                else:
+                    requests.append([space, [batch], n])
+            for space, names, _ in requests:
+                key = {b: batch_key(b, batches[b]) for b in names}
+                body = {"space": space,
+                        "backfills": [{"key": key[b], "declared_captured_at": batches[b]["declared_known_at"], "reason": batches[b]["reason"]} for b in names],
+                        "nodes": [strip(n, batch=key[b]) for b in names for n in groups[(b, space)]["nodes"]],
+                        "edges": [strip(e, batch=key[b]) for b in names for e in groups[(b, space)]["edges"]]}
+                self._post(body, report)
+                report["batches"] += len(names)
+            return report
+        # an older ledger: one POST per (batch, space), each declaring its batch; a retry declares it again
+        for batch, space in order:
+            g = groups[(batch, space)]
             body = {"space": space, "backfill": {"declared_captured_at": batches[batch]["declared_known_at"], "reason": batches[batch]["reason"]},
-                    "nodes": [{k: v for k, v in n.items() if k not in STRIP} for n in g["nodes"]],
-                    "edges": [{k: v for k, v in e.items() if k not in STRIP} for e in g["edges"]]}
-            r = json.loads(self._call("POST", "/v1/memories", body))
-            report["accepted"] += r.get("accepted", 0)
-            report["skipped"] += [w for w in r.get("warned", []) if w.get("reason") == "already_remembered"]
-            report["refused"] += r.get("refused", [])
+                    "nodes": [strip(n) for n in g["nodes"]], "edges": [strip(e) for e in g["edges"]]}
+            self._post(body, report)
             report["batches"] += 1
         return report
 
