@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 
-from .bundle import Bundle, write_bundle
+from .bundle import Bundle, parse_instant, write_bundle
 
 STRIP = ("known_at", "attestation", "captured_at", "superseded_by")   # the store stamps these; a client sending them is refused
 KEYED = (0, 3, 12)   # first tckg that takes backfills: [{key, ...}] and batch: <key>; older ones ignore both
@@ -42,8 +42,7 @@ def _json(rows):
 def _instant(v):
     """One spelling per instant, so a key built from a parsed datetime matches one built from a ledger's
     string ("...57.893320+00:00" and "...57.89332Z" are the same edge)."""
-    d = v if isinstance(v, datetime) else datetime.fromisoformat(v.replace("Z", "+00:00"))
-    return d.astimezone(timezone.utc).isoformat()
+    return parse_instant(v).astimezone(timezone.utc).isoformat()   # naive is UTC, never the machine's zone
 
 
 def node_key(r):
@@ -163,35 +162,47 @@ class TckgStore:
                 report["facts"] += 1
             except urllib.error.HTTPError as e:
                 report["refused"].append({"fact_key": f["fact_key"], "status": e.code, "error": e.read().decode(errors="replace")[:300]})
-        order = sorted(groups, key=lambda k: batches[k[0]]["declared_known_at"])   # an edge never arrives before its endpoints
+        order = sorted(groups, key=lambda k: _instant(batches[k[0]]["declared_known_at"]))   # an edge never arrives before its endpoints
         if any(space is None for _, space in order):
             raise ValueError("rows without a space: pass space= to TckgStore (whose memory this is)")
-        strip = lambda r, **extra: {**{k: v for k, v in r.items() if k not in STRIP}, **extra}  # noqa: E731
-        if self._keyed():
-            requests = []   # (space, [batch]) in knowledge order, at most MAX_BACKFILLS batches and about MAX_ROWS rows each
-            for batch, space in order:
-                n = len(groups[(batch, space)]["nodes"]) + len(groups[(batch, space)]["edges"])
-                last = requests[-1] if requests else None
-                if last and last[0] == space and len(last[1]) < MAX_BACKFILLS and last[2] + n <= MAX_ROWS:
-                    last[1].append(batch); last[2] += n
-                else:
-                    requests.append([space, [batch], n])
-            for space, names, _ in requests:
-                key = {b: batch_key(b, batches[b]) for b in names}
-                body = {"space": space,
-                        "backfills": [{"key": key[b], "declared_captured_at": batches[b]["declared_known_at"], "reason": batches[b]["reason"]} for b in names],
-                        "nodes": [strip(n, batch=key[b]) for b in names for n in groups[(b, space)]["nodes"]],
-                        "edges": [strip(e, batch=key[b]) for b in names for e in groups[(b, space)]["edges"]]}
+
+        def strip(r, **extra):
+            return {**{k: v for k, v in r.items() if k not in STRIP}, **extra}
+
+        def one_by_one(names, space):   # an older ledger: one POST per batch, declaring it; a retry declares it again
+            for batch in names:
+                g = groups[(batch, space)]
+                body = {"space": space, "backfill": {"declared_captured_at": batches[batch]["declared_known_at"], "reason": batches[batch]["reason"]},
+                        "nodes": [strip(n) for n in g["nodes"]], "edges": [strip(e) for e in g["edges"]]}
                 self._post(body, report)
-                report["batches"] += len(names)
+                report["batches"] += 1
+
+        if not self._keyed():
+            for batch, space in order:
+                one_by_one([batch], space)
             return report
-        # an older ledger: one POST per (batch, space), each declaring its batch; a retry declares it again
+        requests = []   # [space, [batch], rows] in knowledge order, at most MAX_BACKFILLS batches and about MAX_ROWS rows each
         for batch, space in order:
-            g = groups[(batch, space)]
-            body = {"space": space, "backfill": {"declared_captured_at": batches[batch]["declared_known_at"], "reason": batches[batch]["reason"]},
-                    "nodes": [strip(n) for n in g["nodes"]], "edges": [strip(e) for e in g["edges"]]}
-            self._post(body, report)
-            report["batches"] += 1
+            n = len(groups[(batch, space)]["nodes"]) + len(groups[(batch, space)]["edges"])
+            last = requests[-1] if requests else None
+            if last and last[0] == space and len(last[1]) < MAX_BACKFILLS and last[2] + n <= MAX_ROWS:
+                last[1].append(batch); last[2] += n
+            else:
+                requests.append([space, [batch], n])
+        for space, names, _ in requests:
+            key = {b: batch_key(b, batches[b]) for b in names}
+            body = {"space": space,
+                    "backfills": [{"key": key[b], "declared_captured_at": batches[b]["declared_known_at"], "reason": batches[b]["reason"]} for b in names],
+                    "nodes": [strip(n, batch=key[b]) for b in names for n in groups[(b, space)]["nodes"]],
+                    "edges": [strip(e, batch=key[b]) for b in names for e in groups[(b, space)]["edges"]]}
+            try:
+                self._post(body, report)
+            except urllib.error.HTTPError as e:
+                if e.code != 409:   # TCKG_BATCH_KEY_CONFLICT: a key of this tenant declared by another API key label
+                    raise
+                one_by_one(names, space)   # nothing of the request was written; never worse than before keys
+                continue
+            report["batches"] += len(names)
         return report
 
 

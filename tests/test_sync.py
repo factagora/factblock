@@ -180,10 +180,11 @@ assert not any("batch" in r for b in mem for r in b["nodes"] + b["edges"]), mem
 
 # 7. keyed batches (tckg 0.3.12): a ledger that declares a batch once per key, as the server does
 class Ledger(factblock.TckgStore):
-    def __init__(self, version="0.3.12", lose=0):
-        super().__init__("https://ledger.test", "key", "brain")
-        self.version, self.lose = version, lose        # lose: how many responses to drop after writing
+    def __init__(self, version="0.3.12", lose=0, label="key-a", space="brain"):
+        super().__init__("https://ledger.test", "key", space)
+        self.version, self.lose, self.label = version, lose, label   # lose: how many responses to drop after writing; label: who vouches
         self.keys, self.batches, self.rows, self.posts = {}, 0, {"nodes": [], "edges": []}, []
+        self.legacy = 0
 
     def _call(self, method, path, body=None, params=None):
         if path == "/v1/version":
@@ -204,12 +205,13 @@ class Ledger(factblock.TckgStore):
         self.posts.append(body)
         out = {"accepted": 0, "warned": [], "refused": [], "backfill_batches": {}}
         for bf in body.get("backfills", []):
-            content = (bf["declared_captured_at"], bf["reason"])
+            content = (bf["declared_captured_at"], bf["reason"], self.label)   # the server adds the voucher from the API key
             if self.keys.setdefault(bf["key"], content) != content:
                 raise urllib.error.HTTPError(self.url + path, 409, "Conflict", {}, io.BytesIO(b'{"detail": {"error": "TCKG_BATCH_KEY_CONFLICT"}}'))
         for bf in body.get("backfills", []):
             out["backfill_batches"][bf["key"]] = "id-" + bf["key"]
-        self.batches = len(self.keys) + sum(1 for b in self.posts if b.get("backfill"))
+        self.legacy += bool(body.get("backfill"))
+        self.batches = len(self.keys) + self.legacy
         have = {KEYS[t](r) for t in self.rows for r in self.rows[t]}
         for t in ("nodes", "edges"):
             for r in body[t]:
@@ -218,7 +220,8 @@ class Ledger(factblock.TckgStore):
                 elif KEYS[t](r) in have:
                     out["warned"].append({"id": r.get("id"), "reason": "already_remembered"})
                 else:
-                    self.rows[t].append(r); out["accepted"] += 1
+                    at = self.keys[r["batch"]][0] if r.get("batch") else (body.get("backfill") or {}).get("declared_captured_at")
+                    self.rows[t].append({**r, "known_at": at}); out["accepted"] += 1
         if self.lose:
             self.lose -= 1
             raise urllib.error.URLError("connection reset")   # written, response lost
@@ -230,6 +233,7 @@ rates = factblock.Bundle(work)
 k = batch_key("b1", {"declared_known_at": "2024-04-15T00:00:00Z", "reason": "r"})
 assert k == batch_key("b1", {"declared_known_at": datetime(2024, 4, 15, tzinfo=timezone.utc), "reason": "r"}) and k.startswith("b1#"), k
 assert k != batch_key("b1", {"declared_known_at": "2024-04-15T00:00:00Z", "reason": "other"})
+assert k == batch_key("b1", {"declared_known_at": datetime(2024, 4, 15), "reason": "r"}) == batch_key("b1", {"declared_known_at": "2024-04-15T00:00:00", "reason": "r"})   # naive is UTC, whatever the machine's zone
 assert len(batch_key("x" * 500, {"declared_known_at": "2024-04-15T00:00:00Z", "reason": "r"})) <= 200
 
 # the version gate compares numbers: 0.3.9 is older than 0.3.12, an unreadable or unreachable version is old
@@ -245,6 +249,14 @@ r = led.push(rates.manifest, rates.nodes, rates.edges)
 assert len(led.posts) == 1 and r["batches"] == 4 and r["accepted"] == 10 and not r["refused"], r
 assert {bf["key"].split("#")[0] for bf in led.posts[0]["backfills"]} == {"b1", "b2", "b3", "dictstore/0@2024-11-02T00:00:00+00:00"}, led.posts[0]["backfills"]
 assert {r["batch"] for r in led.posts[0]["nodes"] + led.posts[0]["edges"]} == {bf["key"] for bf in led.posts[0]["backfills"]}, led.posts[0]
+
+# every row names the key of its own batch
+sent = json.loads(json.dumps(rates.nodes + rates.edges, default=lambda d: d.isoformat()))
+bs = batches_of(rates.manifest, sent)   # also names the batch of the store-stamped row x1
+want = {KEYS["nodes" if "id" in r else "edges"](r): batch_key(r["attestation"]["batch"], bs[r["attestation"]["batch"]]) for r in sent}
+for t in ("nodes", "edges"):
+    for r in led.posts[0][t]:
+        assert r["batch"] == want[KEYS[t](r)], (r, want)
 
 # a second push of the same rows declares no new batch and writes nothing (SPEC 6.1: re-import is a no-op)
 before = led.batches
@@ -266,6 +278,25 @@ led = Ledger()
 assert factblock.sync(work, led, pull=False)["pushed"]["accepted"] == 10
 assert factblock.sync(work, led, pull=False)["pushed"]["batches"] == 0 and len(led.posts) == 1 and led.batches == 4
 
+# another API key of the tenant (another label) declared these keys first: 409, and the request goes one batch at a time as before keys
+first = Ledger(label="key-a")
+first.push(rates.manifest, rates.nodes, rates.edges)
+led = Ledger(label="key-b")
+led.keys = dict(first.keys)   # same tenant, rows in another space
+r = led.push(rates.manifest, rates.nodes, rates.edges)
+assert r["accepted"] == 10 and r["batches"] == 4 and not r["refused"] and led.legacy == 4, (r, led.legacy)
+assert [("backfills" in b, "backfill" in b) for b in led.posts] == [(True, False)] + [(False, True)] * 4, led.posts
+at = {n["id"]: n["known_at"] for n in led.rows["nodes"]}
+assert at["c1"] == "2024-04-15T00:00:00+00:00" and at["c3"] == "2024-07-01T00:00:00+00:00" and at["x1"] == "2024-11-02T00:00:00+00:00", at
+
+# rows in two spaces go in knowledge order: a request never jumps over an earlier batch of another space
+mixed = {"declarations": {"backfills": [{"batch": f"m{i}", "declared_known_at": f"2020-01-0{i + 1}T00:00:00Z", "reason": "r"} for i in range(4)]}}
+rows = [{"id": f"s{i}", "kind": "claim", "statement": "s", "asserted_at": "2019-01-01T00:00:00Z", "space": "ab"[i % 2] if i < 3 else "a",
+         "attestation": {"batch": f"m{i}"}} for i in range(4)]
+led = Ledger()
+led.push(mixed, rows, [])
+assert [(b["space"], [bf["key"].split("#")[0] for bf in b["backfills"]]) for b in led.posts] == [("a", ["m0"]), ("b", ["m1"]), ("a", ["m2", "m3"])], led.posts
+
 # packing: at most 1000 batches per request, in knowledge order, and a request stops near 2000 rows
 many = {"declarations": {"backfills": [{"batch": f"d{i:04d}", "declared_known_at": f"2020-01-01T00:00:{i % 60:02d}Z", "reason": "r"} for i in range(2500)]}}
 nodes = [{"id": f"n{i}", "kind": "claim", "statement": "s", "asserted_at": "2019-01-01T00:00:00Z", "attestation": {"batch": f"d{i:04d}"}} for i in range(2500)]
@@ -280,5 +311,5 @@ led.push(many, big, [])
 assert [len(b["nodes"]) for b in led.posts] == [1600, 800], [len(b["nodes"]) for b in led.posts]
 
 print("PASS sync: push 9, no-op, pull verdict + store-stamped row, folder valid, re-push declares known_at as a batch, "
-      "keyed batches from tckg 0.3.12 (one request, re-push and retry declare nothing new, packed by 1000), "
+      "keyed batches from tckg 0.3.12 (one request, re-push and retry declare nothing new, packed by 1000 in knowledge order, another label's 409 falls back to one batch per request), "
       "facts declared once and never redeclared over the ledger's, tenant and space in the CLI line, empty pull explained")
