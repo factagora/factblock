@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 1.0.0a15 (2026-10-20)
+
+Everything since a14: a shorter README, guides, keyed facts and evidence that says when its basis was replaced, Parquet that reads faster and refuses an append that would corrupt it, and sync to tckg 0.3.12.
+
+**Upgrading from 1.0.0a14.** Reads give the same answers. Three outputs change:
+- `context()` and `factblock recall` write a replacement announced on another day than it took effect as `replaced by (announced <date>, in force from <date>): ...`. Code that matched the old `replaced <date> by:` text for those lines needs the new form; same-day replacements are unchanged.
+- `from_records` and `factblock import` turn a `based_on` column into `DERIVED_FROM` edges, so a bundle imported with `based_on` has one more edge per basis. `payload.based_on` is still there.
+- `write_bundle(append=True)` and `factblock import` into a Parquet bundle now refuse instead of writing a file that no longer reads. Append to the JSONL bundle and convert again.
+
 ### Added
 - `recall`, `context` and `factblock recall --fact-key` take `fact_key=` (one key or a list, SPEC 3.7): only blocks carrying that key, so blocks sharing the query's words but answering another question stay out. Without it results are unchanged.
 - A block that rests on another by a `DERIVED_FROM` edge says when that basis was replaced: recall items carry `basis_replaced` and `context()` adds `rests on <id>, replaced <date> by: ...`. One hop only. SPEC 3.3 says what `DERIVED_FROM` means (informative, no new check).
