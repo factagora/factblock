@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- `track_record` reads excess over any benchmark: a verdict value `{"return": 0.05, "excess": 0.012, "benchmark": "069500"}` counts in `avg_excess_if_followed` like `excess_over_spy` did. A value with `excess_over_spy` and no `excess` reads as before, as excess over SPY. Each item carries `benchmark`, and `baseline` adds `benchmarks`, the calls in `avg_excess_if_followed` per benchmark (`unnamed` when a value has `excess` but no `benchmark`), so an average over several benchmarks says so. `factblock track-record` prints `over SPY` as before for SPY-only bundles, the benchmark's name for one other benchmark, and each name with its count when there are several. Existing keys are unchanged.
+
 ## 1.0.0a15 (2026-10-20)
 
 Everything since a14: a shorter README, guides, keyed facts and evidence that says when its basis was replaced, Parquet that reads faster and refuses an append that would corrupt it, and sync to tckg 0.3.12.

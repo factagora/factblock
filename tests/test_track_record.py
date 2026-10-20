@@ -96,7 +96,24 @@ with tempfile.TemporaryDirectory() as d:   # a tckg export carries the verdict v
     factblock.write_bundle({"nodes": [node("s1", "prediction", "2026-01-05T00:00:00Z", "ana", "2026-02-05T23:59:59Z", LIVE, None) | {"payload": {"direction": "down"}}],
                             "edges": [], "resolutions": [{**verdict("s1", "came_true", "2026-02-06T00:00:00Z"), "value": '{"return": -0.04, "excess_over_spy": -0.01}'}]}, d)
     bl = factblock.track_record(d, "2026-03-01")["total"]["baseline"]
-    assert bl == {"n": 1, "always_up_hit_rate": 0.0, "avg_return_if_followed": 0.04, "avg_excess_if_followed": 0.01}, bl   # short a fall
+    assert bl == {"n": 1, "always_up_hit_rate": 0.0, "avg_return_if_followed": 0.04, "avg_excess_if_followed": 0.01, "benchmarks": {"SPY": 1}}, bl   # short a fall
+
+with tempfile.TemporaryDirectory() as d:   # excess over a named benchmark; excess_over_spy still reads as SPY; mixed benchmarks are named
+    calls = [("k1", '{"return": 0.05, "excess": 0.012, "benchmark": "069500"}'), ("k2", {"return": 0.03, "excess": 0.008, "benchmark": "069500"}),
+             ("k3", {"return": 0.02, "excess_over_spy": 0.004}), ("k4", {"return": 0.01, "excess": 0.002, "excess_over_spy": 0.9}),
+             ("k5", {"return": 0.01})]
+    factblock.write_bundle({"nodes": [node(k, "prediction", "2026-01-05T00:00:00Z", "ana", "2026-02-05T23:59:59Z", LIVE, None) | {"payload": {"direction": "up"}} for k, _ in calls],
+                            "edges": [], "resolutions": [{**verdict(k, "came_true", "2026-02-06T00:00:00Z"), "value": val} for k, val in calls]}, d)
+    r = factblock.track_record(d, "2026-03-01")
+    assert [(i["excess"], i["benchmark"]) for i in r["items"]] == [(0.012, "069500"), (0.008, "069500"), (0.004, "SPY"), (0.002, "unnamed"), (None, None)], r["items"]
+    bl = r["total"]["baseline"]
+    assert bl["avg_excess_if_followed"] == 0.0065 and bl["benchmarks"] == {"069500": 2, "SPY": 1, "unnamed": 1}, bl
+    out = subprocess.run([sys.executable, "-m", "factblock", "track-record", d, "--as-of", "2026-03-01"], capture_output=True, text=True, cwd=ROOT, check=True).stdout
+    assert "+0.7% over 069500 2, SPY 1, unnamed 1\n" in out, out
+    factblock.write_bundle({"nodes": [node("k1", "prediction", "2026-01-05T00:00:00Z", "ana", "2026-02-05T23:59:59Z", LIVE, None) | {"payload": {"direction": "up"}}],
+                            "edges": [], "resolutions": [{**verdict("k1", "came_true", "2026-02-06T00:00:00Z"), "value": calls[0][1]}]}, d + "/one")
+    out = subprocess.run([sys.executable, "-m", "factblock", "track-record", d + "/one", "--as-of", "2026-03-01"], capture_output=True, text=True, cwd=ROOT, check=True).stdout
+    assert "+1.2% over 069500\n" in out, out
 assert cramer["record"] == {"before": 0, "sourced": 779, "writer": 0}, cramer["record"]   # backfilled from dated recordings
 
-print("PASS track_record: latest verdict as of, open and overdue, hit rate, on record before vs a cited source vs the writer's word, who vouches for each before count, ids and speaker, baseline (always up, following the calls), CLI, scan hint, cramer 426/353")
+print("PASS track_record: latest verdict as of, open and overdue, hit rate, on record before vs a cited source vs the writer's word, who vouches for each before count, ids and speaker, baseline (always up, following the calls, over a named benchmark or SPY), CLI, scan hint, cramer 426/353")
