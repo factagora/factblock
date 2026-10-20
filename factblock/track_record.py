@@ -6,10 +6,14 @@ and which of them were on record before they were resolved.
     r["record"]      # before it was resolved: written then, written later from a cited source, written later on the writer's word
     r["record_vouched_by"]   # who vouches for the "before" count: {ledger or batch declared_by: n} (SPEC 3.4)
 
-Baseline, when verdicts carry a numeric `return` in their value (a price-horizon resolver writes {return,
-excess_over_spy, direction}): always_up_hit_rate is how often saying "up" every time would have been right on the same
+Baseline, when verdicts carry a numeric `return` in their value (a price-horizon resolver writes {return, excess,
+benchmark, direction}): always_up_hit_rate is how often saying "up" every time would have been right on the same
 calls, the bar a hit rate has to clear in a rising market; avg_return_if_followed and avg_excess_if_followed are the
-mean return of going long on "up" calls and short on "down" calls, outright and over SPY.
+mean return of going long on "up" calls and short on "down" calls, outright and over the benchmark. `benchmark` names
+what `excess` is measured against (an index or fund, such as SPY or 069500); a value with `excess_over_spy` and no
+`excess` is read as excess over SPY, as earlier resolvers wrote it. benchmarks counts the calls in
+avg_excess_if_followed by benchmark ("unnamed" when a value has `excess` but no `benchmark`), so an average over more
+than one benchmark shows as such.
 
 A statement counts once, by its latest verdict known on as_of. hit_rate is right / (right + wrong); mixed (partial,
 misleading) and undecidable verdicts are counted but left out of it. open is a prediction or commitment with no
@@ -92,8 +96,11 @@ def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, i
         if v:
             record = "before" if written <= v["decided_at"] else "sourced" if _url(p) else "writer"
         f = _fields(v.get("value")) if v else {}
+        ex = "excess" if "excess" in f else "excess_over_spy"
+        bench = (str(f.get("benchmark") or "unnamed") if ex == "excess" else "SPY") if _number(f, ex) is not None else None
         items.append({"id": n["id"], "kind": n["kind"], "statement": n.get("statement"), "said": _day(n["asserted_at"]),
-                      "direction": p.get("direction") or f.get("direction"), "return": _number(f, "return"), "excess": _number(f, "excess_over_spy"),
+                      "direction": p.get("direction") or f.get("direction"), "return": _number(f, "return"), "excess": _number(f, ex),
+                      "benchmark": bench,
                       "group": str(p.get(by, n.get(by)) or "other") if by else None, "status": status,
                       "verdict": o or None, "decided": _day(v["decided_at"]) if v else None, "written": _day(written),
                       "record": record, "vouched_by": vouched_by, "source": _url(p)})
@@ -110,7 +117,8 @@ def track_record(bundle: BundleLike, as_of: Instant, *, by: str | None = None, i
             excess = [i for i in followed if i["excess"] is not None]
             out["baseline"] = {"n": len(priced), "always_up_hit_rate": round(sum(i["return"] > 0 for i in priced) / len(priced), 3),
                                "avg_return_if_followed": round(sum(sign[i["direction"]] * i["return"] for i in followed) / len(followed), 4) if followed else None,
-                               "avg_excess_if_followed": round(sum(sign[i["direction"]] * i["excess"] for i in excess) / len(excess), 4) if excess else None}
+                               "avg_excess_if_followed": round(sum(sign[i["direction"]] * i["excess"] for i in excess) / len(excess), 4) if excess else None,
+                               "benchmarks": {k: sum(1 for i in excess if i["benchmark"] == k) for k in sorted({i["benchmark"] for i in excess})}}
         return out
 
     groups = {}
