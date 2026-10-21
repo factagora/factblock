@@ -148,7 +148,7 @@ A folder is one writer's memory. [factagora.ai](https://factagora.ai) is where a
 
 `factblock sync brain/ <url> --space <space>` moves rows both ways by identity: what only the folder has goes up, what only the ledger has comes down, nothing is changed in place. A row's `known_at` travels as the batch that attests it, so the ledger learns a 2024 transcript as known in 2024, not today, and the folder learns a verdict at the instant the ledger stamped it. Run it again and it is a no-op, down to the batches: from tckg 0.3.12 each batch is declared under a key the folder fixes, so the ledger returns the one it has. `--pull-only` into a folder that does not exist yet clones a space. The token is `$TCKG_TOKEN` or `--token`. Another store is two methods: see [CONTRIBUTING.md](https://github.com/factagora/factblock/blob/main/CONTRIBUTING.md).
 
-The same ledger runs closed for companies at [app.factagora.com](https://app.factagora.com): your support logs, your sales promises, your own assistant's assertions, as claims with verdicts, inside your tenant.
+For companies, [app.factagora.com](https://app.factagora.com) builds dated, sourced statements from your own documents and keeps them inside your tenant. It does not run on this ledger yet.
 
 ## The format and status
 

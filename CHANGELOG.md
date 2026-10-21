@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- README: the app.factagora.com paragraph says what it does today, dated and sourced statements from your own documents kept inside your tenant, and that it does not run on this ledger yet. It said the ledger already ran there with verdicts.
+
 ### Added
 - `track_record` reads excess over any benchmark: a verdict value `{"return": 0.05, "excess": 0.012, "benchmark": "069500"}` counts in `avg_excess_if_followed` like `excess_over_spy` did. A value with `excess_over_spy` and no `excess` reads as before, as excess over SPY. Each item carries `benchmark`, and `baseline` adds `benchmarks`, the calls in `avg_excess_if_followed` per benchmark (`unnamed` when a value has `excess` but no `benchmark`), so an average over several benchmarks says so. `factblock track-record` prints `over SPY` as before for SPY-only bundles, the benchmark's name for one other benchmark, and each name with its count when there are several. Existing keys are unchanged.
 
