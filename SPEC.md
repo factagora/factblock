@@ -163,7 +163,7 @@ A pre-registration is a `commitment` node: the plan written before the data was 
 | `beta`, `se`, `unit` | | Effect size, its standard error, and the unit of `beta` |
 | `n_dates` | | Number of independent sample dates |
 | `p_sign`, `lfsr` | | Probability that the sign of the effect is right, and that it is wrong (local false sign rate). When both are present they sum to 1 |
-| `post_mean`, `post_sd` | | Posterior mean and standard deviation after shrinkage |
+| `post_mean`, `post_sd` | | Posterior mean and standard deviation of the effect |
 | `p_break`, `half_life` | | Probability of a structural break, and the half-life used to discount older data |
 | `cs_lo`, `cs_hi`, `e_value` | | Bounds of a confidence sequence, and an e-value |
 | `prereg_sha256` | | sha256 of the pre-registration document |
