@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/factagora/factblock/blob/main/schemas/measurement.v1.schema.json",
+  "title": "factblock.measurement/v1",
+  "description": "One measurement of a causal edge's strength: a node in a bundle (SPEC 3.8, informative). Only the fields that make a node a measurement are listed; the rest are as for any node (SPEC 3.1), and unknown fields are kept (SPEC 7).",
+  "type": "object",
+  "required": ["id", "kind", "statement", "fact_key", "fact_value", "payload", "asserted_at", "valid_from"],
+  "properties": {
+    "id": {"type": "string", "description": "one id per vintage; a new measurement is a new node"},
+    "kind": {"const": "claim"},
+    "statement": {"type": "string", "description": "one sentence on what was measured"},
+    "fact_key": {"type": "string", "pattern": "^measure\\.", "description": "shared by every vintage of one edge at one horizon; declared with policy latest_observed"},
+    "asserted_at": {"type": "string", "description": "when it was measured (ISO 8601)"},
+    "valid_from": {"type": "string", "description": "where the sample starts (ISO 8601)"},
+    "payload": {
+      "type": "object",
+      "required": ["edge"],
+      "properties": {
+        "edge": {
+          "type": "object",
+          "description": "the edge measured",
+          "required": ["source_id", "target_id", "edge_type"],
+          "properties": {
+            "source_id": {"type": "string"},
+            "target_id": {"type": "string"},
+            "edge_type": {"type": "string", "description": "as written on the edge, e.g. CAUSES"},
+            "regime": {"type": ["string", "null"], "description": "the edge's properties.regime, or null when it has none"}
+          }
+        },
+        "path": {"description": "reserved for results about a path of causal edges; shape not described yet"}
+      }
+    },
+    "fact_value": {
+      "type": "object",
+      "required": ["grade", "method", "method_hash", "horizon"],
+      "properties": {
+        "grade": {"type": "integer", "minimum": 0, "maximum": 3, "description": "evidence grade: 0 hypothesis only, 1 association or lead and lag, 2 event study with placebo test and control group, 3 narrow-window identification or difference in differences"},
+        "method": {"type": "string", "minLength": 1},
+        "method_hash": {"type": "string", "minLength": 1, "description": "the writer's identifier for the exact method; opaque to readers"},
+        "horizon": {"type": "string", "minLength": 1, "description": "e.g. 1d, 30d"},
+        "beta": {"type": "number", "description": "effect size"},
+        "se": {"type": "number", "description": "standard error of beta"},
+        "unit": {"type": "string", "description": "unit of beta"},
+        "n_dates": {"type": "integer", "description": "independent sample dates"},
+        "p_sign": {"type": "number", "minimum": 0, "maximum": 1, "description": "probability the sign is right"},
+        "lfsr": {"type": "number", "minimum": 0, "maximum": 1, "description": "local false sign rate; 1 - p_sign when both are present"},
+        "post_mean": {"type": "number", "description": "posterior mean of the effect"},
+        "post_sd": {"type": "number", "description": "posterior standard deviation of the effect"},
+        "p_break": {"type": "number", "minimum": 0, "maximum": 1, "description": "probability of a structural break"},
+        "half_life": {"description": "half-life used to discount older data"},
+        "cs_lo": {"type": "number", "description": "lower bound of a confidence sequence"},
+        "cs_hi": {"type": "number", "description": "upper bound of a confidence sequence"},
+        "e_value": {"type": "number"},
+        "prereg_sha256": {"type": "string", "description": "sha256 of the pre-registration document"}
+      }
+    }
+  }
+}
