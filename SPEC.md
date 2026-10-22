@@ -47,7 +47,7 @@ A bundle is a FactBlock bundle only if all six hold. The validator (section 8) c
 | `kind` | string | yes | Core: `claim` `prediction` `commitment` `entity` `factor` `timeseries` `episode`. Others preserved (section 7) |
 | `statement` | string | no | The text. Required for `claim`, `prediction` and `commitment` |
 | `category` | string | no | |
-| `payload` | object | no | Free form. Conventions: `about` (the period the content refers to), `speaker` (who said it, as written), `quote` (the words), `source` (`{url, title, published_at, id}`, where it appeared; `id` is the source's own identifier for the document, such as a docket or filing number), `asserted_at_precision` (`second`, `minute`, `hour` or `day`: how much of `asserted_at` the source gave, when it gave less than an instant; a day-only date is stored as midnight UTC), `factblock_id` |
+| `payload` | object | no | Free form. Conventions: `about` (the period the content refers to), `speaker` (who said it, as written), `quote` (the words), `source` (`{url, title, published_at, id}`, where it appeared; `id` is the source's own identifier for the document, such as a docket or filing number), `asserted_at_precision` (`second`, `minute`, `hour` or `day`: how much of `asserted_at` the source gave, when it gave less than an instant; a day-only date is stored as midnight UTC), `edge` (the causal edge a measurement block measured, 3.8), `path` (reserved for results about a path of causal edges, 3.8), `factblock_id` |
 | `asserted_at` | instant | yes | I1 |
 | `valid_from` | instant | yes | I1 |
 | `valid_to` | instant or null | no | I1. For a `prediction` its horizon, for a `commitment` its deadline: the instant by which it should have happened |
@@ -131,6 +131,68 @@ embedding:   { model, dimensions } | null
 ```
 
 `policy` is one of `latest_valid` (latest `valid_from` wins), `latest_observed` (latest `known_at` wins: when it was observed, so a backfilled row ranks at its batch's declared instant; rows tied on `known_at`, as in one batch, are a conflict, never ordered by arrival), `source_priority` (first match in `source_order` wins), `strict` (two candidates is a refusal). Declarations have `declared_at` so that they are themselves as-of'd: a reader applies the declaration in force at `as_of`, or at an explicit `rules_as_of`.
+
+### 3.8 Measured strength of causal edges (informative)
+
+A measurement says how strong one causal edge was found to be over one horizon. It is a node that points at the edge, not a field on the edge: an edge is never edited (I3), and a measurement is redone as data arrives. This section describes the shape so that writers and readers agree on it. It adds no check: a measurement is an ordinary node and passes section 8 like any other. How a writer computes the values is outside this format. [`schemas/measurement.v1.schema.json`](./schemas/measurement.v1.schema.json) describes the node.
+
+**The block.** One measurement (one vintage) is one node:
+
+| Field | Value |
+|---|---|
+| `kind` | `claim` |
+| `statement` | One sentence on what was measured, such as `Measured factor:rain -CAUSES-> entity:harvest (30d): grade 2` |
+| `fact_key` | Starts with `measure.`. The vintages of one edge at one horizon share one key, and every vintage of a key names the same edge and horizon. tckg names a key `measure.<source_id>.<edge_type in lowercase>.<target_id>[.<regime>].<horizon>` when the writer gives none; readers match on `payload.edge`, not on the key's text |
+| `fact_value` | The strength fields below, with `horizon` |
+| `payload.edge` | `{source_id, target_id, edge_type, regime}`: the edge measured. `edge_type` as written on the edge (`CAUSES`). `regime` is null or absent for an edge without one, else the edge's `properties.regime` |
+| `asserted_at` | When it was measured |
+| `valid_from` | Where the sample starts. A measurement says nothing about an instant before its sample |
+
+The fact is declared with policy `latest_observed` (3.7), so the vintage learned last wins. To measure again, you write a new node with a new `id` under the same `fact_key` and leave the old one as it is.
+
+A pre-registration is a `commitment` node: the plan written before the data was looked at. A `DEPENDS_ON` edge from the measurement to it links the two. `DEPENDS_ON` is in the general family, so scoring leaves it alone (3.3). Both blocks carry `known_at`, so a reader can tell whether the plan was on record before the measurement.
+
+**Strength fields (`fact_value`).** Names and meanings only. Fields not listed here are kept as written (section 7).
+
+| Field | Required by tckg | Meaning |
+|---|---|---|
+| `grade` | yes | Evidence grade, an integer from 0 to 3: 0 a hypothesis only, 1 an association or a lead and lag, 2 an event study with a placebo test and a control group, 3 identification in a narrow time window, or difference in differences |
+| `method` | yes | The method's name |
+| `method_hash` | yes | The writer's identifier for the exact method. Opaque to readers: compare it, do not parse it |
+| `horizon` | yes | The horizon the effect is measured over (`1d`, `30d`) |
+| `beta`, `se`, `unit` | | Effect size, its standard error, and the unit of `beta` |
+| `n_dates` | | Number of independent sample dates |
+| `p_sign`, `lfsr` | | Probability that the sign of the effect is right, and that it is wrong (local false sign rate). When both are present they sum to 1 |
+| `post_mean`, `post_sd` | | Posterior mean and standard deviation after shrinkage |
+| `p_break`, `half_life` | | Probability of a structural break, and the half-life used to discount older data |
+| `cs_lo`, `cs_hi`, `e_value` | | Bounds of a confidence sequence, and an e-value |
+| `prereg_sha256` | | sha256 of the pre-registration document |
+
+**Reading strength.** A reader that attaches measurements to edges (tckg's `GET /v1/edges?with=strength` is one) gives each edge a `strength` list with one item per `measure.` fact that names it, in `fact_key` order. A fact names an edge when a vintage known at `as_of` has the edge's `source_id`, `target_id` and `edge_type` in `payload.edge`, and the same `regime` (both absent counts as the same). Only edges in the causal family get items. An edge nobody measured, an edge whose measurements were all learned after `as_of`, and an edge outside the causal family all read as `strength: []`. That is the normal answer, not an error.
+
+Each item is `resolve` (4.4) on the fact as of the read:
+
+```json
+{"fact_key": "measure.factor:rain.causes.entity:harvest.30d",
+ "status": "answered", "reason": null,
+ "id": "measure.factor:rain.causes.entity:harvest.30d.20261020T121705.000000Z",
+ "known_at": "2026-10-20T12:17:05Z", "horizon": "30d",
+ "value": {"grade": 2, "beta": 0.12, "se": 0.04, "horizon": "30d", "method": "event_study", "method_hash": "9f2c..."},
+ "candidates": 2,
+ "prereg": {"commitment_id": "commitment:prereg:rain-harvest", "known_at": "2026-09-01T00:00:00Z", "before_measurement": true}}
+```
+
+| Field | Meaning |
+|---|---|
+| `status`, `reason`, `value` | As `resolve` returns them. With no answer, `value` is null and `reason` says why |
+| `id`, `known_at` | The winning vintage, or null with no answer |
+| `horizon` | `fact_value.horizon` of the latest vintage known at `as_of` |
+| `candidates` | How many vintages `resolve` weighed |
+| `prereg` | The `commitment` the winning vintage `DEPENDS_ON`, or null. `before_measurement` is true when the commitment's `known_at` is earlier than the vintage's |
+
+An item without an answer has one of four reasons: `unresolved_conflict` (two vintages share a `known_at`), `no_value_at` (`valid_at` is outside the sample), `undeclared_fact` (no declaration in force at `as_of`), or `edge_mismatch` (the winning vintage names another edge, so its value is not given as this edge's strength).
+
+**Reserved.** `payload.path` is reserved for results about a path of causal edges rather than one edge. Its shape is not described yet.
 
 ## 4. Read semantics
 
