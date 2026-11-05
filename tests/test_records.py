@@ -179,4 +179,24 @@ with tempfile.TemporaryDirectory() as d:
     assert next(n for n in b.nodes if n["id"] == "n1")["payload"]["based_on"] == "r1;r2"
     p = subprocess.run([sys.executable, "-m", "factblock", "import", str(d / "n.csv"), "-o", str(d / "b"), "--backfill"], capture_output=True, text=True)
     assert "+0 blocks, +0 replaced, +0 verdicts, 6 already there" in p.stdout and "links" not in p.stdout, p.stdout + p.stderr
-print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, same input same bytes (captured_at, reason) and a re-run append changes nothing, scan shows batch reasons, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies (IRS mileage) imports and reads as the README shows, retroactive change included; an import without known_at and an empty recall say why (learned later, or no such words), a missing model extra prints its fix without a traceback; samples/cramer outside a checkout says to clone; --help groups the commands; based_on writes DERIVED_FROM")
+# with conditions=True applies_if cells become SPEC 3.1 conditions (and stay in payload); a narrower replacement reads as superseded_for
+with tempfile.TemporaryDirectory() as d:
+    d = pathlib.Path(d)
+    rows = [{"id": "r40", "said_at": "2017-12-22", "effective_from": "2025-01-01", "text": "Bonus depreciation is 40%."},
+            {"id": "r100", "said_at": "2025-07-04", "effective_from": "2025-01-20", "text": "Bonus depreciation is 100%.", "replaces": "r40",
+             "applies_if": "acquired_after=2025-01-19;entity=c_corp|s_corp;state=CA"}]
+    plain = factblock.from_records(rows, backfill=True)   # default: the column stays payload only, as before
+    assert all("applies_if" not in n for n in plain["nodes"]) and plain["nodes"][1]["payload"]["applies_if"] == rows[1]["applies_if"]
+    out = factblock.write_bundle(factblock.from_records(rows, backfill=True, conditions=True), d / "b")
+    n = {n["id"]: n for n in factblock.Bundle(out).nodes}
+    assert n["r100"]["applies_if"] == [{"key": "acquired", "op": "after", "value": "2025-01-19"},
+                                       {"key": "entity", "op": "eq", "value": ["c_corp", "s_corp"]}, {"key": "state", "op": "eq", "value": "CA"}], n["r100"]
+    assert n["r100"]["payload"]["applies_if"] == rows[1]["applies_if"] and "applies_if" not in n["r40"]
+    r40 = next(r for r in factblock.scan(out, "2025-07-10").to_dicts() if r["id"] == "r40")
+    assert r40["superseded_by"] is None and r40["superseded_for"] == [{"by": "r100", "applies_if": n["r100"]["applies_if"]}], r40
+    try:
+        factblock.from_records([{**rows[1], "applies_if": "acquired"}], conditions=True)
+        raise AssertionError("a condition without = must be refused")
+    except ValueError as e:
+        assert "key=value" in str(e)
+print("PASS records: CSV import (replacement before it takes effect, late correction, verdict) reads right as of each date; replaced date is the effective one; announced changes shown before they take effect; any statement kind recalled, things counted as excluded, empty context says so; batches declared; re-import a no-op, a grown CSV adds only new rows, same input same bytes (captured_at, reason) and a re-run append changes nothing, scan shows batch reasons, an edited row and invalid rows refused before writing; input not mutated; scan.to_dicts parses JSON columns; __version__; sample --policies (IRS mileage) imports and reads as the README shows, retroactive change included; an import without known_at and an empty recall say why (learned later, or no such words), a missing model extra prints its fix without a traceback; samples/cramer outside a checkout says to clone; --help groups the commands; based_on writes DERIVED_FROM; applies_if becomes conditions when asked (payload only by default), a narrower replacement superseded_for")

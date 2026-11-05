@@ -1,6 +1,6 @@
 """SPEC 5.3: the Parquet profile. One file per table, one explicit Arrow schema per
 table, rows sorted by known_at so an as-of read is a prefix scan. Free-form
-columns (payload, properties, fact_value, evidence) are JSON strings; fields the
+columns (payload, properties, fact_value, applies_if, evidence) are JSON strings; fields the
 schema does not know go to `extra` as JSON, so nothing is dropped (SPEC 7). Row groups hold at most
 ROW_GROUP_ROWS rows, and each file records its sort order (Parquet sorting_columns)."""
 import json
@@ -14,14 +14,14 @@ from .bundle import Bundle
 
 TS = pa.timestamp("us", tz="UTC")
 ATTESTATION = pa.struct([("ledger", pa.string()), ("batch", pa.string())])
-JSON_COLS = {"payload", "properties", "fact_value", "evidence", "value", "extra"}   # stored as JSON strings
+JSON_COLS = {"payload", "properties", "fact_value", "applies_if", "evidence", "value", "extra"}   # stored as JSON strings
 
 SCHEMAS = {
     "nodes": pa.schema([
         ("id", pa.string()), ("kind", pa.string()), ("space", pa.string()), ("statement", pa.string()),
         ("category", pa.string()), ("payload", pa.string()),
         ("asserted_at", TS), ("valid_from", TS), ("valid_to", TS), ("known_at", TS),
-        ("attestation", ATTESTATION), ("fact_key", pa.string()), ("fact_value", pa.string()),
+        ("attestation", ATTESTATION), ("fact_key", pa.string()), ("fact_value", pa.string()), ("applies_if", pa.string()),
         ("embedding", pa.list_(pa.float32())), ("author", pa.string()), ("namespace", pa.string()), ("extra", pa.string()),
     ]),
     "edges": pa.schema([

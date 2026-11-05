@@ -25,6 +25,9 @@ with tempfile.TemporaryDirectory() as tmp:
         for v in sorted(s.to_dicts("resolutions"), key=lambda v: (v["decided_at"], v["known_at"])):
             latest[v["target_id"]] = v["outcome"]
         assert latest == c["verdicts"], ("python verdicts", why, latest)
+        # every case checks superseded_for; a case without the field expects none (SPEC 4.3)
+        got = {r["id"]: [x["by"] for x in r["superseded_for"]] for r in s.to_dicts("nodes") if r.get("superseded_for")}
+        assert got == c.get("superseded_for", {}), ("python superseded_for", why, got)
         if "namespaces" in c:
             got = {r["id"]: r["namespace"] for r in s.to_dicts("nodes") if r.get("namespace") is not None}
             assert got == c["namespaces"], ("python namespaces", why, got)
@@ -37,6 +40,9 @@ with tempfile.TemporaryDirectory() as tmp:
         else:
             rows = con.execute(f"SELECT id, superseded_by FROM factblock_nodes(?, {at})", [pq, c["as_of"]]).fetchall()
         assert sorted([i, s_] for i, s_ in rows) == c["nodes"], ("duckdb", why, sorted(rows))
+        got = {i: [x["by"] for x in f] for i, f in con.execute(f"SELECT id, superseded_for FROM factblock_nodes(?, {at}{', valid_at := CAST(? AS TIMESTAMPTZ)' if c['valid_at'] else ''}) WHERE superseded_for IS NOT NULL",
+                                                                [pq, c["as_of"]] + ([c["valid_at"]] if c["valid_at"] else [])).fetchall()}
+        assert got == c.get("superseded_for", {}), ("duckdb superseded_for", why, got)
         if "namespaces" in c:
             got = dict(con.execute(f"SELECT id, namespace FROM factblock_nodes(?, {at}) WHERE namespace IS NOT NULL", [pq, c["as_of"]]).fetchall())
             assert got == c["namespaces"], ("duckdb namespaces", why, got)
@@ -45,4 +51,4 @@ with tempfile.TemporaryDirectory() as tmp:
         else:
             got = {}
         assert got == c["verdicts"], ("duckdb verdicts", why, got)
-print(f"PASS conformance: python and duckdb agree with {len(cases)} cases (replacement announced before it takes effect, learned late, replaced twice, verdicts, namespace set and absent)")
+print(f"PASS conformance: python and duckdb agree with {len(cases)} cases (replacement announced before it takes effect, learned late, replaced twice, verdicts, namespace set and absent, replaced for some cases only)")

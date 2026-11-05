@@ -11,7 +11,7 @@ import sys
 from . import __version__, Bundle, embedder, TckgStore, extract, from_records, graph, leak, read_records, recall, resolve, scan, sync, timeline, to_claimreview, to_okf, track_record, validate, why, write_bundle, write_parquet
 from .adapters.factcheck import bundle_from_factcheck, search as factcheck_search
 from .bundle import parse_instant
-from .recall import THINGS, _hits, _terms
+from .recall import THINGS, _conditions, _hits, _terms
 
 # the wheel carries samples/rates at factblock/samples/rates (pyproject force-include); a checkout has it at the repo root
 SAMPLES = next((d for d in (pathlib.Path(__file__).parent / "samples", pathlib.Path(__file__).resolve().parents[1] / "samples") if (d / "rates").exists()), None)
@@ -301,6 +301,8 @@ def main():
                                      and _day(s["asserted_at"]) != _day(s["since"]) else f"replaced {_day(s['since'])} by {by}: ") + str(s.get("statement"))
                 if i.get("superseded_by"):
                     print(f"{'':<25}  " + rep(i["superseded_by"]["id"], i["superseded_by"]))
+                for s in i.get("superseded_for", ()):   # replaced only for the cases the successor applies to (SPEC 4.3)
+                    print(f"{'':<25}  for {_conditions(s['applies_if'])}, " + rep(s["id"], s))
                 for s in i.get("basis_replaced", ()):
                     print(f"{'':<25}  rests on {s['id']}, " + rep(s["by"], s))
                 if i.get("verdict"):
@@ -388,6 +390,8 @@ def main():
         for d in (pu or {}).get("facts_differ", []):
             print(f"  fact {d['fact_key']}: the ledger has {rule(d['store'])}; the folder has {rule(d['local'])}. "
                   "Kept the ledger's rule; to use the folder's, declare it again on the ledger (POST /v1/facts).")
+        if (pu or {}).get("applies_if"):   # Later: drop once tckg stores applies_if (tax-rules plan Stage 6a)
+            print(f"  {pu['applies_if']} rows carry applies_if; the store drops it until tckg supports conditions, so they will read as unconditional there")
         for x in (pu or {}).get("refused", []):
             print(f"  refused {x}")
         sys.exit(1 if pu and pu["refused"] else 0)

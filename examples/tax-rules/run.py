@@ -51,8 +51,9 @@ def restatements():
 def applies(row, facts):
     """applies_if is `key=value`, `key_after=date` or `key_before=date`, joined by ';'. A row whose
     condition names a fact the client does not have does not apply to that client.
-    shortcut: conditions live in the payload and are checked here, before the bundle is read; upgrade to a
-    SPEC field once conditional replacement (a row replaces another only for some clients) is in the format."""
+    shortcut: applies_if is a SPEC field (3.1) and a replacement for some clients reads as superseded_for (4.3),
+    but no read takes a client's facts yet, so conditions are checked here, before the bundle is read; upgrade
+    to recall(facts=) once a read takes facts (tax-rules Stage 4)."""
     for cond in filter(None, row["applies_if"].split(";")):
         key, want = cond.split("=")
         if key.endswith("_after") or key.endswith("_before"):

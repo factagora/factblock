@@ -310,6 +310,23 @@ led = Ledger()
 led.push(many, big, [])
 assert [len(b["nodes"]) for b in led.posts] == [1600, 800], [len(b["nodes"]) for b in led.posts]
 
+# 6h. rows with applies_if are pushed, counted, and the CLI warns that tckg drops the field (not refused)
+cond = pathlib.Path(tempfile.mkdtemp()) / "rates"
+shutil.copytree(RATES, cond)
+lines = (cond / "nodes.jsonl").read_text().splitlines()
+lines[0] = json.dumps({**json.loads(lines[0]), "applies_if": [{"key": "state", "op": "eq", "value": "CA"}]})
+(cond / "nodes.jsonl").write_text("\n".join(lines) + "\n")
+r = factblock.sync(cond, DictStore(), pull=False)
+assert r["pushed"]["applies_if"] == 1 and r["pushed"]["accepted"] == 9, r["pushed"]
+assert factblock.sync(work, DictStore(), pull=False)["pushed"]["applies_if"] == 0
+out = io.StringIO()
+sys.argv = ["factblock", "sync", str(cond), "https://ledger.test", "--space", "brain", "--token", "k", "--push-only"]
+with contextlib.redirect_stdout(out):
+    try:
+        fbmain.main()
+    except SystemExit as e:
+        assert e.code in (0, None), e.code
+assert "  1 rows carry applies_if; the store drops it until tckg supports conditions, so they will read as unconditional there" in out.getvalue(), out.getvalue()
 print("PASS sync: push 9, no-op, pull verdict + store-stamped row, folder valid, re-push declares known_at as a batch, "
       "keyed batches from tckg 0.3.12 (one request, re-push and retry declare nothing new, packed by 1000 in knowledge order, another label's 409 falls back to one batch per request), "
-      "facts declared once and never redeclared over the ledger's, tenant and space in the CLI line, empty pull explained")
+      "facts declared once and never redeclared over the ledger's, tenant and space in the CLI line, empty pull explained, applies_if rows counted and warned")

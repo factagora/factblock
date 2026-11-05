@@ -1,0 +1,14 @@
+{
+ "factblock_version": "1.0-draft.1",
+ "namespace": "local",
+ "declarations": {
+  "facts": [],
+  "backfills": [],
+  "edge_types": [],
+  "embedding": null
+ },
+ "tables": {
+  "nodes": "nodes.jsonl",
+  "edges": "edges.jsonl"
+ }
+}

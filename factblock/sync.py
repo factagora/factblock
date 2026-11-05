@@ -25,7 +25,7 @@ from typing import Protocol
 
 from .bundle import Bundle, parse_instant, write_bundle
 
-STRIP = ("known_at", "attestation", "captured_at", "superseded_by")   # the store stamps these; a client sending them is refused
+STRIP = ("known_at", "attestation", "captured_at", "superseded_by", "superseded_for")   # the store stamps these; a client sending them is refused
 KEYED = (0, 3, 12)   # first tckg that takes backfills: [{key, ...}] and batch: <key>; older ones ignore both
 MAX_BACKFILLS = 1000   # tckg's cap per request
 MAX_ROWS = 2000        # rows per keyed request; a batch bigger than this still goes alone, as before keys
@@ -237,6 +237,8 @@ def sync(bundle, store: Store, as_of=None, push=True, pull=True) -> dict:
         out["pushed"]["facts_differ"] = [{"fact_key": k, "local": _rule(mine[k]), "store": _rule(theirs[k])}
                                          for k in sorted(mine) if k in theirs and _rule(mine[k]) != _rule(theirs[k])]
         out["pushed"]["resolutions_not_pushed"] = len(only_local["resolutions"])   # verdicts are the store's to make
+        # rows carrying SPEC 3.1 conditions: tckg keeps only the columns it knows, so they arrive unconditional there
+        out["pushed"]["applies_if"] = sum(1 for n in only_local["nodes"] if n.get("applies_if"))
     if pull:
         only_remote = {t: [r for r in remote.get(t, []) if KEYS[t](r) not in have_local[t]] for t in KEYS}
         if any(only_remote.values()) or not exists:
