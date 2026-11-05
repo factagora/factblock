@@ -21,7 +21,7 @@ CREATE OR REPLACE MACRO factblock_cond_ok(c) AS COALESCE(
   AND CASE WHEN (c ->> '$.op') IN ('after', 'before') THEN json_type(c, '$.value') = 'VARCHAR'
            WHEN (c ->> '$.op') = 'eq' THEN json_type(c, '$.value') = 'VARCHAR'
                 OR (json_type(c, '$.value') = 'ARRAY' AND json_array_length(c, '$.value') > 0
-                    AND list_bool_and(list_transform(json_extract(c, '$.value[*]'), x -> json_type(x) = 'VARCHAR')))
+                    AND list_bool_and(list_transform(json_extract(c, '$.value[*]'), lambda x: json_type(x) = 'VARCHAR')))
            ELSE false END, false);
 
 -- A node's applies_if (a JSON string) as comparable conditions, key/op/values with an eq list as a set (SPEC 3.1, 4.3).
@@ -29,8 +29,8 @@ CREATE OR REPLACE MACRO factblock_cond_ok(c) AS COALESCE(
 CREATE OR REPLACE MACRO factblock_conds(j) AS
   CASE WHEN j IS NULL THEN []::VARCHAR[]
        WHEN json_type(j) <> 'ARRAY' THEN NULL
-       WHEN NOT COALESCE(list_bool_and(list_transform(json_extract(j, '$[*]'), c -> factblock_cond_ok(c))), true) THEN NULL
-       ELSE list_transform(json_extract(j, '$[*]'), c -> (c ->> '$.key') || chr(31) || (c ->> '$.op') || chr(31) || array_to_string(list_sort(list_distinct(
+       WHEN NOT COALESCE(list_bool_and(list_transform(json_extract(j, '$[*]'), lambda c: factblock_cond_ok(c))), true) THEN NULL
+       ELSE list_transform(json_extract(j, '$[*]'), lambda c: (c ->> '$.key') || chr(31) || (c ->> '$.op') || chr(31) || array_to_string(list_sort(list_distinct(
               CASE WHEN json_type(c, '$.value') = 'ARRAY' THEN json_extract_string(c, '$.value[*]') ELSE [c ->> '$.value'] END)), chr(31))) END;
 
 -- superseded_by: the latest visible SUPERSEDES whose successor's applies_if is among the row's own (a total replacement).
