@@ -38,7 +38,7 @@ viz = ["vl-convert-python>=1.7"]  # Timeline.save(".png" or ".svg"); .html needs
 demo = ["rich>=13"]               # factblock demo: the animated walkthrough behind samples/demo.gif
 
 [dependency-groups]
-dev = ["duckdb>=1.1", "rich>=13"]   # rich: tests/test_demo.py
+dev = ["duckdb>=1.3", "rich>=13"]   # rich: tests/test_demo.py
 
 [build-system]
 requires = ["hatchling"]
