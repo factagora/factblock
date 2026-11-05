@@ -83,7 +83,8 @@ def _print_track_record(r):
     if bl:
         pct = lambda x: f"{x:+.1%}" if x is not None else "-"  # noqa: E731
         print(f"baseline ({bl['n']} calls with a return): saying up every time would hit {bl['always_up_hit_rate']:.0%}; "
-              f"following the calls made {pct(bl['avg_return_if_followed'])} a call, {pct(bl['avg_excess_if_followed'])} over SPY")
+              f"following the calls made {pct(bl['avg_return_if_followed'])} a call, {pct(bl['avg_excess_if_followed'])} over "
+              + (", ".join(f"{k} {n}" for k, n in bl["benchmarks"].items()) if len(bl["benchmarks"]) > 1 else next(iter(bl["benchmarks"]), "the benchmark")))
     if r["left_out"]:
         print(f"left out: {r['left_out']} picked statement{'s' if r['left_out'] != 1 else ''} with no verdict that {'are' if r['left_out'] != 1 else 'is'} not a prediction or commitment")
     print(_cert(r["certificate"]))

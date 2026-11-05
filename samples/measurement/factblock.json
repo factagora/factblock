@@ -1,0 +1,22 @@
+{
+  "factblock_version": "1.0-draft.1",
+  "namespace": "sample:measurement",
+  "tables": {
+    "nodes": "nodes.jsonl",
+    "edges": "edges.jsonl"
+  },
+  "declarations": {
+    "facts": [
+      {
+        "fact_key": "measure.factor:rain.causes.entity:harvest.30d",
+        "key_fields": ["source_id", "target_id", "edge_type", "regime"],
+        "policy": "latest_observed",
+        "source_order": null,
+        "declared_at": "2026-09-01T00:00:00Z"
+      }
+    ],
+    "backfills": [],
+    "edge_types": [],
+    "embedding": null
+  }
+}
