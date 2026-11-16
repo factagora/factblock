@@ -47,7 +47,7 @@ A bundle is a FactBlock bundle only if all six hold. The validator (section 8) c
 | `kind` | string | yes | Core: `claim` `prediction` `commitment` `entity` `factor` `timeseries` `episode`. Others preserved (section 7) |
 | `statement` | string | no | The text. Required for `claim`, `prediction` and `commitment` |
 | `category` | string | no | |
-| `payload` | object | no | Free form. Conventions: `about` (the period the content refers to), `speaker` (who said it, as written), `quote` (the words), `source` (`{url, title, published_at, id}`, where it appeared; `id` is the source's own identifier for the document, such as a docket or filing number), `asserted_at_precision` (`second`, `minute`, `hour` or `day`: how much of `asserted_at` the source gave, when it gave less than an instant; a day-only date is stored as midnight UTC), `edge` (the causal edge a measurement block measured, 3.8), `path` (reserved for results about a path of causal edges, 3.8), `factblock_id` |
+| `payload` | object | no | Free form. Conventions: `about` (the period the content refers to), `speaker` (who said it, as written), `quote` (the words), `source` (`{url, title, published_at, id}`, where it appeared; `id` is the source's own identifier for the document, such as a docket or filing number), `asserted_at_precision` (`second`, `minute`, `hour` or `day`: how much of `asserted_at` the source gave, when it gave less than an instant; a day-only date is stored as midnight UTC), `edge` (the causal edge a measurement block measured, 3.8), `target_id` (the node a measurement block measured, 3.8), `path` (reserved for results about a path of causal edges, 3.8), `factblock_id` |
 | `asserted_at` | instant | yes | I1 |
 | `valid_from` | instant | yes | I1 |
 | `valid_to` | instant or null | no | I1. For a `prediction` its horizon, for a `commitment` its deadline: the instant by which it should have happened |
@@ -192,6 +192,8 @@ Each item is `resolve` (4.4) on the fact as of the read:
 | `prereg` | The `commitment` the winning vintage `DEPENDS_ON`, or null. `before_measurement` is true when the commitment's `known_at` is earlier than the vintage's |
 
 An item without an answer has one of four reasons: `unresolved_conflict` (two vintages share a `known_at`), `no_value_at` (`valid_at` is outside the sample), `undeclared_fact` (no declaration in force at `as_of`), or `edge_mismatch` (the winning vintage names another edge, so its value is not given as this edge's strength).
+
+**A node as the target.** A measurement can also be about one node, such as a score on a claim. It has the same shape with three differences: `payload.target_id` (the id of the node measured) instead of `payload.edge`; `fact_value` requires only `method` and `method_hash` (`grade` and `horizon` are edge-strength fields, kept as written when present); and the vintages of one measure of one node share one key (`measure.<target_id>.<measure>` when the writer gives none; readers match on `payload.target_id`, not on the key's text). A measurement node sets exactly one of `payload.edge`, `payload.target_id` and `payload.path`. A reader that attaches measurements to nodes gives each node one item per `measure.` fact whose vintage known at `as_of` names it, in the shape of a strength item, and `[]` for a node nobody measured. The format describes the result, not how a value is computed.
 
 **Reserved.** `payload.path` is reserved for results about a path of causal edges rather than one edge. Its shape is not described yet.
 

@@ -13,6 +13,13 @@
         "policy": "latest_observed",
         "source_order": null,
         "declared_at": "2026-09-01T00:00:00Z"
+      },
+      {
+        "fact_key": "measure.claim:frost-warning.independent_sources",
+        "key_fields": ["target_id"],
+        "policy": "latest_observed",
+        "source_order": null,
+        "declared_at": "2026-09-10T00:00:00Z"
       }
     ],
     "backfills": [],
