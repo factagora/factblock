@@ -326,7 +326,7 @@ with contextlib.redirect_stdout(out):
         fbmain.main()
     except SystemExit as e:
         assert e.code in (0, None), e.code
-assert "  1 rows carry applies_if; the store drops it until tckg supports conditions, so they will read as unconditional there" in out.getvalue(), out.getvalue()
+assert "applies_if" not in out.getvalue(), out.getvalue()   # tckg stores applies_if since 0.3.19: nothing to warn about
 print("PASS sync: push 9, no-op, pull verdict + store-stamped row, folder valid, re-push declares known_at as a batch, "
       "keyed batches from tckg 0.3.12 (one request, re-push and retry declare nothing new, packed by 1000 in knowledge order, another label's 409 falls back to one batch per request), "
       "facts declared once and never redeclared over the ledger's, tenant and space in the CLI line, empty pull explained, applies_if rows counted and warned")
