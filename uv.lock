@@ -399,7 +399,7 @@ wheels = [
 
 [[package]]
 name = "factblock"
-version = "1.0.0a15"
+version = "1.0.0a16"
 source = { editable = "." }
 dependencies = [
     { name = "pyarrow" },
